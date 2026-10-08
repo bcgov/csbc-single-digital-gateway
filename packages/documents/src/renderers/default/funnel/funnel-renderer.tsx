@@ -29,6 +29,7 @@ export function FunnelRenderer({ uischema, schema, path, visible, renderers, cel
     ctx.core?.data as FunnelData | undefined,
     ctx.core?.errors ?? [],
     host.finish,
+    host.freeNavigation,
   );
   if (!visible) return null;
   if (runner.current === null)

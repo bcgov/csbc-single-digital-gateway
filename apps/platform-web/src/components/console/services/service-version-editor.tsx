@@ -256,7 +256,7 @@ function EditorBody({
             This version’s content isn’t a document the studio can open.
           </p>
         ) : editable ? (
-          // Rules 21-21b: the DEFAULT variant filled — Back / Next and Save draft stay in the runner's bar, Submit is
+          // Rules 21-21c: the DEFAULT variant filled — Back / Next and Save draft stay in the runner's bar, Submit is
           // hidden because the header publishes.
           <DocumentRunner
             schema={stored.schema}
@@ -265,6 +265,8 @@ function EditorBody({
             onChange={(next) => setAnswers(next as Record<string, unknown>)}
             onSaveDraft={saveAnswers}
             submit={false}
+            // Rule 21c: staff jump about a Funnel freely; Publish is still checked by the API.
+            freeNavigation
             references={references}
           />
         ) : (

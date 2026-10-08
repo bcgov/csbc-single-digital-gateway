@@ -16,6 +16,8 @@ export interface DocumentRunnerPort {
   readonly actions?: boolean;
   /** Doc 281 rule 21a: `false` hides the final Submit — the host submits elsewhere; Back / Next / Save draft stay. */
   readonly submit?: boolean;
+  /** Doc 281 rule 21c: errors show but never block Next or opening a reached step — staff move through freely. */
+  readonly freeNavigation?: boolean;
 }
 
 const DocumentRunnerContext = createContext<DocumentRunnerPort | null>(null);
@@ -37,6 +39,8 @@ export interface HostActions {
   readonly actions: boolean;
   /** Doc 281 rule 21a: whether the bar offers Submit at the end. */
   readonly submit: boolean;
+  /** Doc 281 rule 21c: whether errors leave navigation free. */
+  readonly freeNavigation: boolean;
   /** The payload dialog — Submit's fallback when the host has no `onSubmit` (rule 18). */
   readonly previewing: boolean;
   setPreviewing(open: boolean): void;
@@ -70,6 +74,7 @@ export function useHostActions(port: DocumentRunnerPort | null, data: unknown): 
     disabled: port?.disabled === true,
     actions: port?.actions !== false,
     submit: port?.submit !== false,
+    freeNavigation: port?.freeNavigation === true,
     previewing,
     setPreviewing,
     saveDraft: () => run(port?.onSaveDraft),

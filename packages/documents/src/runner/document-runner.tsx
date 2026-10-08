@@ -47,6 +47,8 @@ export interface DocumentRunnerProps {
   onValidityChange?(valid: boolean): void;
   /** Doc 281 rule 21a: `false` hides the final Submit — for a host that publishes from its own header. */
   readonly submit?: boolean;
+  /** Doc 281 rule 21c: a Funnel's errors show but never block Next or opening a reached step. */
+  readonly freeNavigation?: boolean;
   /** Doc 287: the host's documents for document reference controls. Absent = an outer provider's, if any. */
   readonly references?: DocumentReferenceSource | undefined;
 }
@@ -62,6 +64,7 @@ export function DocumentRunner({
   actions = true,
   onValidityChange,
   submit = true,
+  freeNavigation = false,
   references,
 }: DocumentRunnerProps) {
   const port: DocumentRunnerPort = {
@@ -70,6 +73,7 @@ export function DocumentRunner({
     disabled,
     actions,
     submit,
+    freeNavigation,
   };
   // `null` until JSONForms reports its first validation: not yet known is not valid.
   const [errors, setErrors] = useState<readonly FunnelError[] | null>(null);

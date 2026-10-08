@@ -94,6 +94,8 @@ export function useFunnelRunner(
   errors: readonly FunnelError[],
   /** Submit once no path error blocks it — the host's `onSubmit`, or the payload dialog (rule 18). */
   finish: () => void,
+  /** Doc 281 rule 21c: errors show but never block navigation. */
+  freeNavigation = false,
 ): FunnelRunner {
   const context = useMemo(() => ({ funnel, schema, data }), [funnel, schema, data]);
   const [progress, setProgress] = useState(() => initialProgress(context));
@@ -105,19 +107,21 @@ export function useFunnelRunner(
   const pathForms = usePathForms(listed, forms);
   const path = pathErrors(funnel, listed, errors);
   const current = position === null ? null : (forms.get(position) ?? null);
-  const blocked = current !== null && formHasError(current, errors);
+  const blocked = !freeNavigation && current !== null && formHasError(current, errors);
   const upcoming = upcomingStepRange(context, progress.visited);
   return {
     current,
     summary: progress.summary,
-    steps: railSteps(listed, forms, progress, path),
+    steps: railSteps(listed, forms, progress, path, freeNavigation),
     upcoming,
     summaryStep: showsSummaryPage(funnel)
       ? {
           current: progress.summary,
           // Rule 23: last on the rail, so a visited summary is always PAST the current step when not on it.
           tone: progress.summary ? 'current' : progress.summaryVisited ? 'visited' : 'ahead',
-          locked: !progress.summary && !(upcoming === undefined && pathValidated(path, progress)),
+          locked:
+            !progress.summary &&
+            !(upcoming === undefined && (freeNavigation || pathValidated(path, progress))),
         }
       : undefined,
     pathForms,
@@ -200,6 +204,7 @@ function railSteps(
   forms: ReadonlyMap<string, FunnelElement>,
   progress: Progress,
   path: PathErrors,
+  freeNavigation: boolean,
 ): RailStep[] {
   // On the summary page every listed step lies before the current one.
   const at = progress.summary ? listed.length : listed.indexOf(progress.position ?? '');
@@ -222,7 +227,11 @@ function railSteps(
       label: typeof label === 'string' && label.trim() !== '' ? label : 'Form',
       current,
       tone,
-      lock: !reached ? 'upcoming' : mayOpen(path, progress.position, id) ? null : 'blocked',
+      lock: !reached
+        ? 'upcoming'
+        : freeNavigation || mayOpen(path, progress.position, id)
+          ? null
+          : 'blocked',
       hasError: flagged,
     };
   });

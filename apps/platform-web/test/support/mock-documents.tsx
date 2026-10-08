@@ -77,12 +77,15 @@ export function documentRunnerMock() {
       onValidityChange,
       onSaveDraft,
       submit,
+      freeNavigation,
       references,
     }: {
       disabled?: boolean;
       actions?: boolean;
       /** Doc 281 rule 21a: `false` hides the final Submit. */
       submit?: boolean;
+      /** Doc 281 rule 21c: errors never block navigation. */
+      freeNavigation?: boolean;
       onSaveDraft?: (answers: Record<string, unknown>) => void | Promise<void>;
       /** Doc 287: whether the host handed down a reference source. */
       references?: unknown;
@@ -105,6 +108,7 @@ export function documentRunnerMock() {
           // Doc 229: whether the host asked for the action bar (the runner's default is true).
           data-actions={String(actions !== false)}
           data-submit={String(submit !== false)}
+          data-free-navigation={String(freeNavigation === true)}
           data-references={String(references !== undefined)}
           data-answers={JSON.stringify(answers)}
         >

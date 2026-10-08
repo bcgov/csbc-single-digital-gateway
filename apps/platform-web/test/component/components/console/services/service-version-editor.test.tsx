@@ -163,6 +163,8 @@ describe('ServiceVersionEditor (docs 230, 281 rules 21-25)', () => {
     // Rule 21a: the runner bar stays (Back / Next) but its Submit is hidden; rule 21b: references handed down.
     expect(runner()).toHaveAttribute('data-actions', 'true');
     expect(runner()).toHaveAttribute('data-submit', 'false');
+    // Rule 21c: staff move through a Funnel freely — errors show, never block.
+    expect(runner()).toHaveAttribute('data-free-navigation', 'true');
     expect(runner()).toHaveAttribute('data-references', 'true');
     expect(screen.getByRole('heading', { name: 'Permit application' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
