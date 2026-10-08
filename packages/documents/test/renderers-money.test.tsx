@@ -130,8 +130,10 @@ describe('money control (doc 286)', () => {
     it('marks required with a red asterisk and hides the label with options.hideLabel', () => {
       const required = renderControl(control('fee'));
       const label = required.container.querySelector('label')!;
-      expect(label).toHaveTextContent('Fee *');
-      expect(label.querySelector('.text-destructive')).toHaveTextContent('*');
+      expect(label).toHaveTextContent(/^Fee$/);
+      expect(required.container.querySelector('[data-slot="required-marker"]')).toHaveClass(
+        'text-destructive',
+      );
       expect(screen.getByRole('textbox', { name: /Fee/ })).toHaveAttribute('aria-required', 'true');
       required.unmount();
       const hidden = renderControl(control('price', { ...MONEY, hideLabel: true }));

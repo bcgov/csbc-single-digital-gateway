@@ -120,7 +120,13 @@ describe('string controls (doc 239)', () => {
     it('stacks label, description, control, counter — description under the label', () => {
       const { field } = renderControl(control('name'));
       const order = [...field().children].map((c) => c.getAttribute('data-slot'));
-      expect(order).toEqual(['field-label', 'field-description', 'input', 'character-count']);
+      // `name` is required, so its label sits in a line with the marker (doc 285 rule 5).
+      expect(order).toEqual([
+        'control-label-line',
+        'field-description',
+        'input',
+        'character-count',
+      ]);
     });
 
     it('labels and describes the control, the counter first in aria-describedby', () => {
@@ -132,11 +138,16 @@ describe('string controls (doc 239)', () => {
       expect(document.getElementById(ids[1]!)).toHaveTextContent('As it appears on your ID');
     });
 
-    it('marks a required field: asterisk on the label, required and aria-required on the control', () => {
+    it('marks a required field: asterisk right of the label line, required and aria-required on the control', () => {
       const required = renderControl(control('name'));
       const label = required.field().querySelector('label')!;
-      expect(label).toHaveTextContent('Full name *');
-      expect(label.querySelector('[aria-hidden="true"]')).toHaveTextContent('*');
+      expect(label).toHaveTextContent(/^Full name$/);
+      const line = required.field().querySelector('[data-slot="control-label-line"]')!;
+      expect([...line.children].map((c) => c.getAttribute('data-slot'))).toEqual([
+        'field-label',
+        'required-marker',
+      ]);
+      expect(line.lastElementChild).toHaveAttribute('aria-hidden', 'true');
       const box = within(required.field()).getByRole('textbox');
       expect(box).toBeRequired();
       expect(box).toHaveAttribute('aria-required', 'true');

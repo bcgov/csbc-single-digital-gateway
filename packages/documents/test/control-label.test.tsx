@@ -186,11 +186,17 @@ describe('fill controls hide the label visually (rules 2, 5, 6, 7)', () => {
     expect(screen.getByRole('table', { name: 'People' })).toBeInTheDocument();
   });
 
-  it('a required control hides its * with the label but stays aria-required', () => {
+  it('a required control hides only its label: the red * stays visible, and it stays aria-required (rule 5)', () => {
     renderUi(hidden('name'));
     const label = hiddenLabels()[0]!;
-    // The marker is red (2026-10-08) and lives inside the label, so it hides with it.
-    expect(label.querySelector('.text-destructive')).toHaveTextContent('*');
+    expect(label).toHaveTextContent(/^Full name$/);
+    // The marker sits OUTSIDE the label, at the right of its line, so hiding the label leaves it shown.
+    const line = label.closest('[data-slot="control-label-line"]')!;
+    const marker = line.querySelector('[data-slot="required-marker"]')!;
+    expect(marker).toHaveTextContent('*');
+    expect(marker).toHaveClass('text-destructive', 'ml-auto');
+    expect(marker).not.toHaveClass('sr-only');
+    expect(marker).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByRole('textbox', { name: 'Full name' })).toHaveAttribute(
       'aria-required',
       'true',

@@ -114,7 +114,10 @@ describe('number input (doc 248)', () => {
 
     it('marks a required field, and names an unlabelled one by its key', () => {
       const required = renderControl(control('age'));
-      expect(required.field()!.querySelector('label')).toHaveTextContent('Age *');
+      expect(required.field()!.querySelector('label')).toHaveTextContent(/^Age$/);
+      expect(required.field()!.querySelector('[data-slot="required-marker"]')).toHaveTextContent(
+        '*',
+      );
       expect(screen.getByRole('textbox', { name: /Age/ })).toHaveAttribute('aria-required', 'true');
       required.unmount();
       renderControl(control('amount', {}, { label: '' }));

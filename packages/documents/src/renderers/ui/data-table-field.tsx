@@ -1,8 +1,8 @@
 import type { ControlProps } from '@jsonforms/core';
-import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
+import { Field, FieldDescription } from '@repo/ui/field';
 import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
-import { useHiddenLabel } from './control-label';
+import { ControlLabel, useHiddenLabel } from './control-label';
 
 /** How the table is named and described by its field (doc 263 rule 15). */
 export interface DataTableWiring {
@@ -40,16 +40,12 @@ export function DataTableField({
   return (
     <Field data-slot="data-table-field" data-component={component}>
       {label !== '' && (
-        <FieldLabel id={labelId} {...hiddenLabel.labelProps}>
-          {label}
-          {required === true && (
-            <span aria-hidden="true" className="text-destructive">
-              {' '}
-              *
-            </span>
-          )}
-          {hiddenLabel.marker}
-        </FieldLabel>
+        <ControlLabel
+          label={label}
+          required={required === true}
+          hiddenLabel={hiddenLabel}
+          id={labelId}
+        />
       )}
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>

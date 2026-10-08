@@ -1,10 +1,10 @@
 import { and, rankWith, schemaMatches, uiTypeIs, type ControlProps } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
+import { Field, FieldDescription } from '@repo/ui/field';
 import { NumberInput, type NumberInputProps } from '@repo/ui/number-input';
 import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
-import { useHiddenLabel } from './control-label';
+import { ControlLabel, useHiddenLabel } from './control-label';
 import { isPlainNumber, numberOptions } from './number-options';
 
 /** A Control over a plain number or integer (doc 248 rules 1-2) — never a numeric choice, so rank 1 never ties. */
@@ -55,16 +55,12 @@ export function NumberControlField({
   return (
     <Field data-slot="number-field">
       {label !== '' && (
-        <FieldLabel htmlFor={id} {...hiddenLabel.labelProps}>
-          {label}
-          {required === true && (
-            <span aria-hidden="true" className="text-destructive">
-              {' '}
-              *
-            </span>
-          )}
-          {hiddenLabel.marker}
-        </FieldLabel>
+        <ControlLabel
+          label={label}
+          required={required === true}
+          hiddenLabel={hiddenLabel}
+          htmlFor={id}
+        />
       )}
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>

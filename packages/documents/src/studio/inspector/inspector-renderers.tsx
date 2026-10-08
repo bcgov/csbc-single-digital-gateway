@@ -54,7 +54,8 @@ const COMPACT_CLASS = [
   '[&_[data-slot=field-label]]:font-normal',
   '[&_[data-slot=field-description]]:text-[11px]',
   // Doc 249: the inspector's required fields are always-set selects, not questions.
-  '[&_[data-slot=field-label]>span[aria-hidden=true]]:hidden',
+  // The marker sits beside the label, in its line (doc 285 rule 5).
+  '[&_[data-slot=required-marker]]:hidden',
   '[&_[data-slot=input]]:h-7',
   '[&_[data-slot=input]]:px-2',
   '[&_[data-slot=input]]:py-1',
@@ -104,6 +105,8 @@ const ROW_CLASS = [
   '[&_[data-slot=number-field]]:gap-x-2',
   '[&_[data-slot=choice-field]]:gap-x-2',
   '[&_[data-slot=field-label]]:min-w-0',
+  // A required field's label sits in a line with its (hidden) marker: let that line shrink so the label truncates.
+  '[&_[data-slot=control-label-line]]:min-w-0',
   '[&_[data-slot=field-label]]:truncate',
   '[&_[data-slot=field-description]]:col-span-2',
   '[&_[data-slot=field-description]]:order-last',

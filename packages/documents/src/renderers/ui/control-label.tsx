@@ -1,5 +1,6 @@
 import { mdiEyeOffOutline } from '@mdi/js';
 import { Icon } from '@mdi/react';
+import { FieldLabel } from '@repo/ui/field';
 import { createContext, useContext, type ReactNode } from 'react';
 import { hideLabel } from './hide-label';
 
@@ -52,4 +53,44 @@ export function useHiddenLabel(uischema: unknown): HiddenLabel {
       </span>
     ),
   };
+}
+
+/**
+ * A Control's label line (doc 285 rule 5): the label, then — OUTSIDE it, at the far right of the line — the required
+ * marker. Only the label hides with `options.hideLabel`; the marker stays visible, since `aria-required` already
+ * says it to assistive technology (the marker itself is `aria-hidden`). Without a marker it is the bare label, so a
+ * hidden, optional field's label takes no line.
+ */
+export function ControlLabel({
+  label,
+  required,
+  hiddenLabel,
+  id,
+  htmlFor,
+}: {
+  label: string;
+  required: boolean;
+  hiddenLabel: HiddenLabel;
+  id?: string | undefined;
+  htmlFor?: string | undefined;
+}) {
+  const element = (
+    <FieldLabel
+      {...(id !== undefined && { id })}
+      {...(htmlFor !== undefined && { htmlFor })}
+      {...hiddenLabel.labelProps}
+    >
+      {label}
+      {hiddenLabel.marker}
+    </FieldLabel>
+  );
+  if (!required) return element;
+  return (
+    <div data-slot="control-label-line" className="flex items-baseline gap-2">
+      {element}
+      <span data-slot="required-marker" aria-hidden="true" className="ml-auto text-destructive">
+        *
+      </span>
+    </div>
+  );
 }

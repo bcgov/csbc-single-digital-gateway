@@ -1,9 +1,9 @@
 import { and, rankWith, schemaMatches, uiTypeIs, type ControlProps } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
+import { Field, FieldDescription } from '@repo/ui/field';
 import { RichTextInput } from '@repo/ui/rich-text-input';
 import { controlDescription } from './control-description';
-import { useHiddenLabel } from './control-label';
+import { ControlLabel, useHiddenLabel } from './control-label';
 import { isRichTextProperty, richTextHasText, richTextValue } from './rich-text-value';
 
 /** A Control over a rich text property (doc 250 rules 1, 5) — disjoint from every other control by `type`. */
@@ -31,16 +31,12 @@ export function RichTextControl(props: ControlProps) {
   return (
     <Field data-slot="rich-text-field">
       {label !== '' && (
-        <FieldLabel id={labelId} {...hiddenLabel.labelProps}>
-          {label}
-          {required === true && (
-            <span aria-hidden="true" className="text-destructive">
-              {' '}
-              *
-            </span>
-          )}
-          {hiddenLabel.marker}
-        </FieldLabel>
+        <ControlLabel
+          label={label}
+          required={required === true}
+          hiddenLabel={hiddenLabel}
+          id={labelId}
+        />
       )}
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>

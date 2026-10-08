@@ -53,6 +53,18 @@ const heading = (name: string) =>
   screen.getByRole('button', { name: new RegExp(`^${name}$`, 'i') });
 
 describe('inspector density (doc 252 rules 1-6)', () => {
+  it("hides a required field's * — now beside its label, not inside it (doc 285 rule 5)", () => {
+    // `Display as` is a required inspector select: it renders the marker, and the stack hides it.
+    render(<Harness initial="c-t" />);
+    const marker = stack().querySelector('[data-slot="required-marker"]');
+    expect(marker).not.toBeNull();
+    expect(marker!.closest('[data-slot="field-label"]')).toBeNull();
+    expect(stack()).toHaveClass(
+      '[&_[data-slot=required-marker]]:hidden',
+      '[&_[data-slot=control-label-line]]:min-w-0',
+    );
+  });
+
   it('carries the compact type, 28px controls and small switches on the root stack', () => {
     render(<Harness initial="c-n" />);
     expect(stack()).toHaveClass(

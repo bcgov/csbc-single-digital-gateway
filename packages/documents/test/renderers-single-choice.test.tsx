@@ -116,8 +116,11 @@ describe('single-choice controls (doc 244)', () => {
       );
       const required = renderControl(control('plan'));
       const label = required.field()!.querySelector('label')!;
-      expect(label).toHaveTextContent('Plan *');
-      expect(label.querySelector('[aria-hidden="true"]')).toHaveTextContent('*');
+      expect(label).toHaveTextContent(/^Plan$/);
+      expect(required.field()!.querySelector('[data-slot="required-marker"]')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
       expect(within(required.field()!).getByRole('combobox')).toHaveAttribute(
         'aria-required',
         'true',

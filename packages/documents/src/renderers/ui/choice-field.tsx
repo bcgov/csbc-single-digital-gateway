@@ -1,8 +1,8 @@
 import type { ControlProps } from '@jsonforms/core';
-import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
+import { Field, FieldDescription } from '@repo/ui/field';
 import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
-import { useHiddenLabel } from './control-label';
+import { ControlLabel, useHiddenLabel } from './control-label';
 
 export type ChoiceComponent = 'select' | 'radio-group' | 'multi-select' | 'checkbox-group';
 
@@ -49,16 +49,13 @@ export function ChoiceField({
   return (
     <Field data-slot="choice-field" data-component={component}>
       {label !== '' && (
-        <FieldLabel id={labelId} htmlFor={id} {...hiddenLabel.labelProps}>
-          {label}
-          {required === true && (
-            <span aria-hidden="true" className="text-destructive">
-              {' '}
-              *
-            </span>
-          )}
-          {hiddenLabel.marker}
-        </FieldLabel>
+        <ControlLabel
+          label={label}
+          required={required === true}
+          hiddenLabel={hiddenLabel}
+          id={labelId}
+          htmlFor={id}
+        />
       )}
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>

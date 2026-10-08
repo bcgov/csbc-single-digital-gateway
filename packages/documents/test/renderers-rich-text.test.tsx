@@ -93,7 +93,8 @@ describe('ui Rich text control (doc 250 rules 5-6)', () => {
       required: true,
     });
     const field = container.querySelector('[data-slot="rich-text-field"]')!;
-    expect(field.querySelector('[data-slot="field-label"]')).toHaveTextContent('Background *');
+    expect(field.querySelector('[data-slot="field-label"]')).toHaveTextContent(/^Background$/);
+    expect(field.querySelector('[data-slot="required-marker"]')).toHaveTextContent('*');
     const editor = screen.getByRole('textbox', { name: 'Background' });
     expect(editor).toHaveAccessibleDescription('A few lines about you.');
     expect(field.querySelector('[data-slot="rich-text-toolbar"]')).not.toBeNull();

@@ -119,7 +119,10 @@ describe('multi-choice controls (doc 245)', () => {
         'Pick any',
       );
       const required = renderControl(control('picked'));
-      expect(required.field()!.querySelector('label')).toHaveTextContent('Picked *');
+      expect(required.field()!.querySelector('label')).toHaveTextContent(/^Picked$/);
+      expect(required.field()!.querySelector('[data-slot="required-marker"]')).toHaveTextContent(
+        '*',
+      );
       expect(within(required.field()!).getByRole('combobox')).toHaveAttribute(
         'aria-required',
         'true',
