@@ -223,6 +223,7 @@ export function DocumentReferenceControl(props: ControlProps) {
             <>
               {references.length > 0 ? (
                 <ReferenceCards
+                  type={type}
                   references={references}
                   hrefOf={hrefOf}
                   onRemove={enabled ? removal.request : undefined}
