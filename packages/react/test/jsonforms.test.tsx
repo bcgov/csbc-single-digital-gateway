@@ -46,8 +46,7 @@ describe('@repo/react/jsonforms — JsonForms wrapper', () => {
 
     // @jsonforms/react debounces onChange (~10ms) — wait for the trailing emit.
     await waitFor(() => {
-      const last = onData.mock.calls.at(-1)?.[0] as { name?: string } | undefined;
-      expect(last?.name).toBe('Ada');
+      expect(onData).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ada' }));
     });
   });
 
