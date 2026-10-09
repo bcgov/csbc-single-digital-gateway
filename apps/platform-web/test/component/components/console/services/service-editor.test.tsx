@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceEditor } from '@/components/console/services/service-editor';
+import { mockDefinition } from '../../../../support/fixtures';
 
 const state = vi.hoisted(() => ({ isIntegrationTest: false }));
 
@@ -65,10 +66,6 @@ function ServiceDetailMirror({
 
 describe('ServiceEditor Component Test Suite', () => {
   it('renders JsonForms with correct props', () => {
-    const mockDefinition = {
-      schema: { type: 'object', properties: { name: { type: 'string' } } },
-      uischema: { type: 'VerticalLayout', elements: [] },
-    };
     const mockData = { name: 'Riverton' };
     const mockOnChange = vi.fn();
 
@@ -92,10 +89,6 @@ describe('ServiceEditor Component Test Suite', () => {
   });
 
   it('calls onChange when JsonForms calls onChange and readonly is false', () => {
-    const mockDefinition = {
-      schema: { type: 'object' },
-      uischema: { type: 'VerticalLayout' },
-    };
     const mockOnChange = vi.fn();
 
     render(
@@ -115,10 +108,6 @@ describe('ServiceEditor Component Test Suite', () => {
   });
 
   it('does not call onChange when JsonForms calls onChange and readonly is true', () => {
-    const mockDefinition = {
-      schema: { type: 'object' },
-      uischema: { type: 'VerticalLayout' },
-    };
     const mockOnChange = vi.fn();
 
     render(
@@ -132,6 +121,25 @@ describe('ServiceEditor Component Test Suite', () => {
 
     const jsonFormsProps = vi.mocked(JsonForms).mock.calls[0]![0];
     jsonFormsProps.onChange!({ data: { title: 'New Title' } } as any);
+
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('handles definition when uischema elements is missing or not an array (L38)', () => {
+    render(
+      <ServiceEditor definition={{ schema: {}, uischema: {} }} data={{}} onChange={vi.fn()} />,
+    );
+    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
+  });
+
+  it('does not call onChange when next data is identical to current data', () => {
+    const mockOnChange = vi.fn();
+    const data = { title: 'Same Title' };
+
+    render(<ServiceEditor definition={mockDefinition} data={data} onChange={mockOnChange} />);
+
+    const jsonFormsProps = vi.mocked(JsonForms).mock.calls[0]![0];
+    jsonFormsProps.onChange!({ data: { title: 'Same Title' } } as any);
 
     expect(mockOnChange).not.toHaveBeenCalled();
   });

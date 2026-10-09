@@ -3,6 +3,7 @@ import type { WorkspaceLike } from './render-app';
 import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions';
 import type { GeoCountryOption } from '@repo/react/jsonforms-renderers';
 import type { ServiceAgreementSummary } from '@/lib/service-agreements';
+import type { ContainerNode } from '@/components/form-builder/model';
 
 /**
  * ISO 8601 date string fixture.
@@ -199,4 +200,77 @@ export const COUNTRIES: GeoCountryOption[] = [
 export const EMPTY: { schema: Record<string, unknown>; uischema: Record<string, unknown> } = {
   schema: { type: 'object', properties: {}, required: [] },
   uischema: { type: 'VerticalLayout', elements: [] },
+};
+
+export const mockWorkspaceMember = {
+  ...adminWorkspace,
+  role: 'member' as const,
+  ownerId: 'u2', // Sam Lee
+};
+
+export const mockUserNoEmail = {
+  id: 'u-123',
+  roles: ['admin'],
+  claims: {
+    sub: 'sub-123',
+    name: 'Test User No Email',
+    preferred_username: 'Tester',
+  },
+};
+
+export const defaultAgreement = {
+  id: 'd1',
+  agreementDocumentId: 'a1',
+  title: 'Terms of service',
+  isOptional: false,
+  isGlobal: false,
+  createdAt: ISO,
+};
+
+export const mockBasicFormDraft = {
+  form: {
+    id: 'am-789',
+    workspaceId: 'w1',
+    title: 'Parking Application',
+    kind: 'basic-form',
+    createdAt: ISO,
+  },
+  version: {
+    id: 'v-1',
+    documentId: 'am-789',
+    version: 1,
+    status: 'draft' as const,
+    schema: {
+      schema: {
+        type: 'object',
+        title: 'Parking Application',
+        properties: {
+          licensePlate: { type: 'string', title: 'License Plate' },
+        },
+      },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/licensePlate' }],
+      },
+    },
+    createdAt: ISO,
+  },
+};
+
+export const mockDefinition = {
+  schema: {
+    type: 'object',
+    properties: { name: { type: 'string', title: 'Full Name' } },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [],
+  },
+};
+
+// Grid container with columns fallback
+export const gridNode: ContainerNode = {
+  kind: 'container',
+  layout: 'grid',
+  children: [],
 };

@@ -330,14 +330,15 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
       readOnlyProvince: _readOnlyProvince,
       ...baseNode
     } = createField('address');
-    const sparseNode: ControlNode = {
+
+    const sparseNodeAddress: ControlNode = {
       ...baseNode,
       key: 'addr_sparse',
       label: 'Sparse Address',
       options: {},
       required: false,
     };
-    renderEditor(sparseNode);
+    renderEditor(sparseNodeAddress);
     expect(countrySwitch()).not.toBeInTheDocument();
     expect(provinceSwitch()).not.toBeInTheDocument();
   });

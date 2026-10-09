@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OverviewPage } from '@/components/console/pages/overview';
 import type { ServiceSummary } from '@/lib/services';
 import { service } from '../../../../support/testHelpers';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,

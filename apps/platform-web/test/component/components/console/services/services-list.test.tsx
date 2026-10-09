@@ -5,9 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ServicesList } from '@/components/console/services/services-list';
 import type { ServiceSummary } from '@/lib/services';
 import { service } from '../../../../support/testHelpers';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 let mockSearchValue: any = { sort: 'updated', order: 'desc' };
-const mockNavigate = vi.fn();
+
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,

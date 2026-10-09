@@ -6,8 +6,24 @@ import { ISO } from '../../../../support/fixtures';
 import { mockSubmissionsBff } from '../../../../support/mock-submissions-bff';
 import { mockAuthUser } from '../../../../support/mock-auth-user';
 
+let mockSlug: string | undefined = 'riverton';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...original,
+    useParams: (options: any) => {
+      if (mockSlug === undefined) {
+        return { slug: undefined };
+      }
+      return original.useParams(options);
+    },
+  };
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  mockSlug = 'riverton';
 });
 
 const submissionsList = [
@@ -42,7 +58,7 @@ const submissionsList = [
 ];
 
 describe('SubmissionsPage Component Test Suite', () => {
-  it('renders loading skeleton when data is fetching', async () => {
+  it('Should display loading skeleton when data is fetching', async () => {
     mockAuthUser(authedUser);
 
     const { container } = renderApp('/app/riverton/submissions');
@@ -55,8 +71,11 @@ describe('SubmissionsPage Component Test Suite', () => {
     );
   });
 
-  it('renders submission records with correct fields and links', async () => {
-    mockSubmissionsBff({ items: submissionsList }, authedUser);
+  it('Should display submission records with correct fields and links', async () => {
+    mockSubmissionsBff(
+      { items: submissionsList },
+      { testFile: 'submissions.test', user: authedUser },
+    );
     renderApp('/app/riverton/submissions');
 
     // Wait for the table rows to render
@@ -84,7 +103,10 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('filters submissions when clicking status tabs', async () => {
-    mockSubmissionsBff({ items: submissionsList }, authedUser, { filtered: true });
+    mockSubmissionsBff(
+      { items: submissionsList },
+      { testFile: 'submissions.test', user: authedUser, filtered: true },
+    );
     renderApp('/app/riverton/submissions');
     const user = userEvent.setup();
 
@@ -123,7 +145,7 @@ describe('SubmissionsPage Component Test Suite', () => {
     });
   });
 
-  it('renders "—" when submittedAt date is null', async () => {
+  it('Should display "—" when submittedAt date is null', async () => {
     const nullDateSubmission = [
       {
         id: 'sub-3',
@@ -140,7 +162,10 @@ describe('SubmissionsPage Component Test Suite', () => {
         updatedAt: ISO,
       },
     ];
-    mockSubmissionsBff({ items: nullDateSubmission }, authedUser);
+    mockSubmissionsBff(
+      { items: nullDateSubmission },
+      { testFile: 'submissions.test', user: authedUser },
+    );
     renderApp('/app/riverton/submissions');
 
     const linkCharlie = await screen.findByRole('link', { name: 'Charlie Brown' });
@@ -182,7 +207,10 @@ describe('SubmissionsPage Component Test Suite', () => {
       },
     ];
 
-    mockSubmissionsBff({ items: extraSubmissions }, authedUser, { filtered: true });
+    mockSubmissionsBff(
+      { items: extraSubmissions },
+      { testFile: 'submissions.test', user: authedUser, filtered: true },
+    );
     renderApp('/app/riverton/submissions');
     const user = userEvent.setup();
 
@@ -221,7 +249,10 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('falls back to "All" tab when status parameter in search is unknown/not in tabs', async () => {
-    mockSubmissionsBff({ items: submissionsList }, authedUser, { filtered: true });
+    mockSubmissionsBff(
+      { items: submissionsList },
+      { testFile: 'submissions.test', user: authedUser, filtered: true },
+    );
     renderApp('/app/riverton/submissions?status=withdrawn');
 
     // Should display empty state because no items match "withdrawn" status
@@ -233,28 +264,33 @@ describe('SubmissionsPage Component Test Suite', () => {
     expect(allTab).toHaveAttribute('data-active');
   });
 
-  it('renders no matches empty state when search term returns no results for the submissions page component', async () => {
-    mockSubmissionsBff({ items: [] }, authedUser);
+  it('Should display no matches empty state when search term returns no results for the submissions page component', async () => {
+    mockSubmissionsBff({ items: [] }, { testFile: 'submissions.test', user: authedUser });
     renderApp('/app/riverton/submissions?q=nonexistent');
 
     expect(await screen.findByText('No submissions match “nonexistent”.')).toBeInTheDocument();
   });
 
-  it('handles workspace with missing/null id gracefully for the submissions page component', async () => {
-    const mockWorkspaceNoId = {
-      id: null as any,
-      slug: 'riverton',
-      name: 'Riverton',
-      role: 'admin' as const,
-      createdAt: ISO,
-    };
-    mockSubmissionsBff({ items: [] }, authedUser, {
-      workspaces: [mockWorkspaceNoId],
-    });
+  it('Should display no submissions yet empty state when workspace has no submissions', async () => {
+    mockSubmissionsBff(
+      { items: [] },
+      { testFile: 'submissions.test', user: authedUser, filtered: true },
+    );
     renderApp('/app/riverton/submissions');
 
     expect(
       await screen.findByPlaceholderText('Search applicant, service, ref…'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders correctly when slug is undefined (workspace is undefined)', async () => {
+    mockAuthUser(authedUser);
+    mockSlug = undefined;
+
+    renderApp('/app/riverton/submissions');
+
+    expect(
+      await screen.findByText('No submissions yet — they appear here once applicants submit.'),
     ).toBeInTheDocument();
   });
 });

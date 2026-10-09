@@ -4,15 +4,27 @@ import { adminUser, adminWorkspace, ISO } from './fixtures';
 import type { MockAuthOptions } from './render-app';
 import { mockAuthUser } from './mock-auth-user';
 
+/**
+ * Options for mockMembersBff.
+ */
 interface MockMembersListOptions extends MockAuthOptions {
-  testFile?: string;
+  /** The user to return. */
   user?: unknown | null;
+  /** The test file name to match for routing. */
+  testFile?: string;
+  /** The staff to return. */
   staff?: any[];
+  /** The role to return. */
   role?: 'admin' | 'member';
+  /** Whether the API failed. */
   failedApi?: boolean;
+  /** The promise to return for save requests. */
   savePromise?: Promise<unknown>;
+  /** The promise to return for transfer requests. */
   transferPromise?: Promise<unknown>;
+  /** The resolver for staff requests. */
   resolveStaff?: ((resolve: (r: Response) => void) => void) | null;
+  /** The resolver for add requests. */
   resolveAdd?: ((resolve: (r: Response) => void) => void) | null;
 }
 
@@ -20,6 +32,15 @@ interface MockMembersListOptions extends MockAuthOptions {
  * Mock members BFF for testing.
  * @param members List of members to return.
  * @param options Options for the mock.
+ * @param options.user The user to return.
+ * @param options.testFile The test file name to match for routing.
+ * @param options.staff The staff to return.
+ * @param options.role The role to return.
+ * @param options.failedApi Whether the API failed.
+ * @param options.savePromise The promise to return for save requests.
+ * @param options.transferPromise The promise to return for transfer requests.
+ * @param options.resolveStaff The resolver for staff requests.
+ * @param options.resolveAdd The resolver for add requests.
  * @returns The fetch mock.
  */
 export function mockMembersBff(members: { items: any[] }, options: MockMembersListOptions = {}) {

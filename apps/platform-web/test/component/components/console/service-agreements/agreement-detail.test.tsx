@@ -8,6 +8,7 @@ import {
   serviceAgreementsDetailResponse,
 } from '../../../../support/fixtures';
 import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
+import * as authModule from '@/lib/auth';
 
 let capturedOptionsList: any[] = [];
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -403,16 +404,20 @@ describe('AgreementDetail Component Test Suite', () => {
   });
 
   it('covers user undefined branch', async () => {
-    const userWithoutRoles = { ...authedUser, roles: [] };
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
-      user: userWithoutRoles,
       serviceResponse,
     });
+    const useAuthSpy = vi.spyOn(authModule, 'useAuth').mockReturnValue({
+      data: undefined,
+    } as any);
+
     renderApp('/app/riverton/service-agreements/g1');
     // Wait for the render/query to load
     await screen.findByRole('heading', { name: 'Global Privacy Policy' }, { timeout: 10000 });
     // It should render successfully in read-only mode
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
+
+    useAuthSpy.mockRestore();
   });
 });

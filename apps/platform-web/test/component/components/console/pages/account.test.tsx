@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AccountPage } from '@/components/console/pages/account';
 import { useAuth } from '@/lib/auth';
+import { mockUserNoEmail } from '../../../../support/fixtures';
+import { authedUser } from '../../../../support/render-app';
 
 // Mock useAuth from auth library
 vi.mock('@/lib/auth', async (importOriginal) => {
@@ -22,16 +24,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const mockStaffUser = {
-  id: 'u-123',
-  roles: ['staff'],
-  claims: {
-    sub: 'sub-123',
-    name: 'Maya Reyes',
-    email: 'maya.reyes@riverton.gov',
-  },
-};
-
 describe('AccountPage Component Test Suite', () => {
   it('renders a loading skeleton when user data is loading', () => {
     vi.mocked(useAuth).mockReturnValue({ data: undefined } as any);
@@ -44,7 +36,7 @@ describe('AccountPage Component Test Suite', () => {
   });
 
   it('renders user details when user data is loaded', () => {
-    vi.mocked(useAuth).mockReturnValue({ data: mockStaffUser } as any);
+    vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
 
     render(<AccountPage />);
 
@@ -67,20 +59,12 @@ describe('AccountPage Component Test Suite', () => {
   });
 
   it('renders user details correctly when user has no email', () => {
-    const mockUserNoEmail = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test Admin No Email',
-      },
-    };
     vi.mocked(useAuth).mockReturnValue({ data: mockUserNoEmail } as any);
 
     render(<AccountPage />);
 
     expect(screen.getByText('Profile')).toBeInTheDocument();
-    expect(screen.getByText('Test Admin No Email')).toBeInTheDocument();
+    expect(screen.getByText('Test User No Email')).toBeInTheDocument();
     // Only role should render: "Admin" instead of "email · Admin"
     expect(screen.getByText('Admin')).toBeInTheDocument();
 

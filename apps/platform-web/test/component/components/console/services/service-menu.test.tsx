@@ -83,7 +83,7 @@ function renderServiceMenu(props: {
 }
 
 describe('ServiceMenu Component Test Suite', () => {
-  it('renders dropdown items for unarchived service without discard capability', async () => {
+  it('Should display dropdown items for unarchived service without discard capability', async () => {
     const user = userEvent.setup();
     renderServiceMenu({ archived: false, canDiscard: false, hasSubmissions: false });
 
@@ -96,7 +96,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(screen.queryByRole('menuitem', { name: /discard draft/i })).not.toBeInTheDocument();
   });
 
-  it('renders dropdown items with discard and locked delete for archived, submitted service', async () => {
+  it('Should display dropdown items with discard and locked delete for archived, submitted service', async () => {
     const user = userEvent.setup();
     renderServiceMenu({
       archived: true,
@@ -117,7 +117,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(screen.getByText('Has submissions — archive it instead.')).toBeInTheDocument();
   });
 
-  it('renders "Restore" when archived service has not been published', async () => {
+  it('Should display "Restore" when archived service has not been published', async () => {
     const user = userEvent.setup();
     renderServiceMenu({ archived: true, latestPublished: false });
 

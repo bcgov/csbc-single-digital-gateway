@@ -82,6 +82,7 @@ function renderMethods(
     </QueryClientProvider>,
   );
 }
+
 describe('External Application Method Integration Test Suite', () => {
   describe('isHttpsUrl', () => {
     it('accepts absolute https and rejects everything else', () => {

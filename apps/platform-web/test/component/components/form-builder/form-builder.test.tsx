@@ -239,7 +239,7 @@ function FormBuilderMirror({ initial = EMPTY }: { initial?: typeof EMPTY }) {
 const dump = () => JSON.parse(screen.getByTestId('dump').textContent ?? '{}');
 
 describe('FormBuilder Component Test Suite', () => {
-  const initialValue: FormDefinition = {
+  const initialFormDefinition: FormDefinition = {
     schema: {
       type: 'object',
       properties: {
@@ -258,7 +258,7 @@ describe('FormBuilder Component Test Suite', () => {
   });
 
   it('renders Build view with Palette, Canvas, and Inspector by default', () => {
-    render(<FormBuilder value={initialValue} onChange={vi.fn()} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={vi.fn()} />);
 
     expect(screen.getByTestId('mock-palette')).toBeInTheDocument();
     expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
@@ -268,7 +268,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('switches to Preview tab and renders the preview component', async () => {
     const user = userEvent.setup();
-    render(<FormBuilder value={initialValue} onChange={vi.fn()} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={vi.fn()} />);
 
     // Click Preview tab
     const previewTab = screen.getByRole('tab', { name: 'Preview' });
@@ -286,7 +286,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('triggers onChange when modifying form metadata (title & description)', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     // Click Change Title inside mock Canvas
     const titleBtn = screen.getByRole('button', { name: 'Change Title' });
@@ -316,7 +316,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('handles field selection and edits field control configuration', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     // Inspector shows None initially
     expect(screen.getByText('Inspector Node: None')).toBeInTheDocument();
@@ -349,7 +349,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('handles deletion of field', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     const deleteBtn = screen.getByRole('button', { name: 'Delete Field 0' });
     await user.click(deleteBtn);
@@ -370,7 +370,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('handles adding new fields from the palette', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     const addBtn = screen.getByRole('button', { name: 'Add Text Field' });
     await user.click(addBtn);
@@ -387,7 +387,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('renders optional title and actions toolbars when provided', () => {
     render(
       <FormBuilder
-        value={initialValue}
+        value={initialFormDefinition}
         onChange={vi.fn()}
         title={<div data-testid="custom-title">Custom Title</div>}
         actions={<button data-testid="custom-action">Custom Action</button>}
@@ -401,7 +401,7 @@ describe('FormBuilder Component Test Suite', () => {
   it('handles drag and drop event triggers successfully', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     await user.click(screen.getByRole('button', { name: 'Drag Start Palette' }));
     await user.click(screen.getByRole('button', { name: 'Drag Start Null' }));
@@ -455,7 +455,7 @@ describe('FormBuilder Component Test Suite', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(<FormBuilder value={initialValue} onChange={handleChange} />);
+    render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
 
     const deleteInvalidBtn = screen.getByRole('button', { name: 'Delete Invalid' });
     await user.click(deleteInvalidBtn);
@@ -619,7 +619,9 @@ describe('FormBuilder Component Test Suite', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(<FormBuilder title="Form Builder" value={initialValue} onChange={handleChange} />);
+    render(
+      <FormBuilder title="Form Builder" value={initialFormDefinition} onChange={handleChange} />,
+    );
 
     // 1. Add Heading display field via clicking palette button (covers line 62)
     await user.click(screen.getByRole('button', { name: 'Add Heading Field' }));

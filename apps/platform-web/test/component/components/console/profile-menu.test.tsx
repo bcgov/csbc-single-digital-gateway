@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfileMenu } from '@/components/console/profile-menu';
 import { logout } from '@/lib/bff';
-import { adminUser } from '../../../support/fixtures';
+import { adminUser, mockUserNoEmail } from '../../../support/fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -136,15 +136,6 @@ describe('ProfileMenu Component Test Suite', () => {
 
   it('does not render email in dropdown if email claim is missing', async () => {
     const user = userEvent.setup();
-    const mockUserNoEmail = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test User No Email',
-        preferred_username: 'Tester',
-      },
-    };
     queryClient.setQueryData(['auth', 'me'], mockUserNoEmail);
 
     renderProfileMenu(queryClient);

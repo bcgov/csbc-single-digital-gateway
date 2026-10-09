@@ -31,7 +31,7 @@ export const group = (label: string, elements: unknown[] = []) => ({
   elements,
 });
 
-export const service = (over: Partial<ServiceSummary>): ServiceSummary => ({
+export const service = (over?: Partial<ServiceSummary>): ServiceSummary => ({
   id: 'srv-1',
   workspaceId: 'w1',
   title: 'Parking Permits',

@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationsProxyService } from '../../../../../src/modules/notifications/services/notifications-proxy.service';
 import type { Env } from '../../../../../src/config/env.schema';
 import { createMockConfigService } from '../../../../utils/create-mock-config-service';
-import { createMockResponse } from '../../../../utils/create-mock-response';
+import { mockResponse } from '../../../../utils/create-mock-response';
 import { createMockReq } from '../../../../utils/create-mock-req';
 import { createMockRes } from '../../../../utils/create-mock-res';
 import { createTokenSpy } from '../../../../utils/create-token-spy';
@@ -34,7 +34,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
   describe('request', () => {
     it('Should successfully make an HTTP request and return the JSON response', async () => {
       const mockResult = { success: true };
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         json: vi.fn().mockResolvedValue(mockResult),
       });
 
@@ -54,7 +54,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
 
     it('Should include content-type and stringified body if body is provided', async () => {
       const mockResult = { created: true };
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: true,
         status: 201,
         json: vi.fn().mockResolvedValue(mockResult),
@@ -89,7 +89,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw NotFoundException if response status is 404', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 404,
       });
@@ -100,7 +100,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw BadRequestException if response status is 400', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 400,
       });
@@ -111,7 +111,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should invalidate token client and throw BadGatewayException if response status is 401', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 401,
       });
@@ -123,7 +123,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw BadGatewayException if response status is 500 or any other error', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 500,
       });
@@ -134,7 +134,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw UnprocessableEntityException with upstream message if status is 422 and json has message string', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue({ message: 'Custom validation error' }),
@@ -148,7 +148,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw UnprocessableEntityException with fallback message if status is 422 and json lacks message string', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue({ error: 'Some other key' }),
@@ -162,7 +162,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw UnprocessableEntityException with fallback message if status is 422 and json throws/fails', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockRejectedValue(new Error('JSON parse error')),
@@ -176,7 +176,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
 
     it('Should throw UnprocessableEntityException with fallback message if status is 422 and json is null/non-object', async () => {
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue(null),
@@ -206,7 +206,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
         getReader: vi.fn().mockReturnValue(mockReader),
       };
 
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: mockBody,
@@ -248,7 +248,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
 
       const mockRes = createMockRes();
 
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: {
@@ -295,7 +295,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       const mockReq = createMockReq();
       const mockRes = createMockRes();
 
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: false,
         status: 401,
       });
@@ -312,7 +312,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       const mockReq = createMockReq();
       const mockRes = createMockRes();
 
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: null,
@@ -333,7 +333,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
         read: vi.fn().mockRejectedValue(new Error('Reader stream error')),
       };
 
-      const responseMock = createMockResponse({
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: {

@@ -9,7 +9,8 @@ import {
   subscribeToNotifications,
   RequestError,
 } from '@/lib/notifications';
-import { createMockResponse } from '../../support/create-mock-response';
+import { mockResponse } from '../../support/mock-response';
+import { mockFetch } from '../../support/vi-fixtures';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
@@ -17,7 +18,6 @@ vi.mock('@/lib/bff', () => ({
 }));
 
 describe('Notifications Unit Test Suite', () => {
-  const mockFetch = vi.fn();
   globalThis.fetch = mockFetch;
 
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe('Notifications Unit Test Suite', () => {
 
   it('queries notification feed with query options', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { items: [{ deliveryId: 'd-1', title: 'Welcome' }] }),
+      mockResponse(200, { items: [{ deliveryId: 'd-1', title: 'Welcome' }] }),
     );
 
     const options = notificationFeedQueryOptions();
@@ -41,7 +41,7 @@ describe('Notifications Unit Test Suite', () => {
   });
 
   it('queries unread count with query options', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { count: 5 }));
+    mockFetch.mockResolvedValue(mockResponse(200, { count: 5 }));
 
     const options = unreadCountQueryOptions();
     expect(options.queryKey).toEqual(['notifications', 'unread-count']);
@@ -55,7 +55,7 @@ describe('Notifications Unit Test Suite', () => {
 
   it('queries preferences with query options', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { userId: 'u-1', email: 'test@example.com', channels: [] }),
+      mockResponse(200, { userId: 'u-1', email: 'test@example.com', channels: [] }),
     );
 
     const options = notificationPreferencesQueryOptions();
@@ -70,7 +70,7 @@ describe('Notifications Unit Test Suite', () => {
 
   it('marks a notification as read', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { deliveryId: 'd-1', readAt: '2026-07-07T00:00:00.000Z' }),
+      mockResponse(200, { deliveryId: 'd-1', readAt: '2026-07-07T00:00:00.000Z' }),
     );
 
     const result = await markNotificationRead('d-1');
@@ -82,7 +82,7 @@ describe('Notifications Unit Test Suite', () => {
   });
 
   it('marks all notifications as read', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { updated: 3 }));
+    mockFetch.mockResolvedValue(mockResponse(200, { updated: 3 }));
 
     const result = await markAllNotificationsRead();
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/me/notifications/read-all', {
@@ -94,7 +94,7 @@ describe('Notifications Unit Test Suite', () => {
 
   it('updates notification preferences', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { userId: 'u-1', email: 'new@example.com', channels: [] }),
+      mockResponse(200, { userId: 'u-1', email: 'new@example.com', channels: [] }),
     );
 
     const result = await updateNotificationPreferences({ email: 'new@example.com' });
@@ -110,7 +110,7 @@ describe('Notifications Unit Test Suite', () => {
   });
 
   it('throws RequestError on non-ok responses', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(400, 'Bad Request', false));
+    mockFetch.mockResolvedValue(mockResponse(400, 'Bad Request', false));
 
     let thrown: RequestError | undefined;
     try {
@@ -125,7 +125,7 @@ describe('Notifications Unit Test Suite', () => {
   });
 
   it('throws RequestError with GET method when feed query fails', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(500, 'Internal Server Error', false));
+    mockFetch.mockResolvedValue(mockResponse(500, 'Internal Server Error', false));
 
     const options = notificationFeedQueryOptions();
     let thrown: RequestError | undefined;

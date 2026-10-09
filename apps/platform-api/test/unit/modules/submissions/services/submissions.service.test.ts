@@ -13,7 +13,7 @@ import {
 } from '@repo/database';
 import { enqueueNotification } from '../../../../../src/notifications/enqueue';
 import { createSelectBuilder } from '../../../../utils/create-select-builder';
-import { createMockResponse } from '../../../../utils/create-mock-response';
+import { mockResponse } from '../../../../utils/create-mock-response';
 import { createMockDb } from '../../../../utils/create-db-mock';
 
 vi.mock('../../../../../src/notifications/enqueue', () => ({
@@ -68,7 +68,7 @@ describe('SubmissionsService', () => {
   describe('list', () => {
     it('throws NotFoundException if the user is not a member of the workspace', async () => {
       // requireMembership returns empty
-      createMockResponse(tableResponses, workspaceMembers, []);
+      mockResponse(tableResponses, workspaceMembers, []);
 
       await expect(service.list('user-1', { workspaceId: 'ws-1' } as any)).rejects.toThrow(
         NotFoundException,
@@ -93,9 +93,9 @@ describe('SubmissionsService', () => {
         submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, submissions, [{ count: 1 }]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, submissions, [{ count: 1 }]);
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
@@ -152,9 +152,9 @@ describe('SubmissionsService', () => {
         submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub1, mockSub2]);
-      createMockResponse(tableResponses, submissions, [{ count: 2 }]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub1, mockSub2]);
+      mockResponse(tableResponses, submissions, [{ count: 2 }]);
 
       // query status 'pending'
       const result = await service.list('user-1', {
@@ -184,9 +184,9 @@ describe('SubmissionsService', () => {
         submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, submissions, [{ count: 1 }]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, submissions, [{ count: 1 }]);
 
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
@@ -219,9 +219,9 @@ describe('SubmissionsService', () => {
         submittedAt: null,
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, submissions, []);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, submissions, []);
 
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
@@ -245,23 +245,23 @@ describe('SubmissionsService', () => {
 
   describe('get', () => {
     it('throws NotFoundException if the submission does not exist', async () => {
-      createMockResponse(tableResponses, submissions, []);
+      mockResponse(tableResponses, submissions, []);
 
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException if the user is not a member of the workspace', async () => {
       const mockSub = { id: 'sub-1', workspaceId: 'ws-1' };
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, []);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, []);
 
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException if toSummary returns null', async () => {
       const mockSub = { id: 'sub-1', workspaceId: 'ws-1' };
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
       vi.spyOn(service as any, 'toSummary').mockResolvedValueOnce(null);
 
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
@@ -278,29 +278,27 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      createMockResponse(tableResponses, documents, [{ title: 'My Service' }]); // toSummary (service)
-      createMockResponse(tableResponses, documents, [{ title: 'My Form' }]); // toSummary (form)
-      createMockResponse(tableResponses, users, [
-        { displayName: 'Jane Doe', email: 'jane@example.com' },
-      ]); // toSummary (user)
-      createMockResponse(tableResponses, submissionVersions, [
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
+      mockResponse(tableResponses, documents, [{ title: 'My Service' }]); // toSummary (service)
+      mockResponse(tableResponses, documents, [{ title: 'My Form' }]); // toSummary (form)
+      mockResponse(tableResponses, users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]); // toSummary (user)
+      mockResponse(tableResponses, submissionVersions, [
         {
           status: 'pending',
           submittedAt: new Date('2026-07-28T00:00:00Z'),
           updatedAt: new Date('2026-07-28T00:00:00Z'),
         },
       ]); // toSummary (latestVersion)
-      createMockResponse(tableResponses, submissionVersions, [{ data: { name: 'Jane' } }]); // get (latestVersion data)
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, submissionVersions, [{ data: { name: 'Jane' } }]); // get (latestVersion data)
+      mockResponse(tableResponses, documentVersions, [
         {
           kind: 'basic-form',
           schema: { type: 'object' },
         },
       ]); // get (documentVersions schema/kind)
-      createMockResponse(tableResponses, reviews, [
+      mockResponse(tableResponses, reviews, [
         {
           id: 'review-1',
           decision: 'approved',
@@ -354,9 +352,9 @@ describe('SubmissionsService', () => {
         workspaceId: 'ws-1',
         userId: 'applicant-1',
       };
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'approved' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'approved' }]);
 
       await expect(
         service.review('user-1', 'sub-1', {
@@ -372,8 +370,8 @@ describe('SubmissionsService', () => {
         workspaceId: 'ws-1',
         userId: 'applicant-1',
       };
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
       vi.spyOn(service as any, 'latestVersion').mockResolvedValueOnce(null);
 
       await expect(
@@ -395,30 +393,30 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
 
       // txMock return insert review
       txMock.returning.mockResolvedValueOnce([{ id: 'review-1' }]);
 
       // get() mocks:
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      createMockResponse(tableResponses, documents, [{ title: 'My Service' }]);
-      createMockResponse(tableResponses, documents, [{ title: 'My Form' }]);
-      createMockResponse(tableResponses, users, []); // anonymous applicant
-      createMockResponse(tableResponses, submissionVersions, [
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
+      mockResponse(tableResponses, documents, [{ title: 'My Service' }]);
+      mockResponse(tableResponses, documents, [{ title: 'My Form' }]);
+      mockResponse(tableResponses, users, []); // anonymous applicant
+      mockResponse(tableResponses, submissionVersions, [
         {
           status: 'approved',
           submittedAt: new Date('2026-07-28T00:00:00Z'),
           updatedAt: new Date('2026-07-28T00:00:00Z'),
         },
       ]);
-      createMockResponse(tableResponses, submissionVersions, [{ data: {} }]);
-      createMockResponse(tableResponses, documentVersions, [{ kind: 'basic-form', schema: {} }]);
-      createMockResponse(tableResponses, reviews, [
+      mockResponse(tableResponses, submissionVersions, [{ data: {} }]);
+      mockResponse(tableResponses, documentVersions, [{ kind: 'basic-form', schema: {} }]);
+      mockResponse(tableResponses, reviews, [
         {
           id: 'review-1',
           decision: 'approved',
@@ -450,33 +448,31 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
-      createMockResponse(tableResponses, users, [{ email: 'jane@example.com' }]); // resolve owner's contact email
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
+      mockResponse(tableResponses, users, [{ email: 'jane@example.com' }]); // resolve owner's contact email
 
       // txMock return insert review
       txMock.returning.mockResolvedValueOnce([{ id: 'review-1' }]);
 
       // get() mocks:
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      createMockResponse(tableResponses, documents, [{ title: 'My Service' }]);
-      createMockResponse(tableResponses, documents, [{ title: 'My Form' }]);
-      createMockResponse(tableResponses, users, [
-        { displayName: 'Jane Doe', email: 'jane@example.com' },
-      ]);
-      createMockResponse(tableResponses, submissionVersions, [
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, [{ serviceId: 'doc-svc-1' }]);
+      mockResponse(tableResponses, documents, [{ title: 'My Service' }]);
+      mockResponse(tableResponses, documents, [{ title: 'My Form' }]);
+      mockResponse(tableResponses, users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]);
+      mockResponse(tableResponses, submissionVersions, [
         {
           status: 'approved',
           submittedAt: new Date('2026-07-28T00:00:00Z'),
           updatedAt: new Date('2026-07-28T00:00:00Z'),
         },
       ]);
-      createMockResponse(tableResponses, submissionVersions, [{ data: {} }]);
-      createMockResponse(tableResponses, documentVersions, [{ kind: 'basic-form', schema: {} }]);
-      createMockResponse(tableResponses, reviews, []);
+      mockResponse(tableResponses, submissionVersions, [{ data: {} }]);
+      mockResponse(tableResponses, documentVersions, [{ kind: 'basic-form', schema: {} }]);
+      mockResponse(tableResponses, reviews, []);
 
       await service.review('user-1', 'sub-1', {
         decision: 'approve',
@@ -515,9 +511,9 @@ describe('SubmissionsService', () => {
         submittedAt: null,
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, submissions, [{ count: 1 }]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, submissions, [{ count: 1 }]);
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
@@ -550,22 +546,22 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, users, []);
-      createMockResponse(tableResponses, submissionVersions, [
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, users, []);
+      mockResponse(tableResponses, submissionVersions, [
         {
           status: 'pending',
           submittedAt: new Date('2026-07-28T00:00:00Z'),
           updatedAt: new Date('2026-07-28T00:00:00Z'),
         },
       ]);
-      createMockResponse(tableResponses, submissionVersions, []);
-      createMockResponse(tableResponses, documentVersions, []);
-      createMockResponse(tableResponses, reviews, []);
+      mockResponse(tableResponses, submissionVersions, []);
+      mockResponse(tableResponses, documentVersions, []);
+      mockResponse(tableResponses, reviews, []);
 
       const result = await service.get('user-1', 'sub-1');
       expect(result.kind).toBe('basic-form');
@@ -587,25 +583,25 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
-      createMockResponse(tableResponses, users, []);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissionVersions, [{ id: 'ver-1', status: 'pending' }]);
+      mockResponse(tableResponses, users, []);
 
       txMock.returning.mockResolvedValueOnce([{ id: 'review-1' }]);
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, users, []);
-      createMockResponse(tableResponses, submissionVersions, [
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, users, []);
+      mockResponse(tableResponses, submissionVersions, [
         { status: 'approved', createdAt: new Date() },
       ]);
-      createMockResponse(tableResponses, submissionVersions, [{ data: {} }]);
-      createMockResponse(tableResponses, documentVersions, []);
-      createMockResponse(tableResponses, reviews, []);
+      mockResponse(tableResponses, submissionVersions, [{ data: {} }]);
+      mockResponse(tableResponses, documentVersions, []);
+      mockResponse(tableResponses, reviews, []);
 
       await service.review('user-1', 'sub-1', {
         decision: 'approve',
@@ -633,9 +629,9 @@ describe('SubmissionsService', () => {
         versionUpdatedAt: null,
       };
 
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, submissions, [{ count: 1 }]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, submissions, [{ count: 1 }]);
 
       (globalThis as any).mockOrUndefined = true;
       try {
@@ -660,13 +656,13 @@ describe('SubmissionsService', () => {
         updatedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
-      createMockResponse(tableResponses, submissions, [mockSub]);
-      createMockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
-      createMockResponse(tableResponses, documentReferences, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, documents, []);
-      createMockResponse(tableResponses, users, []);
-      createMockResponse(tableResponses, submissionVersions, []); // latestVersion returns null -> status falls back to draft
+      mockResponse(tableResponses, submissions, [mockSub]);
+      mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
+      mockResponse(tableResponses, documentReferences, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, documents, []);
+      mockResponse(tableResponses, users, []);
+      mockResponse(tableResponses, submissionVersions, []); // latestVersion returns null -> status falls back to draft
 
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });

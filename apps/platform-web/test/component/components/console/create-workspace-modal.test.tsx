@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CreateWorkspaceModal } from '@/components/console/create-workspace-modal';
 import { createWorkspace, type Workspace } from '@/lib/workspaces';
+import { handleOpenChange, mockNavigate } from '../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
@@ -72,7 +72,6 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
 
   it('renders dismissable new workspace style when dismissable is true', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
     renderModal(queryClient, { dismissable: true, open: true, onOpenChange: handleOpenChange });
 
     expect(screen.getByRole('heading', { name: 'Create workspace' })).toBeInTheDocument();
@@ -89,7 +88,6 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
 
   it('submits workspace creation successfully and navigates to the new workspace', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
 
     vi.mocked(createWorkspace).mockResolvedValue({
       id: 'w-1',

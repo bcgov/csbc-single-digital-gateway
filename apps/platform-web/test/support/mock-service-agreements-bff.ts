@@ -12,15 +12,27 @@ import type { MockAuthOptions } from './render-app';
 import { mockAuthUser } from './mock-auth-user';
 import type { ServiceAgreementSummary } from '@/lib/service-agreements';
 
+/**
+ * Options for mockAgreementsBff.
+ */
 interface MockAgreementsBffOptions extends MockAuthOptions {
+  /** The user to return. */
   user?: unknown | null;
+  /** The test file name to match for routing. */
   testFile?: string;
+  /** The service response to return. */
   serviceResponse?: any;
+  /** The URL to match for patch requests. */
   patchUrl?: string;
+  /** The promise to return for put requests. */
   putPromise?: Promise<unknown>;
+  /** The defaults to return. */
   defaults?: any[];
+  /** The agreements to return. */
   agreements?: any[];
+  /** The status to return for detach requests. */
   detachStatus?: number;
+  /** The attached ref to return. */
   attachedRef?: any;
 }
 
@@ -44,8 +56,16 @@ const defaultAttachedRef = {
  * Creates a mock BFF for service agreements.
  * @param agreement Agreement to use for the mock.
  * @param testFile The test file identifier.
- * @param user User to authenticate as.
  * @param options Options for the mock.
+ * @param options.user The user to return.
+ * @param options.testFile The test file name to match for routing.
+ * @param options.serviceResponse The service response to return.
+ * @param options.patchUrl The URL to match for patch requests.
+ * @param options.putPromise The promise to return for put requests.
+ * @param options.defaults The defaults to return.
+ * @param options.agreements The agreements to return.
+ * @param options.detachStatus The status to return for detach requests.
+ * @param options.attachedRef The attached ref to return.
  * @returns A mock fetch function.
  */
 export function mockServiceAgreementsBff(

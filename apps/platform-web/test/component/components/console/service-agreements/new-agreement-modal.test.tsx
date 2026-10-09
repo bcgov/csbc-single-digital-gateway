@@ -5,8 +5,8 @@ import { NewAgreementModal } from '@/components/console/service-agreements/new-a
 import { createAgreement } from '@/lib/service-agreements';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { adminScope, workspaceScope } from '../../../../support/fixtures';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,

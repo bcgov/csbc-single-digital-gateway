@@ -4,27 +4,54 @@ import { mockAuthUser } from './mock-auth-user';
 import type { MockAuthOptions } from './render-app';
 import { adminUser, adminWorkspace, ISO } from './fixtures';
 
-interface MockDocumentTypesBffOptions extends MockAuthOptions {
-  user?: unknown | null;
-  testFile?: string;
-}
-
+/**
+ * A version of a document type.
+ */
 export interface Version {
+  /** The ID of the version. */
   id: string;
+  //The ID of the type.
   typeId: string;
+  /** The version number. */
   version: number;
+  //The status of the version.
   status: 'draft' | 'published' | 'archived';
+  /** The definition of the version. */
   definition: Record<string, unknown>;
+  /** The creation date of the version. */
   createdAt: string;
+  /** The publication date of the version. */
   publishedAt: string | null;
+  /** The archival date of the version. */
   archivedAt: string | null;
 }
 
+/**
+ * An entry for a document type.
+ */
 export interface Entry {
   type: { id: string; workspaceId: null; name: string; kind: string; createdAt: string };
   versions: Version[];
 }
 
+/**
+ * Options for mockDocumentTypesBff.
+ */
+interface MockDocumentTypesBffOptions extends MockAuthOptions {
+  /** The user to return. */
+  user?: unknown | null;
+  /** The test file name to match for routing. */
+  testFile?: string;
+}
+
+/**
+ * Mock document types BFF for testing.
+ * @param documentTypes The document types to return.
+ * @param options The options to return.
+ * @param options.user The user to return.
+ * @param options.testFile The test file name to match for routing.
+ * @returns The mock document types BFF.
+ */
 export function mockDocumentTypesBff(
   documentTypes: { items: any[] },
   options: MockDocumentTypesBffOptions = {},

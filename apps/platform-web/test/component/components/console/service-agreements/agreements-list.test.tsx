@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementsList } from '@/components/console/service-agreements/agreements-list';
 import { adminScope, workspaceScope } from '../../../../support/fixtures';
+import { mockNavigate, mockUseSearch } from '../../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
-const mockUseSearch = vi.fn(() => ({}));
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {

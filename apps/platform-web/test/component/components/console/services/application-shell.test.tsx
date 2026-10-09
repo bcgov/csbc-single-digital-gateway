@@ -3,8 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApplicationShell } from '@/components/console/services/application-shell';
 import { useSetPageChrome } from '@/lib/page-chrome';
-
-const mockNavigate = vi.fn();
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),

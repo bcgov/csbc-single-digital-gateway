@@ -2,21 +2,16 @@ import { screen, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { jsonResponse, renderApp } from '../../../../support/render-app';
-import { ISO, adminWorkspace } from '../../../../support/fixtures';
+import { adminWorkspace, ISO, mockWorkspaceMember } from '../../../../support/fixtures';
 import { addMembers } from '../../../../support/testHelpers';
 import { mockMembersBff } from '../../../../support/mock-members-bff';
+import { originalFetch } from '../../../../support/vi-fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const mockWorkspaceMember = {
-  ...adminWorkspace,
-  role: 'member' as const,
-  ownerId: 'u2',
-};
-
-const membersList = addMembers([
+const teamList = addMembers([
   {
     id: 'm2',
     userId: 'u2',
@@ -40,8 +35,8 @@ const membersList = addMembers([
 ]);
 
 describe('TeamPage Component Test Suite', () => {
-  it('renders list of members and action buttons when viewed by admin', async () => {
-    mockMembersBff({ items: membersList }, { testFile: 'team.test' });
+  it('Should display list of members and action buttons when viewed by admin', async () => {
+    mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     renderApp('/app/riverton/team');
 
     // Settings/Team sub-nav confirms the section shell rendered.
@@ -75,7 +70,7 @@ describe('TeamPage Component Test Suite', () => {
 
   it('hides Add member action when viewed by non-admin member', async () => {
     mockMembersBff(
-      { items: membersList },
+      { items: teamList },
       { testFile: 'team.test', workspaces: [mockWorkspaceMember] },
     );
     renderApp('/app/riverton/team');
@@ -88,7 +83,7 @@ describe('TeamPage Component Test Suite', () => {
   });
 
   it('navigates to member profile page when a row is clicked', async () => {
-    mockMembersBff({ items: membersList }, { testFile: 'team.test' });
+    mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     const { router } = renderApp('/app/riverton/team');
     const user = userEvent.setup();
 
@@ -106,7 +101,7 @@ describe('TeamPage Component Test Suite', () => {
   });
 
   it('opens add member modal when clicking Add member button', async () => {
-    mockMembersBff({ items: membersList }, { testFile: 'team.test' });
+    mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
@@ -123,7 +118,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(within(dialog).getByText('Add member')).toBeInTheDocument();
   });
 
-  it('renders "—" when member email is not present', async () => {
+  it('Should display "—" when member email is not present', async () => {
     const noEmailMember = [
       {
         id: 'm4',
@@ -145,31 +140,26 @@ describe('TeamPage Component Test Suite', () => {
 
   it('handles workspace with missing/null id gracefully for the team page component', async () => {
     const mockWorkspaceNoId = {
+      ...adminWorkspace,
       id: null as any,
-      slug: 'riverton',
-      name: 'Riverton',
       role: 'member' as const,
       ownerId: 'u2',
-      createdAt: ISO,
     };
-    mockMembersBff(
-      { items: membersList },
-      { testFile: 'team.test', workspaces: [mockWorkspaceNoId] },
-    );
+    mockMembersBff({ items: teamList }, { testFile: 'team.test', workspaces: [mockWorkspaceNoId] });
     renderApp('/app/riverton/team');
 
     expect(await screen.findByPlaceholderText('Search name or email…')).toBeInTheDocument();
   });
 
-  it('renders no matches empty state when search term returns no results for the team page component', async () => {
+  it('Should display no matches empty state when search term returns no results for the team page component', async () => {
     mockMembersBff({ items: [] }, { testFile: 'team.test' });
     renderApp('/app/riverton/team?q=nonexistent');
 
     expect(await screen.findByText('No members match “nonexistent”.')).toBeInTheDocument();
   });
 
-  it('renders rows with data-pending attribute when query is refetching in the background', async () => {
-    mockMembersBff({ items: membersList }, { testFile: 'team.test' });
+  it('Should display rows with data-pending attribute when query is refetching in the background', async () => {
+    mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     const { queryClient } = renderApp('/app/riverton/team');
 
     expect(await screen.findByText('Sam Lee')).toBeInTheDocument();
@@ -182,7 +172,6 @@ describe('TeamPage Component Test Suite', () => {
       resolveRefetch = resolve;
     });
 
-    const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/members')) {
@@ -199,6 +188,6 @@ describe('TeamPage Component Test Suite', () => {
       expect(row).toHaveAttribute('data-pending', '');
     });
 
-    resolveRefetch(jsonResponse({ items: membersList }));
+    resolveRefetch(jsonResponse({ items: teamList }));
   });
 });

@@ -80,7 +80,7 @@ describe('Add Member Modal Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Add member' })).not.toBeInTheDocument();
   });
 
-  it('renders "No email on file" when staff member email is not present', async () => {
+  it('Should display "No email on file" when staff member email is not present', async () => {
     const staffWithNoEmail = [{ id: 'u4', displayName: 'No Email Guy', email: undefined }];
     mockMembersBff(members, {
       testFile: 'add-member-modal.test',

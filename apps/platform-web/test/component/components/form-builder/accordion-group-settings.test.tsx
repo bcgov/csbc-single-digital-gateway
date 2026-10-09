@@ -74,7 +74,8 @@ describe('AccordionGroupSettings Component Test Suite', () => {
       defaultOpen: _defaultOpen,
       ...baseNode
     } = createField('accordiongroup');
-    const sparseNode: ControlNode = {
+
+    const sparseNodeAccordion: ControlNode = {
       ...baseNode,
       key: 'faq_sparse',
       label: 'Sparse Accordion',
@@ -82,7 +83,7 @@ describe('AccordionGroupSettings Component Test Suite', () => {
       required: false,
     };
 
-    render(<AccordionGroupSettings node={sparseNode} onChange={vi.fn()} />);
+    render(<AccordionGroupSettings node={sparseNodeAccordion} onChange={vi.fn()} />);
 
     // Item noun defaults to "item"
     const itemNounInput = screen.getByLabelText('Item noun');

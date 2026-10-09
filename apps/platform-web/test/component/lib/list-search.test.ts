@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { listSearchValidator, useListSearch } from '@/lib/list-search';
 import { renderHook, act } from '@testing-library/react';
+import { mockNavigate } from '../../support/vi-fixtures';
 
 const validate = listSearchValidator(['title', 'updated', 'status'] as const, {
   sort: 'updated',
@@ -45,7 +46,6 @@ describe('listSearchValidator', () => {
 });
 
 let mockSearchValue: any = {};
-const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewServiceModal } from '@/components/console/services/new-service-modal';
 import { createService } from '@/lib/services';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 vi.mock('@repo/ui/dialog', () => {
   return {
@@ -39,15 +40,12 @@ vi.mock('@repo/ui/dialog', () => {
   };
 });
 
-const mockNavigate = vi.fn();
 const mockOnOpenChange = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
-  useParams: () => {
-    'riverton';
-  },
+  useParams: () => ({ slug: 'riverton' }),
   Link: ({ children, to, className }: any) => (
     <a href={to} className={className}>
       {children}

@@ -100,7 +100,7 @@ function StageBuilderMirror() {
 
 describe('StageBuilder Component Test Suite', () => {
   describe('StageBuilder main components', () => {
-    const initialValue: MultiStageDefinition = {
+    const initialStageDefinition: MultiStageDefinition = {
       name: 'Application Form Flow',
       description: 'Main intake stages.',
       stages: [
@@ -122,12 +122,34 @@ describe('StageBuilder Component Test Suite', () => {
       edges: [],
     };
 
+    // Give two stages so removing one is allowed by stage-model rules
+    const twoStageVal: MultiStageDefinition = {
+      ...initialStageDefinition,
+      stages: [
+        ...initialStageDefinition.stages,
+        {
+          id: 'stage-2',
+          name: 'Stage Two',
+          position: { x: 320, y: 0 },
+          pages: [
+            {
+              id: 'page-2',
+              name: 'Page Beta',
+              description: '',
+              schema: { type: 'object', properties: {} },
+              uischema: { type: 'VerticalLayout', elements: [] },
+            },
+          ],
+        },
+      ],
+    };
+
     beforeEach(() => {
       vi.clearAllMocks();
     });
 
     it('renders correctly with default form name and stages in build tab', () => {
-      render(<StageBuilder value={initialValue} onChange={vi.fn()} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
       expect(screen.getByLabelText('Form name')).toHaveValue('Application Form Flow');
       expect(screen.getByLabelText('Description')).toHaveValue('Main intake stages.');
@@ -142,7 +164,7 @@ describe('StageBuilder Component Test Suite', () => {
 
     it('switches to preview tab and renders StagePreview', async () => {
       const user = userEvent.setup();
-      render(<StageBuilder value={initialValue} onChange={vi.fn()} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
       const previewTab = screen.getByRole('tab', { name: 'Preview' });
       await user.click(previewTab);
@@ -155,7 +177,7 @@ describe('StageBuilder Component Test Suite', () => {
     it('triggers onChange when modifying form metadata (name & description)', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<StageBuilder value={initialValue} onChange={handleChange} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
 
       // Edit Name
       const nameInput = screen.getByLabelText('Form name');
@@ -179,7 +201,7 @@ describe('StageBuilder Component Test Suite', () => {
     it('triggers onChange when clicking Add Stage', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<StageBuilder value={initialValue} onChange={handleChange} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
 
       const addStageBtn = screen.getByRole('button', { name: 'Add stage' });
       await user.click(addStageBtn);
@@ -200,10 +222,10 @@ describe('StageBuilder Component Test Suite', () => {
 
       // Give two pages so removing one is allowed by stage-model rules
       const twoPageVal: MultiStageDefinition = {
-        ...initialValue,
+        ...initialStageDefinition,
         stages: [
           {
-            ...initialValue.stages[0]!,
+            ...initialStageDefinition.stages[0]!,
             pages: [
               {
                 id: 'page-1',
@@ -268,28 +290,6 @@ describe('StageBuilder Component Test Suite', () => {
       // Spy and mock confirm dialog to return true
       const confirmSpy = vi.spyOn(globalThis, 'confirm').mockImplementation(() => true);
 
-      // Give two stages so removing one is allowed by stage-model rules
-      const twoStageVal: MultiStageDefinition = {
-        ...initialValue,
-        stages: [
-          ...initialValue.stages,
-          {
-            id: 'stage-2',
-            name: 'Stage Two',
-            position: { x: 320, y: 0 },
-            pages: [
-              {
-                id: 'page-2',
-                name: 'Page Beta',
-                description: '',
-                schema: { type: 'object', properties: {} },
-                uischema: { type: 'VerticalLayout', elements: [] },
-              },
-            ],
-          },
-        ],
-      };
-
       render(<StageBuilder value={twoStageVal} onChange={handleChange} />);
 
       // Click Remove Stage under Stage Two
@@ -308,7 +308,7 @@ describe('StageBuilder Component Test Suite', () => {
     it('opens FormBuilderDialog when selecting a page, saves edits, and closes dialog', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
-      render(<StageBuilder value={initialValue} onChange={handleChange} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
 
       // No dialog by default
       expect(screen.queryByTestId('mock-form-builder-dialog')).not.toBeInTheDocument();
@@ -349,7 +349,7 @@ describe('StageBuilder Component Test Suite', () => {
 
     it('renders optional title and actions toolbars and handles empty metadata fallbacks', () => {
       const emptyMetaVal = {
-        ...initialValue,
+        ...initialStageDefinition,
         name: undefined,
         description: undefined,
       };
@@ -375,27 +375,6 @@ describe('StageBuilder Component Test Suite', () => {
 
       const confirmSpy = vi.spyOn(globalThis, 'confirm').mockImplementation(() => false);
 
-      const twoStageVal: MultiStageDefinition = {
-        ...initialValue,
-        stages: [
-          ...initialValue.stages,
-          {
-            id: 'stage-2',
-            name: 'Stage Two',
-            position: { x: 320, y: 0 },
-            pages: [
-              {
-                id: 'page-2',
-                name: 'Page Beta',
-                description: '',
-                schema: { type: 'object', properties: {} },
-                uischema: { type: 'VerticalLayout', elements: [] },
-              },
-            ],
-          },
-        ],
-      };
-
       render(<StageBuilder value={twoStageVal} onChange={handleChange} />);
 
       const removeBtns = screen.getAllByRole('button', { name: 'Remove Stage' });
@@ -409,7 +388,7 @@ describe('StageBuilder Component Test Suite', () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
-      render(<StageBuilder value={initialValue} onChange={handleChange} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
 
       await user.click(screen.getByRole('button', { name: 'Reorder Pages' }));
       expect(handleChange).toHaveBeenLastCalledWith(
@@ -449,7 +428,7 @@ describe('StageBuilder Component Test Suite', () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       const modelWithEdges: MultiStageDefinition = {
-        ...initialValue,
+        ...initialStageDefinition,
         edges: [{ id: 'edge-1', source: 'stage-1', target: 'stage-2' }],
       };
 
@@ -480,7 +459,7 @@ describe('StageBuilder Component Test Suite', () => {
 
     it('covers FormBuilderDialog onOpenChange true branch', async () => {
       const user = userEvent.setup();
-      render(<StageBuilder value={initialValue} onChange={vi.fn()} />);
+      render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
       // Open FormBuilderDialog
       const editPageBtn = screen.getByRole('button', { name: 'Edit Page' });

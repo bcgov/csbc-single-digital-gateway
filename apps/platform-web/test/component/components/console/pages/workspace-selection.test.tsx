@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WorkspaceSelectionPage } from '@/components/console/pages/workspace-selection';
 import { authedUser, mockAuth, renderApp } from '../../../../support/render-app';
+import { adminWorkspace } from '../../../../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();

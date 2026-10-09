@@ -14,7 +14,7 @@ import {
   submissions,
 } from '@repo/database';
 import { createSelectBuilder } from '../../../../utils/create-select-builder';
-import { createMockResponse } from '../../../../utils/create-mock-response';
+import { mockResponse } from '../../../../utils/create-mock-response';
 import { createMockDoc, createMockRef, createMockVersion } from '../../../../utils/test-helpers';
 import { mockCreatedAt } from '../../../../utils/fixtures';
 import { createMockDb } from '../../../../utils/create-db-mock';
@@ -55,8 +55,8 @@ describe('ReferencesService', () => {
       // 1. servicesService.requireDocument
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           ref: {
             id: 'ref-1',
@@ -99,7 +99,7 @@ describe('ReferencesService', () => {
 
     it('throws NotFoundException if the owner service version is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      createMockResponse(tableResponses, documentVersions, []); // no version found
+      mockResponse(tableResponses, documentVersions, []); // no version found
 
       await expect(service.list('user-1', 'service-1', 'owner-version-1')).rejects.toThrow(
         NotFoundException,
@@ -109,8 +109,8 @@ describe('ReferencesService', () => {
     it('sets url to null in list if external application targetData is null or invalid', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           ref: {
             id: 'ref-1',
@@ -137,8 +137,8 @@ describe('ReferencesService', () => {
     it('sets url to null in list if external application targetData url is not a string', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           ref: {
             id: 'ref-1',
@@ -165,8 +165,8 @@ describe('ReferencesService', () => {
     it('returns ReferenceResponse for external_application reference with its URL resolved', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           ref: {
             id: 'ref-1',
@@ -204,8 +204,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -214,7 +214,7 @@ describe('ReferencesService', () => {
           version: 2,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]); // nextPosition select max
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]); // nextPosition select max
 
       dbMock.returning.mockResolvedValueOnce([
         {
@@ -242,8 +242,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -264,8 +264,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'service-1',
           kind: 'service',
@@ -286,8 +286,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-service-1',
           kind: 'service',
@@ -308,8 +308,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -318,7 +318,7 @@ describe('ReferencesService', () => {
           version: 1,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       const dbError = new Error('duplicate key');
       (dbError as any).code = '23505';
@@ -335,8 +335,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -345,7 +345,7 @@ describe('ReferencesService', () => {
           version: 2,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       dbMock.returning.mockResolvedValueOnce([]); // empty reference insert
 
@@ -360,7 +360,7 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'published' }]); // non-draft
+      mockResponse(tableResponses, documentVersions, [{ status: 'published' }]); // non-draft
 
       await expect(service.add('user-1', 'service-1', 'owner-version-1', input)).rejects.toThrow(
         ConflictException,
@@ -373,8 +373,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, []); // target not found
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, []); // target not found
 
       await expect(service.add('user-1', 'service-1', 'owner-version-1', input)).rejects.toThrow(
         NotFoundException,
@@ -392,8 +392,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'service',
@@ -402,7 +402,7 @@ describe('ReferencesService', () => {
           version: 2,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       dbMock.returning.mockResolvedValueOnce([
         {
@@ -433,8 +433,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form', // invalid for related_service
@@ -455,8 +455,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -465,7 +465,7 @@ describe('ReferencesService', () => {
           version: 1,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       const dbError = new Error('duplicate key');
       (dbError as any).cause = { code: '23505' };
@@ -482,8 +482,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -492,7 +492,7 @@ describe('ReferencesService', () => {
           version: 1,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       dbMock.returning.mockRejectedValueOnce('raw string error');
 
@@ -511,8 +511,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentVersions, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentVersions, [
         {
           documentId: 'target-doc-1',
           kind: 'basic-form',
@@ -521,7 +521,7 @@ describe('ReferencesService', () => {
           version: 2,
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 0 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 0 }]);
 
       dbMock.returning.mockResolvedValueOnce([
         {
@@ -550,8 +550,8 @@ describe('ReferencesService', () => {
         targetDocumentId: 'target-doc-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
 
       await service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -564,9 +564,9 @@ describe('ReferencesService', () => {
         targetDocumentId: 'target-form-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
-      createMockResponse(tableResponses, documentReferences, [{ n: 2 }]); // count of references
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentReferences, [{ n: 2 }]); // count of references
 
       await service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -579,10 +579,10 @@ describe('ReferencesService', () => {
         targetDocumentId: 'target-form-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
-      createMockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references
-      createMockResponse(tableResponses, submissions, [{ n: 0 }]); // submission count
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references
+      mockResponse(tableResponses, submissions, [{ n: 0 }]); // submission count
 
       await service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -597,10 +597,10 @@ describe('ReferencesService', () => {
         targetDocumentId: 'target-form-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
-      createMockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references
-      createMockResponse(tableResponses, submissions, [{ n: 5 }]); // submission count
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references
+      mockResponse(tableResponses, submissions, [{ n: 5 }]); // submission count
 
       await expect(
         service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1'),
@@ -610,8 +610,8 @@ describe('ReferencesService', () => {
     it('throws NotFoundException if reference is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, []); // requireReference returns empty
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, []); // requireReference returns empty
 
       await expect(
         service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1'),
@@ -624,10 +624,10 @@ describe('ReferencesService', () => {
         targetDocumentId: 'target-form-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
-      createMockResponse(tableResponses, documentReferences, []); // empty reference count query (falls back to 0)
-      createMockResponse(tableResponses, submissions, []); // empty submission count query (falls back to 0)
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentReferences, []); // empty reference count query (falls back to 0)
+      mockResponse(tableResponses, submissions, []); // empty submission count query (falls back to 0)
 
       await service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -643,9 +643,9 @@ describe('ReferencesService', () => {
         targetDocumentId: 'ext-doc-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
-      createMockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
-      createMockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references (last one)
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
+      mockResponse(tableResponses, documentReferences, [mockRef]); // requireReference
+      mockResponse(tableResponses, documentReferences, [{ n: 1 }]); // count of references (last one)
 
       await service.remove('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -660,8 +660,8 @@ describe('ReferencesService', () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({});
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [mockRef]);
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [mockRef]);
 
       await service.archive('user-1', 'service-1', 'owner-version-1', 'ref-1');
 
@@ -675,8 +675,8 @@ describe('ReferencesService', () => {
         targetVersionId: 'target-version-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [mockRef]);
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [mockRef]);
 
       await expect(
         service.archive('user-1', 'service-1', 'owner-version-1', 'ref-1'),
@@ -689,8 +689,8 @@ describe('ReferencesService', () => {
         targetVersionId: null,
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [mockRef]);
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [mockRef]);
 
       await expect(
         service.archive('user-1', 'service-1', 'owner-version-1', 'ref-1'),
@@ -711,15 +711,15 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'basic-form',
           typeVersionId: 'type-version-1',
           definition: { schema: {}, uischema: {} },
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: null }]); // nextPosition max position
+      mockResponse(tableResponses, documentReferences, [{ max: null }]); // nextPosition max position
 
       const mockDoc = createMockDoc({ id: 'form-doc-1' });
       const mockVersion = createMockVersion({ id: 'form-version-1', version: 1 });
@@ -750,8 +750,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, []); // loadFormType returns nothing
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, []); // loadFormType returns nothing
 
       await expect(
         service.createForm('user-1', 'service-1', 'owner-version-1', input),
@@ -764,15 +764,15 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'basic-form',
           typeVersionId: 'type-version-1',
           definition: { schema: {}, uischema: {} },
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: null }]);
+      mockResponse(tableResponses, documentReferences, [{ max: null }]);
 
       txMock.returning.mockResolvedValueOnce([]); // empty doc insert
 
@@ -787,15 +787,15 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'basic-form',
           typeVersionId: 'type-version-1',
           definition: { schema: {}, uischema: {} },
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: null }]);
+      mockResponse(tableResponses, documentReferences, [{ max: null }]);
 
       txMock.returning.mockResolvedValueOnce([{ id: 'form-doc-1' }]).mockResolvedValueOnce([]); // empty version insert
 
@@ -810,15 +810,15 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'basic-form',
           typeVersionId: 'type-version-1',
           definition: { schema: {}, uischema: {} },
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: null }]);
+      mockResponse(tableResponses, documentReferences, [{ max: null }]);
 
       txMock.returning
         .mockResolvedValueOnce([{ id: 'form-doc-1' }])
@@ -836,8 +836,8 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'service', // invalid form type kind
           typeVersionId: 'type-version-1',
@@ -860,15 +860,15 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         {
           kind: 'basic-form',
           typeVersionId: 'type-version-1',
           definition: { schema: {}, uischema: {} },
         },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: null }]);
+      mockResponse(tableResponses, documentReferences, [{ max: null }]);
 
       const mockDoc = createMockDoc({ id: 'form-doc-1' });
       const mockVersion = createMockVersion({ id: 'form-version-1', version: 1 });
@@ -896,8 +896,8 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, []); // loadExternalType returns empty
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, []); // loadExternalType returns empty
 
       await expect(
         service.createExternal('user-1', 'service-1', 'owner-version-1', {
@@ -912,11 +912,11 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         { typeId: 'ext-type-1', typeVersionId: 'ext-type-version-1' },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 1 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 1 }]);
 
       txMock.returning.mockResolvedValueOnce([]); // empty document insert
 
@@ -933,11 +933,11 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         { typeId: 'ext-type-1', typeVersionId: 'ext-type-version-1' },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 1 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 1 }]);
 
       txMock.returning
         .mockResolvedValueOnce([{ id: 'ext-doc-1' }]) // doc insert success
@@ -956,11 +956,11 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         { typeId: 'ext-type-1', typeVersionId: 'ext-type-version-1' },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 1 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 1 }]);
 
       txMock.returning
         .mockResolvedValueOnce([{ id: 'ext-doc-1' }])
@@ -980,11 +980,11 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentTypes, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentTypes, [
         { typeId: 'ext-type-1', typeVersionId: 'ext-type-version-1' },
       ]);
-      createMockResponse(tableResponses, documentReferences, [{ max: 1 }]);
+      mockResponse(tableResponses, documentReferences, [{ max: 1 }]);
 
       const mockDoc = createMockDoc({ id: 'ext-doc-1' });
       const mockVersion = createMockVersion({ id: 'ext-version-1', version: 1 });
@@ -1032,8 +1032,8 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           id: 'ref-1',
           relation: 'application_form', // not external_application
@@ -1055,8 +1055,8 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           id: 'ref-1',
           relation: 'external_application',
@@ -1082,8 +1082,8 @@ describe('ReferencesService', () => {
         id: 'service-1',
         workspaceId: 'ws-1',
       });
-      createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
-      createMockResponse(tableResponses, documentReferences, [
+      mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
+      mockResponse(tableResponses, documentReferences, [
         {
           id: 'ref-1',
           relation: 'external_application',

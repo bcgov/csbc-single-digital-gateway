@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { authedUser, jsonResponse, renderApp } from '../../../support/render-app';
-import { FEED, adminWorkspace } from '../../../support/fixtures';
+import { renderApp } from '../../../support/render-app';
+import { mockNavigate } from '../../../support/vi-fixtures';
+import { mockNotificationsBff } from '../../../support/mock-notifications-bff';
 
-const mockNavigate = vi.fn();
 const sse = vi.hoisted(() => ({
   onEvent: null as null | (() => void),
   isIntegrationTest: false,
@@ -141,29 +141,6 @@ vi.mock('@repo/react/notification-center', async (importOriginal) => {
   };
 });
 
-/**
- * Mocks the BFF requests for the NotificationsMenu component.
- * @returns An array of strings representing the fetch calls.
- */
-function mockNotificationMenuBff(): string[] {
-  const calls: string[] = [];
-  globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    calls.push(`${init?.method ?? 'GET'} ${url}`);
-    if (url.includes('/auth/me')) return jsonResponse(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
-    if (url.includes('/v1/workspaces')) return jsonResponse([adminWorkspace]);
-    if (url.includes('/notifications/unread-count')) return jsonResponse({ count: 1 });
-    if (url.includes('/read-all')) return jsonResponse({ updated: 1 });
-    if (url.includes('/read'))
-      return jsonResponse({ ...FEED.items[0], readAt: new Date().toISOString() });
-    if (url.includes('/v1/me/notifications')) return jsonResponse(FEED);
-    if (url.includes('/v1/services')) return jsonResponse({ items: [] });
-    return new Response(null, { status: 404 });
-  }) as unknown as typeof fetch;
-  return calls;
-}
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -278,7 +255,7 @@ describe('NotificationsMenu Component Test Suite', () => {
     });
 
     it('shows the unread badge for a signed-in staff member', async () => {
-      mockNotificationMenuBff();
+      mockNotificationsBff({ count: 1 });
       renderApp('/app/riverton');
       expect(
         await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 }),
@@ -286,7 +263,7 @@ describe('NotificationsMenu Component Test Suite', () => {
     });
 
     it('invalidates the submission family on a realtime notification event', async () => {
-      mockNotificationMenuBff();
+      mockNotificationsBff({ count: 1 });
       const { queryClient } = renderApp('/app/riverton');
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 });
       const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
@@ -299,7 +276,7 @@ describe('NotificationsMenu Component Test Suite', () => {
 
     it('navigates to the workspace review page for a staff payload and marks it read', async () => {
       const user = userEvent.setup();
-      const calls = mockNotificationMenuBff();
+      const { calls } = mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',
@@ -322,7 +299,7 @@ describe('NotificationsMenu Component Test Suite', () => {
 
     it('does not navigate for a payload-less notification', async () => {
       const user = userEvent.setup();
-      mockNotificationMenuBff();
+      mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',

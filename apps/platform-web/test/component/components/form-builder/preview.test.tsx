@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import Preview from '@/components/form-builder/preview';
+import { mockDefinition } from '../../../support/fixtures';
 
 // Mock FormRunner from shared repo library
 vi.mock('@repo/react/form-runner', () => ({
@@ -16,19 +17,6 @@ vi.mock('@repo/react/form-runner', () => ({
 }));
 
 describe('Preview Component Test Suite', () => {
-  const mockDefinition = {
-    schema: {
-      type: 'object',
-      properties: {
-        fullname: { type: 'string', title: 'Full Name' },
-      },
-    },
-    uischema: {
-      type: 'VerticalLayout',
-      elements: [],
-    },
-  };
-
   it('renders FormRunner with definition and empty default data state', () => {
     render(<Preview definition={mockDefinition as any} />);
 

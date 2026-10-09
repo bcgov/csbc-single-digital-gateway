@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
-import { adminWorkspace, ISO } from '../../../../support/fixtures';
-
-const originalFetch = globalThis.fetch;
+import { jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminWorkspace, ISO, mockBasicFormDraft } from '../../../../support/fixtures';
+import { originalFetch } from '../../../../support/vi-fixtures';
+import { mockApplicationsBff } from '../../../../support/mock-applications-bff';
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (e) => {
@@ -51,36 +51,6 @@ const mockServiceDetail = {
   versions: [],
   definition: { schema: {}, uischema: {} },
   hasSubmissions: false,
-};
-
-const mockBasicFormDraft = {
-  form: {
-    id: 'am-789',
-    workspaceId: 'w1',
-    title: 'Parking Application',
-    kind: 'basic-form',
-    createdAt: ISO,
-  },
-  version: {
-    id: 'v-1',
-    documentId: 'am-789',
-    version: 1,
-    status: 'draft' as const,
-    schema: {
-      schema: {
-        type: 'object',
-        title: 'Parking Application',
-        properties: {
-          licensePlate: { type: 'string', title: 'License Plate' },
-        },
-      },
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [{ type: 'Control', scope: '#/properties/licensePlate' }],
-      },
-    },
-    createdAt: ISO,
-  },
 };
 
 const mockBasicFormPublished = {
@@ -185,60 +155,14 @@ const mockMultiStageFormPublished = {
   },
 };
 
-function mockApplicationMethodEditPageBff({
-  workspace = adminWorkspace,
-  service = mockServiceDetail,
-  form = mockBasicFormDraft,
-  onSaveForm,
-}: {
-  workspace?: any;
-  service?: any;
-  form?: any;
-  onSaveForm?: (body: any) => void;
-} = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/auth/me')) {
-      return jsonResponse(authedUser);
-    }
-    if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return jsonResponse(workspace);
-    }
-    if (url.includes('/v1/workspaces')) {
-      return jsonResponse({ items: [workspace], total: 1, limit: 100, offset: 0 });
-    }
-    if (url.includes('/v1/services/srv-123')) {
-      return jsonResponse(service);
-    }
-    if (url.includes('/v1/forms/am-789/versions/v-1') && method === 'PATCH') {
-      const body = JSON.parse(String(init?.body));
-      if (onSaveForm) {
-        onSaveForm(body);
-      }
-      return jsonResponse({
-        id: 'v-1',
-        documentId: 'am-789',
-        version: 1,
-        status: form.version.status,
-        schema: body.definition,
-        createdAt: ISO,
-      });
-    }
-    if (url.includes('/v1/forms/am-789')) {
-      return jsonResponse(form);
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Application Method Edit Page Component Test Suite', () => {
+  let savedBody: any = null;
+
   it('renders loading spinner when loading form data', async () => {
-    mockApplicationMethodEditPageBff({
-      form: mockBasicFormDraft,
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
     });
 
     mockFormQueryState = {
@@ -261,9 +185,10 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders draft basic-form layout and edits title successfully', async () => {
-    let savedBody: any = null;
-    mockApplicationMethodEditPageBff({
-      form: mockBasicFormDraft,
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
       onSaveForm: (body) => {
         savedBody = body;
       },
@@ -315,7 +240,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders published basic-form layout as read-only preview', async () => {
-    mockApplicationMethodEditPageBff({ form: mockBasicFormPublished });
+    mockApplicationsBff(mockBasicFormPublished, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -332,9 +261,10 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders draft multi-stage-form layout and edits definition successfully', async () => {
-    let savedBody: any = null;
-    mockApplicationMethodEditPageBff({
-      form: mockMultiStageFormDraft,
+    mockApplicationsBff(mockMultiStageFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
       onSaveForm: (body) => {
         savedBody = body;
       },
@@ -380,7 +310,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders published multi-stage-form layout as read-only stage outline', async () => {
-    mockApplicationMethodEditPageBff({ form: mockMultiStageFormPublished });
+    mockApplicationsBff(mockMultiStageFormPublished, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -435,7 +369,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockBasicFormNoTitleDraft });
+    mockApplicationsBff(mockBasicFormNoTitleDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const canvas = await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 });
@@ -472,7 +410,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockBasicFormNoTitlePublished });
+    mockApplicationsBff(mockBasicFormNoTitlePublished, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
@@ -520,7 +462,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockMultiStageFormNoTitleDraft });
+    mockApplicationsBff(mockMultiStageFormNoTitleDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const nameInput = await screen.findByLabelText(/form name/i, undefined, { timeout: 32000 });
@@ -564,7 +510,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockMultiStageFormNoTitlePublished });
+    mockApplicationsBff(mockMultiStageFormNoTitlePublished, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
@@ -577,8 +527,10 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('shows error message when form save fails', async () => {
-    mockApplicationMethodEditPageBff({
-      form: mockBasicFormDraft,
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
     });
 
     const currentFetch = globalThis.fetch;
@@ -608,8 +560,10 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('shows spinner when saving form', async () => {
-    mockApplicationMethodEditPageBff({
-      form: mockBasicFormDraft,
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
     });
 
     let resolveSave: (value: Response) => void;
@@ -685,7 +639,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockBasicFormPublishedWithDesc });
+    mockApplicationsBff(mockBasicFormPublishedWithDesc, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -697,9 +655,10 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('falls back to form title when saving draft multi-stage-form with an empty/whitespace name', async () => {
-    let savedBody: any = null;
-    mockApplicationMethodEditPageBff({
-      form: mockMultiStageFormDraft,
+    mockApplicationsBff(mockMultiStageFormDraft, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
       onSaveForm: (body) => {
         savedBody = body;
       },
@@ -751,7 +710,11 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApplicationMethodEditPageBff({ form: mockBasicFormEmptyTitlePublished });
+    mockApplicationsBff(mockBasicFormEmptyTitlePublished, {
+      testFile: 'application-method-edit-page.test',
+      workspace: adminWorkspace,
+      service: mockServiceDetail,
+    });
     const { container } = renderApp(
       '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );

@@ -1,8 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, mockAuth, renderApp } from '../support/render-app';
-import { adminWorkspace, ISO } from '../support/fixtures';
+import { authedUser, renderApp } from '../support/render-app';
+import { ISO } from '../support/fixtures';
+import { mockServicesBff } from '../support/mock-services-bff';
+import { service } from '../support/testHelpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -31,114 +33,9 @@ const draftVersion = {
   archivedAt: null,
 };
 
-function withServices(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/v1/document-types')) {
-      return jsonResponse({ items: [] });
-    }
-    if (url.includes('/v1/services')) {
-      const rest = url.split('/v1/services')[1]?.split('?')[0] ?? '';
-      const segs = rest.split('/').filter(Boolean);
-      if (segs[0] === 'definition') {
-        return jsonResponse(definition);
-      }
-      if (segs[0] === 'forms') {
-        return jsonResponse({
-          items: [{ documentId: 'f1', versionId: 'fv1', title: 'Permit form', kind: 'basic-form' }],
-        });
-      }
-      if (segs.length === 0) {
-        if (method === 'POST') {
-          return jsonResponse(
-            {
-              service: {
-                id: 's1',
-                workspaceId: 'w1',
-                title: 'New',
-                description: '',
-                createdAt: ISO,
-                updatedAt: ISO,
-              },
-              versions: [draftVersion],
-            },
-            201,
-          );
-        }
-        return jsonResponse({
-          items: [
-            {
-              id: 's1',
-              workspaceId: 'w1',
-              title: 'Permit application',
-              description: '',
-              createdAt: ISO,
-              updatedAt: ISO,
-              status: 'draft',
-              versionCount: 1,
-              hasSubmissions: true,
-              latestPublished: false,
-            },
-          ],
-          total: 1,
-          limit: 20,
-          offset: 0,
-        });
-      }
-      if (segs.length === 1) {
-        return jsonResponse({
-          service: {
-            id: 's1',
-            workspaceId: 'w1',
-            title: 'Permit application',
-            description: '',
-            createdAt: ISO,
-            updatedAt: ISO,
-          },
-          versions: [draftVersion],
-          definition,
-          hasSubmissions: true,
-        });
-      }
-      if (segs[segs.length - 1] === 'agreements') {
-        return jsonResponse({ items: [] });
-      }
-      if (segs[segs.length - 1] === 'references') {
-        return jsonResponse({
-          items: [
-            {
-              id: 'ref1',
-              relation: 'application_form',
-              position: 0,
-              label: 'Apply now',
-              targetDocumentId: 'f1',
-              targetVersionId: 'fv1',
-              targetKind: 'basic-form',
-              targetTitle: 'Permit form',
-              targetVersion: 1,
-              targetStatus: 'draft',
-              hasSubmissions: false,
-              hasStructure: true,
-              createdAt: ISO,
-            },
-          ],
-        });
-      }
-      return jsonResponse(draftVersion);
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Console Services Integration Test Suite', () => {
   it('lists a workspace’s services', async () => {
-    withServices(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    mockServicesBff(service(), { user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/');
     expect(
       await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 }),
@@ -147,7 +44,7 @@ describe('Console Services Integration Test Suite', () => {
   });
 
   it('requests the paged list with the default sort', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    const fetchMock = mockServicesBff(service(), { user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 });
 
@@ -161,7 +58,7 @@ describe('Console Services Integration Test Suite', () => {
   });
 
   it('opens the New service modal (title + description) from the services list New button', async () => {
-    withServices(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    mockServicesBff(service(), { user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     const user = userEvent.setup();
 
@@ -177,7 +74,7 @@ describe('Console Services Integration Test Suite', () => {
   });
 
   it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    const fetchMock = mockServicesBff(service(), { user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/s1/old/edit');
     const user = userEvent.setup();
 

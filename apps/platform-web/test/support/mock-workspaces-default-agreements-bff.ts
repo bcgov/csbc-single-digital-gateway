@@ -4,32 +4,52 @@ import { jsonResponse } from './render-app';
 import type { MockAuthOptions } from './render-app';
 import { mockAuthUser } from './mock-auth-user';
 
+/**
+ * Options for mockWorkspacesDefaultAgreementsBff.
+ */
 interface MockWorkspacesDefaultAgreementsBffOptions extends MockAuthOptions {
+  /** The user to return. */
+  user?: unknown | null;
+  /** The test file name to match for routing. */
+  testFile?: string;
+  /** The role to return. */
   role?: string;
+  /** Whether the API failed. */
   failedApi?: boolean;
+  /** The defaults to return. */
   defaults?: any[];
+  /** The agreements to return. */
   agreements?: any[];
+  /** Whether to mock the response. */
   mockResponse?: boolean;
+  /** Whether to mock errors. */
   mockErrors?: boolean;
 }
 
 /**
  * Creates a mock BFF for the workspaces default agreements.
  * @param agreement Agreement to use for the mock.
- * @param user User to authenticate as.
  * @param options Options for the mock.
+ * @param options.user The user to return.
+ * @param options.testFile The test file name to match for routing.
+ * @param options.role The role to return.
+ * @param options.failedApi Whether the API failed.
+ * @param options.defaults The defaults to return.
+ * @param options.agreements The agreements to return.
+ * @param options.mockResponse Whether to mock the response.
+ * @param options.mockErrors Whether to mock errors.
  * @returns A mock fetch function.
  */
 export function mockWorkspacesDefaultAgreementsBff(
   agreement: any,
-  user: unknown | null = adminUser,
-  options: MockWorkspacesDefaultAgreementsBffOptions = { workspaces: [adminWorkspace] },
+  options: MockWorkspacesDefaultAgreementsBffOptions = {},
 ) {
-  const mergedOptions = {
+  const mergedOptions: MockWorkspacesDefaultAgreementsBffOptions = {
+    user: adminUser,
     workspaces: [adminWorkspace],
     ...options,
   };
-  const base = mockAuthUser(user, mergedOptions);
+  const base = mockAuthUser(mergedOptions.user, mergedOptions);
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
@@ -37,7 +57,8 @@ export function mockWorkspacesDefaultAgreementsBff(
     const baseWorkspace = mergedOptions.workspaces?.[0] ?? adminWorkspace;
     const responseWorkspace = {
       ...baseWorkspace,
-      role: mergedOptions.role ?? (user as any)?.role ?? baseWorkspace.role ?? 'admin',
+      role:
+        mergedOptions.role ?? (mergedOptions.user as any)?.role ?? baseWorkspace.role ?? 'admin',
     };
     if (url.includes('/v1/workspaces/by-slug/')) {
       return jsonResponse(responseWorkspace);

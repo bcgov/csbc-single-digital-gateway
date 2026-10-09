@@ -29,7 +29,8 @@ import {
   type ServiceDetail,
   type ServiceVersion,
 } from '@/lib/services';
-import { createMockResponse } from '../../support/create-mock-response';
+import { mockResponse } from '../../support/mock-response';
+import { mockFetch } from '../../support/vi-fixtures';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
@@ -46,7 +47,6 @@ const runAndCatch = async (fn: () => Promise<unknown>) => {
 };
 
 describe('Services Unit Test Suite', () => {
-  const mockFetch = vi.fn();
   globalThis.fetch = mockFetch;
 
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe('Services Unit Test Suite', () => {
 
   it('queries all services Summaries with query options', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { items: [{ id: 'srv-1', title: 'Service A' }] }),
+      mockResponse(200, { items: [{ id: 'srv-1', title: 'Service A' }] }),
     );
 
     const params: ServiceListParams = {
@@ -81,7 +81,7 @@ describe('Services Unit Test Suite', () => {
 
   it('queries a single service details by id', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { service: { id: 'srv-1', title: 'Service A' }, versions: [] }),
+      mockResponse(200, { service: { id: 'srv-1', title: 'Service A' }, versions: [] }),
     );
 
     const options = serviceQueryOptions('srv-1');
@@ -95,9 +95,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('queries service definitions schema details', async () => {
-    mockFetch.mockResolvedValue(
-      createMockResponse(200, { schema: { type: 'object' }, uischema: {} }),
-    );
+    mockFetch.mockResolvedValue(mockResponse(200, { schema: { type: 'object' }, uischema: {} }));
 
     const options = serviceDefinitionQueryOptions();
     expect(options.queryKey).toEqual(['services', 'definition']);
@@ -111,7 +109,7 @@ describe('Services Unit Test Suite', () => {
 
   it('queries published form types filtered by kind basic-form and multi-stage-form', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, {
+      mockResponse(200, {
         items: [
           { type: { id: 'ft-1', name: 'Form One', kind: 'basic-form' } },
           { type: { id: 'ft-2', name: 'Form Two', kind: 'multi-stage-form' } },
@@ -134,7 +132,7 @@ describe('Services Unit Test Suite', () => {
 
   it('queries forms catalog entries with query options', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { items: [{ documentId: 'doc-1', title: 'Doc Form' }] }),
+      mockResponse(200, { items: [{ documentId: 'doc-1', title: 'Doc Form' }] }),
     );
 
     const options = formsCatalogQueryOptions('ws-1');
@@ -149,7 +147,7 @@ describe('Services Unit Test Suite', () => {
 
   it('queries service references for a specific service version', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { items: [{ id: 'ref-1', relation: 'application_form' }] }),
+      mockResponse(200, { items: [{ id: 'ref-1', relation: 'application_form' }] }),
     );
 
     const options = serviceReferencesQueryOptions('srv-1', 'ver-1');
@@ -165,7 +163,7 @@ describe('Services Unit Test Suite', () => {
 
   it('handles detailed API error message array structures', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(
+      mockResponse(
         422,
         { message: 'Schema invalid', errors: ['Field name missing', 'Properties duplicate'] },
         false,
@@ -179,9 +177,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('creates service with a POST request', async () => {
-    mockFetch.mockResolvedValue(
-      createMockResponse(201, { service: { id: 'srv-1' }, versions: [] }),
-    );
+    mockFetch.mockResolvedValue(mockResponse(201, { service: { id: 'srv-1' }, versions: [] }));
 
     const input = {
       workspaceId: 'ws-1',
@@ -201,7 +197,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('saves draft service version data with a PATCH request', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', data: { updated: true } }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', data: { updated: true } }));
 
     const input = { data: { updated: true } };
     const res = await updateDraft('srv-1', 'ver-1', input);
@@ -215,7 +211,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('handles simple publish, archive, and add version triggers', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', status: 'published' }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'published' }));
 
     const pub = await publishVersion('srv-1', 'ver-1');
     expect(mockFetch).toHaveBeenCalledWith(
@@ -227,7 +223,7 @@ describe('Services Unit Test Suite', () => {
     );
     expect(pub.status).toBe('published');
 
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', status: 'archived' }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'archived' }));
     const arch = await archiveVersion('srv-1', 'ver-1');
     expect(mockFetch).toHaveBeenCalledWith(
       'http://bff-test/v1/services/srv-1/versions/ver-1/archive',
@@ -238,7 +234,7 @@ describe('Services Unit Test Suite', () => {
     );
     expect(arch.status).toBe('archived');
 
-    mockFetch.mockResolvedValue(createMockResponse(201, { id: 'ver-2' }));
+    mockFetch.mockResolvedValue(mockResponse(201, { id: 'ver-2' }));
     const addVer = await addServiceVersion('srv-1');
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services/srv-1/versions', {
       method: 'POST',
@@ -248,7 +244,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('sends DELETE requests for deleteService and discardServiceVersion', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(204, null));
+    mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await deleteService('srv-1');
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services/srv-1', {
@@ -264,7 +260,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('sends POST requests for archiveService and reactivateService', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(204, null));
+    mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await archiveService('srv-1');
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services/srv-1/archive', {
@@ -280,7 +276,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('manages form reference creation, delete, and archive', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(201, { id: 'ref-1' }));
+    mockFetch.mockResolvedValue(mockResponse(201, { id: 'ref-1' }));
 
     const input = { typeId: 'ft-1', title: 'New Form' };
     const ref = await createReferencedForm('srv-1', 'ver-1', input);
@@ -296,7 +292,7 @@ describe('Services Unit Test Suite', () => {
     expect(ref.id).toBe('ref-1');
 
     // Remove reference
-    mockFetch.mockResolvedValue(createMockResponse(204, null));
+    mockFetch.mockResolvedValue(mockResponse(204, null));
     await removeReference('srv-1', 'ver-1', 'ref-1');
     expect(mockFetch).toHaveBeenCalledWith(
       'http://bff-test/v1/services/srv-1/versions/ver-1/references/ref-1',
@@ -399,7 +395,7 @@ describe('Services Unit Test Suite', () => {
 
     it('queries service agreements attached to a service version', async () => {
       mockFetch.mockResolvedValue(
-        createMockResponse(200, {
+        mockResponse(200, {
           items: [{ id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }],
         }),
       );
@@ -418,7 +414,7 @@ describe('Services Unit Test Suite', () => {
 
     it('attaches a service agreement', async () => {
       mockFetch.mockResolvedValue(
-        createMockResponse(200, { id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }),
+        mockResponse(200, { id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }),
       );
 
       const res = await attachServiceAgreement('srv-1', 'ver-1', 'doc-1');
@@ -433,7 +429,7 @@ describe('Services Unit Test Suite', () => {
     });
 
     it('detaches a service agreement successfully or throws error on failure', async () => {
-      mockFetch.mockResolvedValue(createMockResponse(204, null, true));
+      mockFetch.mockResolvedValue(mockResponse(204, null, true));
 
       await detachServiceAgreement('srv-1', 'ver-1', 'ref-1');
       expect(mockFetch).toHaveBeenCalledWith(
@@ -460,7 +456,7 @@ describe('Services Unit Test Suite', () => {
 
     it('creates an external application method', async () => {
       mockFetch.mockResolvedValue(
-        createMockResponse(200, {
+        mockResponse(200, {
           id: 'ref-1',
           relation: 'external_application',
           targetTitle: 'Go link',
@@ -483,7 +479,7 @@ describe('Services Unit Test Suite', () => {
 
     it('updates an external application method', async () => {
       mockFetch.mockResolvedValue(
-        createMockResponse(200, {
+        mockResponse(200, {
           id: 'ref-1',
           relation: 'external_application',
           targetTitle: 'Updated Go Link',
@@ -508,7 +504,7 @@ describe('Services Unit Test Suite', () => {
   describe('servicesQueryOptions search query handling', () => {
     it('appends search parameter q when non-empty', async () => {
       mockFetch.mockResolvedValue(
-        createMockResponse(200, { items: [{ id: 'srv-2', title: 'Service B' }] }),
+        mockResponse(200, { items: [{ id: 'srv-2', title: 'Service B' }] }),
       );
 
       const params: ServiceListParams = {

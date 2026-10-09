@@ -14,14 +14,14 @@ import { ISO, serviceAgreement } from '../../../../support/fixtures';
 import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
 
 export let capturedActionOnClick: (() => void) | undefined;
-export let mockAlwaysOpen = false;
+export let mockOpenDialog = false;
 
 vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
     AlertDialog: vi.fn((props: any) => {
-      return <actual.AlertDialog {...props} open={mockAlwaysOpen || props.open} />;
+      return <actual.AlertDialog {...props} open={mockOpenDialog || props.open} />;
     }),
     AlertDialogAction: (props: any) => {
       capturedActionOnClick = props.onClick;
@@ -340,7 +340,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
       defaults: [],
       attachedRef,
     });
-    mockAlwaysOpen = true;
+    mockOpenDialog = true;
     try {
       renderServiceAgreementMethods();
       await screen.findByText('Terms of service');
@@ -350,7 +350,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
         capturedActionOnClick?.();
       });
     } finally {
-      mockAlwaysOpen = false;
+      mockOpenDialog = false;
     }
   });
 });

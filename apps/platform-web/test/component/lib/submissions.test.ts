@@ -7,7 +7,8 @@ import {
   submissionQueryOptions,
   type SubmissionListParams,
 } from '@/lib/submissions';
-import { createMockResponse } from '../../support/create-mock-response';
+import { mockResponse } from '../../support/mock-response';
+import { mockFetch } from '../../support/vi-fixtures';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
@@ -15,7 +16,6 @@ vi.mock('@/lib/bff', () => ({
 }));
 
 describe('Submissions Unit Test Suite', () => {
-  const mockFetch = vi.fn();
   globalThis.fetch = mockFetch;
 
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe('Submissions Unit Test Suite', () => {
 
   it('lists submissions without status filter', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { items: [{ id: 'sub-1', applicantName: 'John Doe' }], total: 1 }),
+      mockResponse(200, { items: [{ id: 'sub-1', applicantName: 'John Doe' }], total: 1 }),
     );
 
     const params: SubmissionListParams = {
@@ -46,7 +46,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('lists submissions with status filter', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { items: [], total: 0 }));
+    mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
     const params: SubmissionListParams = {
       q: '',
@@ -66,7 +66,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('gets a single submission details by id', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'sub-1', data: {} }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1', data: {} }));
 
     const res = await getSubmission('sub-1');
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/submissions/sub-1', {
@@ -76,7 +76,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('reviews submission with a POST request', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'sub-1', status: 'approved' }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1', status: 'approved' }));
 
     const reviewInput = { decision: 'approve' as const, reason: 'Approved application' };
     const res = await reviewSubmission('sub-1', reviewInput);
@@ -90,7 +90,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('throws custom status error message when request fails', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(500, null, false));
+    mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
     await expect(getSubmission('sub-1').catch((e: any) => e.message)).resolves.toContain(
       'GET /v1/submissions/sub-1 failed: 500',
@@ -98,7 +98,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('proposes correct submissionsQueryOptions configuration details', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { items: [], total: 0 }));
+    mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
     // Without status
     const paramsAll: SubmissionListParams = {
@@ -127,7 +127,7 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('proposes correct submissionQueryOptions details', async () => {
-    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'sub-1' }));
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1' }));
 
     const opts = submissionQueryOptions('sub-1');
     expect(opts.queryKey).toEqual(['submissions', 'detail', 'sub-1']);

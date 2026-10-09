@@ -10,7 +10,7 @@ export type MockResponseOverrides = Partial<Omit<Response, 'body' | 'json' | 'te
  * @param overrides - Optional overrides for the default response object.
  * @returns A mock Response object.
  */
-export const createMockResponse = (overrides: MockResponseOverrides = {}) => {
+export const mockResponse = (overrides: MockResponseOverrides = {}) => {
   return {
     ok: true,
     status: 200,

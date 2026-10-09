@@ -27,17 +27,19 @@ describe('geo lib', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
+  const mockCountries = [{ id: 1, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true }];
+  const mockStates = [{ id: 10, name: 'British Columbia', type: 'province', iso2: 'BC' }];
+  const mockRegions = [{ country: 'CA', province: 'BC' }];
 
   describe('countriesQueryOptions', () => {
     it('constructs correct query options and fetches countries successfully', async () => {
-      const mockCountries = [
-        { id: 1, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true },
+      const mockCountriesUSA = [
+        ...mockCountries,
         { id: 2, name: 'United States', iso2: 'US', hasStates: true, hasPostal: true },
       ];
-
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
-        json: async () => ({ items: mockCountries }),
+        json: async () => ({ items: mockCountriesUSA }),
       } as Response);
 
       const options = countriesQueryOptions();
@@ -48,7 +50,7 @@ describe('geo lib', () => {
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/geo/countries`, {
         credentials: 'include',
       });
-      expect(result).toEqual(mockCountries);
+      expect(result).toEqual(mockCountriesUSA);
     });
 
     it('throws an error when countries fetch response is not ok', async () => {
@@ -71,8 +73,6 @@ describe('geo lib', () => {
 
   describe('statesQueryOptions', () => {
     it('constructs query options with enabled=true when countryId is provided', async () => {
-      const mockStates = [{ id: 10, name: 'British Columbia', type: 'province', iso2: 'BC' }];
-
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockStates }),
@@ -116,8 +116,6 @@ describe('geo lib', () => {
 
   describe('addressSearchRegionsQueryOptions', () => {
     it('constructs correct query options and fetches regions successfully', async () => {
-      const mockRegions = [{ country: 'CA', province: 'BC' }];
-
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockRegions }),
@@ -211,9 +209,6 @@ describe('geo lib', () => {
 
   describe('appGeoData hooks', () => {
     it('useCountries returns query data and loading state', async () => {
-      const mockCountries = [
-        { id: 1, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true },
-      ];
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockCountries }),
@@ -233,7 +228,6 @@ describe('geo lib', () => {
     });
 
     it('useStates returns query data and loading state for a valid countryId', async () => {
-      const mockStates = [{ id: 10, name: 'British Columbia', type: 'province', iso2: 'BC' }];
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockStates }),
@@ -260,7 +254,6 @@ describe('geo lib', () => {
     });
 
     it('useAddressSearchRegions returns query data and loading state', async () => {
-      const mockRegions = [{ country: 'CA', province: 'BC' }];
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockRegions }),

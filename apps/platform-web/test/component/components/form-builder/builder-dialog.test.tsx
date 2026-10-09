@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { FormBuilderDialog, EMPTY_FORM_DEFINITION } from '@/components/form-builder/builder-dialog';
+import { handleOpenChange } from '../../../support/vi-fixtures';
 
 vi.mock('@/components/form-builder/form-builder', () => ({
   FormBuilder: ({ value, onChange }: any) => (
@@ -18,7 +19,6 @@ vi.mock('@/components/form-builder/form-builder', () => ({
 
 describe('FormBuilderDialog Component Test Suite', () => {
   it('does not render content when open is false', () => {
-    const handleOpenChange = vi.fn();
     const handleChange = vi.fn();
 
     render(

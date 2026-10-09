@@ -1,8 +1,9 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, renderApp } from '../support/render-app';
-import { adminWorkspace, ISO } from '../support/fixtures';
+import { renderApp } from '../support/render-app';
+import { mockSubmissionsBff } from '../support/mock-submissions-bff';
+import { ISO } from '../support/fixtures';
 
 const summary = {
   id: 'sub1',
@@ -33,46 +34,13 @@ const detail = {
   reviews: [] as Array<Record<string, unknown>>,
 };
 
-/** Stateful BFF mock: a review POST flips the submission to approved on subsequent reads. */
-function mockSubmissions() {
-  let reviewed = false;
-  const approved = {
-    ...detail,
-    status: 'approved',
-    statusLabel: 'Approved',
-    reviews: [
-      { id: 'r1', decision: 'approved', reason: null, reviewerName: 'Maya Reyes', createdAt: ISO },
-    ],
-  };
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/auth/me')) return jsonResponse(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
-    if (url.includes('/v1/submissions/sub1/review') && method === 'POST') {
-      reviewed = true;
-      return jsonResponse(approved);
-    }
-    if (url.endsWith('/v1/submissions/sub1')) return jsonResponse(reviewed ? approved : detail);
-    if (url.includes('/v1/submissions')) {
-      const items = [
-        reviewed ? { ...summary, status: 'approved', statusLabel: 'Approved' } : summary,
-      ];
-      return jsonResponse({ items, total: items.length, limit: 20, offset: 0 });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe('Console Submissions Integration Test Suite', () => {
   it('lists the workspace submissions for review', async () => {
-    mockSubmissions();
+    mockSubmissionsBff({ items: [summary] }, { testFile: 'console-submissions.e2e.test', detail });
     renderApp('/app/riverton/submissions');
     expect(
       await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 32000 }),
@@ -83,7 +51,10 @@ describe('Console Submissions Integration Test Suite', () => {
   });
 
   it('drives the queue API from the status tab, search, and sort controls', async () => {
-    const fetchMock = mockSubmissions();
+    const fetchMock = mockSubmissionsBff(
+      { items: [summary] },
+      { testFile: 'console-submissions.e2e.test', detail },
+    );
     renderApp('/app/riverton/submissions');
     await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 32000 });
     const user = userEvent.setup();
@@ -108,7 +79,10 @@ describe('Console Submissions Integration Test Suite', () => {
   });
 
   it('opens a submission and records a review decision', async () => {
-    const fetchMock = mockSubmissions();
+    const fetchMock = mockSubmissionsBff(
+      { items: [summary] },
+      { testFile: 'console-submissions.e2e.test', detail },
+    );
     const user = userEvent.setup();
     renderApp('/app/riverton/submissions/sub1');
 

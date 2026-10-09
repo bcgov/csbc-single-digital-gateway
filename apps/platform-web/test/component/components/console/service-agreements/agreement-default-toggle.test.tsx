@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementDefaultToggle } from '@/components/console/service-agreements/agreement-default-toggle';
-import { ISO } from '../../../../support/fixtures';
+import { defaultAgreement } from '../../../../support/fixtures';
 import { mockWorkspacesDefaultAgreementsBff } from '../../../../support/mock-workspaces-default-agreements-bff';
 
 vi.mock('@repo/ui/switch', () => ({
@@ -21,15 +21,6 @@ vi.mock('@repo/ui/switch', () => ({
     </button>
   ),
 }));
-
-const defaultAgreement = {
-  id: 'row-1',
-  agreementDocumentId: 'a1',
-  title: 'Terms of service',
-  isOptional: false,
-  isGlobal: false,
-  createdAt: ISO,
-};
 
 function renderToggle(published = true) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -49,18 +40,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const adminUser = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  ownerId: 'u1',
-  createdAt: ISO,
-};
-
 describe('agreement default toggle', () => {
   it('is unchecked for a published non-default agreement and POSTs an add when switched on', async () => {
-    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       defaults: [],
     });
 
@@ -82,7 +64,7 @@ describe('agreement default toggle', () => {
   });
 
   it('is checked when already a default and DELETEs the row when switched off', async () => {
-    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       defaults: [defaultAgreement],
     });
 
@@ -96,7 +78,7 @@ describe('agreement default toggle', () => {
       expect(
         fetchMock.mock.calls.some(
           ([u, init]) =>
-            String(u).includes('/v1/workspaces/w1/default-agreements/row-1') &&
+            String(u).includes('/v1/workspaces/w1/default-agreements/d1') &&
             (init?.method ?? 'GET').toUpperCase() === 'DELETE',
         ),
       ).toBe(true);
@@ -104,7 +86,7 @@ describe('agreement default toggle', () => {
   });
 
   it('shows the description as a tooltip on hover instead of inline text', async () => {
-    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, { defaults: [] });
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, { defaults: [] });
     renderToggle(true);
 
     const label = await screen.findByText('Workspace default');
@@ -119,18 +101,17 @@ describe('agreement default toggle', () => {
   });
 
   it('renders nothing for a non-admin member', async () => {
-    const fetchMock = mockWorkspacesDefaultAgreementsBff(
-      defaultAgreement,
-      { ...adminUser, role: 'member' },
-      { defaults: [] },
-    );
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'member',
+      defaults: [],
+    });
     renderToggle(true);
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(screen.queryByRole('switch')).toBeNull();
   });
 
   it('renders nothing when the agreement is not published', async () => {
-    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, { defaults: [] });
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, { defaults: [] });
     renderToggle(false);
     // Give the queries a chance to resolve; the switch must never appear.
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -139,7 +120,7 @@ describe('agreement default toggle', () => {
 
   it('covers the next = false and current = undefined branch by forcing false switch toggle', async () => {
     const user = userEvent.setup();
-    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, { defaults: [] });
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, { defaults: [] });
     renderToggle(true);
 
     const toggle = await screen.findByRole('switch', { name: 'Workspace default' });
@@ -151,7 +132,7 @@ describe('agreement default toggle', () => {
 
   it('renders mutation error alert when the toggle request fails', async () => {
     const user = userEvent.setup();
-    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       defaults: [],
       failedApi: true,
     });

@@ -5,7 +5,7 @@
  * @param value Array of mock rows for this table
  * @param tableResponses Map to register the mocked responses
  */
-export const createMockResponse = (tableResponses: Map<any, any[]>, table: any, value: any) => {
+export const mockResponse = (tableResponses: Map<any, any[]>, table: any, value: any) => {
   if (!tableResponses.has(table)) {
     tableResponses.set(table, []);
   }

@@ -1,10 +1,9 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from '@/components/console/command-palette';
 import { authedUser, mockAuth, renderApp } from '../../../support/render-app';
-
-const mockNavigate = vi.fn();
+import { handleOpenChange, mockNavigate } from '../../../support/vi-fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
@@ -67,7 +66,6 @@ describe('CommandPalette Component Test Suite', () => {
   });
 
   it('calls onOpenChange on pressing Cmd+K or Ctrl+K key combination', () => {
-    const handleOpenChange = vi.fn();
     render(<CommandPalette open={false} onOpenChange={handleOpenChange} slug="riverton" />);
 
     // Press Ctrl+k
@@ -97,7 +95,6 @@ describe('CommandPalette Component Test Suite', () => {
 
   it('navigates to workspace-scoped route and closes on item select', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
     render(<CommandPalette open={true} onOpenChange={handleOpenChange} slug="riverton" />);
 
     const servicesItem = screen.getByText('Services');
@@ -112,7 +109,6 @@ describe('CommandPalette Component Test Suite', () => {
 
   it('navigates to non-scoped route and closes on item select', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
     render(<CommandPalette open={true} onOpenChange={handleOpenChange} slug="riverton" />);
 
     const accountItem = screen.getByText('Account');

@@ -2,7 +2,9 @@ import { screen, waitFor, configure } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
-import { adminWorkspace, mockFormTypes } from '../../../../support/fixtures';
+import { adminWorkspace, mockBasicFormDraft, mockFormTypes } from '../../../../support/fixtures';
+import { originalFetch } from '../../../../support/vi-fixtures';
+import { mockApplicationsBff } from '../../../../support/mock-applications-bff';
 
 vi.mock('@repo/ui/button', () => {
   return {
@@ -13,8 +15,6 @@ vi.mock('@repo/ui/button', () => {
 });
 
 configure({ asyncUtilTimeout: 10000 });
-
-const originalFetch = globalThis.fetch;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -49,70 +49,14 @@ const mockMultistageReference = {
   hasSubmissions: false,
 };
 
-function mockApplicationMethodModalBff({
-  onCreateForm,
-  onCreateExternal,
-}: {
-  onCreateForm?: (body: any) => void;
-  onCreateExternal?: (body: any) => void;
-} = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/auth/me')) {
-      return jsonResponse(authedUser);
-    }
-    if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return jsonResponse(adminWorkspace);
-    }
-    if (url.includes('/v1/workspaces')) {
-      return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
-    }
-    if (url.includes('/v1/document-types')) {
-      return jsonResponse(mockFormTypes);
-    }
-    if (url.includes('/v1/services/srv-123/versions/v-456/forms') && method === 'POST') {
-      const body = JSON.parse(String(init?.body));
-      if (onCreateForm) {
-        onCreateForm(body);
-      }
-      if (body.typeId === 'type-basic') {
-        return jsonResponse(mockBasicReference);
-      }
-      return jsonResponse(mockMultistageReference);
-    }
-    if (
-      url.includes('/v1/services/srv-123/versions/v-456/external-applications') &&
-      method === 'POST'
-    ) {
-      const body = JSON.parse(String(init?.body));
-      if (onCreateExternal) {
-        onCreateExternal(body);
-      }
-      return jsonResponse({
-        id: 'ref-external-123',
-        relation: 'external_application',
-        position: 0,
-        label: body.label,
-        targetDocumentId: 'doc-external-789',
-        targetVersionId: 'v-external-1',
-        targetKind: 'external-link',
-        targetTitle: body.label,
-        targetVersion: 1,
-        targetStatus: 'draft',
-        hasSubmissions: false,
-      });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Application Method Modal Component Test Suite', () => {
   it('renders the modal with basic, multi-stage options and coming-soon external link', async () => {
-    mockApplicationMethodModalBff();
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
@@ -142,7 +86,11 @@ describe('Application Method Modal Component Test Suite', () => {
 
   it('creates basic form and navigates to the edit page successfully', async () => {
     let createdBody: any = null;
-    mockApplicationMethodModalBff({
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
       onCreateForm: (body) => {
         createdBody = body;
       },
@@ -187,7 +135,11 @@ describe('Application Method Modal Component Test Suite', () => {
 
   it('creates multi-stage form and navigates to the edit page successfully', async () => {
     let createdBody: any = null;
-    mockApplicationMethodModalBff({
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
       onCreateForm: (body) => {
         createdBody = body;
       },
@@ -231,7 +183,12 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('closes the modal and navigates back to service details when dismissed', async () => {
-    mockApplicationMethodModalBff();
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
 
     const user = userEvent.setup();
     const { router } = renderApp(
@@ -263,7 +220,12 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when form creation fails', async () => {
-    const fetchMock = mockApplicationMethodModalBff();
+    const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -293,7 +255,12 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when form type is unavailable', async () => {
-    const fetchMock = mockApplicationMethodModalBff();
+    const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/v1/document-types')) {
@@ -323,7 +290,12 @@ describe('Application Method Modal Component Test Suite', () => {
       resolveCreate = resolve;
     });
 
-    const fetchMock = mockApplicationMethodModalBff();
+    const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -367,7 +339,11 @@ describe('Application Method Modal Component Test Suite', () => {
 
   it('creates external link and navigates back to service details page successfully', async () => {
     let createdBody: any = null;
-    mockApplicationMethodModalBff({
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
       onCreateExternal: (body) => {
         createdBody = body;
       },
@@ -421,7 +397,12 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('allows cancelling from external link step and returning to choose step', async () => {
-    mockApplicationMethodModalBff();
+    mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
 
     const user = userEvent.setup();
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
@@ -440,7 +421,12 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when external link creation fails', async () => {
-    const fetchMock = mockApplicationMethodModalBff();
+    const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -486,7 +472,12 @@ describe('Application Method Modal Component Test Suite', () => {
       resolveCreate = resolve;
     });
 
-    const fetchMock = mockApplicationMethodModalBff();
+    const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
+      testFile: 'application-method-modal.test',
+      mockFormTypes,
+      mockBasicReference,
+      mockMultistageReference,
+    });
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();

@@ -6,7 +6,7 @@ import {
   normalizeBcFeature,
 } from '../../../../../src/modules/geo/services/geocoder.service';
 import { createMockConfigService } from '../../../../utils/create-mock-config-service';
-import { createMockResponse } from '../../../../utils/create-mock-response';
+import { mockResponse } from '../../../../utils/create-mock-response';
 
 describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
   describe('Dependency Injection and Metadata', () => {
@@ -167,7 +167,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
 
     it('Should successfully fetch and normalizes address suggestions from BC geocoder (case-insensitive region)', async () => {
       const fetchMock = vi.fn(async () =>
-        createMockResponse({
+        mockResponse({
           json: vi.fn().mockResolvedValue({
             features: [
               {
@@ -209,7 +209,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () =>
-          createMockResponse({ json: vi.fn().mockResolvedValue({ features: 'not-an-array' }) }),
+          mockResponse({ json: vi.fn().mockResolvedValue({ features: 'not-an-array' }) }),
         ),
       );
 
@@ -222,9 +222,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
     it('Should handle non-object response body gracefully', async () => {
       vi.stubGlobal(
         'fetch',
-        vi.fn(async () =>
-          createMockResponse({ json: vi.fn().mockResolvedValue('plain-text-response') }),
-        ),
+        vi.fn(async () => mockResponse({ json: vi.fn().mockResolvedValue('plain-text-response') })),
       );
 
       const service = new GeocoderService(createMockConfigService());
@@ -237,7 +235,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () =>
-          createMockResponse({ ok: false, status: 502, json: vi.fn().mockResolvedValue(null) }),
+          mockResponse({ ok: false, status: 502, json: vi.fn().mockResolvedValue(null) }),
         ),
       );
 

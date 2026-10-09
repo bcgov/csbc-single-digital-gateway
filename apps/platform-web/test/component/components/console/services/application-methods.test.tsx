@@ -11,10 +11,11 @@ import {
   updateExternalApplication,
   type ServiceReference,
 } from '@/lib/services';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 export let capturedOnOpenChange: ((next: boolean) => void) | undefined;
 export let capturedActionOnClick: (() => void) | undefined;
-export let mockAlwaysOpen = false;
+export let mockOpen = false;
 
 vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@repo/ui/alert-dialog')>();
@@ -22,7 +23,7 @@ vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
     ...actual,
     AlertDialog: (props: any) => {
       capturedOnOpenChange = props.onOpenChange;
-      return <actual.AlertDialog {...props} open={mockAlwaysOpen || props.open} />;
+      return <actual.AlertDialog {...props} open={mockOpen || props.open} />;
     },
     AlertDialogAction: (props: any) => {
       capturedActionOnClick = props.onClick;
@@ -78,8 +79,6 @@ vi.mock('@/components/console/services/external-application-form', () => ({
     return <div data-testid="external-form">Mock External Form</div>;
   },
 }));
-
-const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -194,6 +193,23 @@ function renderApplicationMethods(props: {
     </QueryClientProvider>,
   );
 }
+
+const externalRef: ServiceReference = {
+  id: 'ref-external-123',
+  relation: 'external_application',
+  position: 3,
+  label: 'External site',
+  url: 'https://example.com/apply',
+  targetDocumentId: 'doc-external-789',
+  targetVersionId: 'v-external-1',
+  targetKind: 'external-application',
+  targetTitle: 'External Apply',
+  targetVersion: 1,
+  targetStatus: 'draft',
+  hasSubmissions: false,
+  hasStructure: false,
+  createdAt: '2026-06-01T00:00:00.000Z',
+};
 
 describe('Application Methods Component Test Suite', () => {
   it('renders empty state message when there are no references', () => {
@@ -447,7 +463,7 @@ describe('Application Methods Component Test Suite', () => {
   });
 
   it('covers AlertDialog onOpenChange true branch and action click when confirmId is null', async () => {
-    mockAlwaysOpen = true;
+    mockOpen = true;
     try {
       renderApplicationMethods({ references: mockReferences });
       await screen.findByRole('alertdialog');
@@ -462,29 +478,13 @@ describe('Application Methods Component Test Suite', () => {
         capturedActionOnClick?.();
       });
     } finally {
-      mockAlwaysOpen = false;
+      mockOpen = false;
     }
   });
 
   it('covers Dialog onOpenChange and cancel path for editing external method', async () => {
     vi.mocked(updateExternalApplication).mockResolvedValueOnce({} as any);
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
-      label: 'External site',
-      url: 'https://example.com/apply',
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
-    };
 
     renderApplicationMethods({ references: [externalRef] });
 
@@ -553,22 +553,6 @@ describe('Application Methods Component Test Suite', () => {
     vi.mocked(updateExternalApplication).mockReturnValueOnce(promise as any);
 
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
-      label: 'External site',
-      url: 'https://example.com/apply',
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
-    };
 
     renderApplicationMethods({ references: [externalRef] });
 
@@ -603,24 +587,13 @@ describe('Application Methods Component Test Suite', () => {
 
   it('handles external application reference with null label and url', async () => {
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
+    const externalRefNoLabel: ServiceReference = {
+      ...externalRef,
       label: null as any,
       url: null as any,
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
     };
 
-    renderApplicationMethods({ references: [externalRef] });
+    renderApplicationMethods({ references: [externalRefNoLabel] });
 
     await user.click(screen.getByRole('button', { name: /edit/i }));
     expect(await screen.findByText('Edit external link')).toBeInTheDocument();

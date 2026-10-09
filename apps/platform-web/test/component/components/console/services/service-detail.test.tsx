@@ -57,8 +57,7 @@ import {
   archiveService,
   type ServiceReference,
 } from '@/lib/services';
-
-const mockNavigate = vi.fn();
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),

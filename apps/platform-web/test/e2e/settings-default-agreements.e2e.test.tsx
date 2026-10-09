@@ -28,6 +28,7 @@ afterEach(() => {
 describe('workspace settings — default agreements section', () => {
   it('renders the Default agreements panel between General and Danger zone', async () => {
     mockBff();
+
     renderApp('/app/riverton/settings');
 
     // CardTitle / the panel heading render styled divs (no heading role) — match by text.

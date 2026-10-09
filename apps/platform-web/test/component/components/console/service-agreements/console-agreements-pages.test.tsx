@@ -8,7 +8,6 @@ import { serviceAgreement, serviceAgreementsDetailResponse } from '../../../../s
 import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
 
 const mockUseParams = vi.fn(() => ({ slug: 'riverton', id: 'a1' }));
-const mockUseSearch = vi.fn(() => ({}));
 const mockUseNavigate = vi.fn(() => vi.fn());
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
@@ -27,6 +26,7 @@ import '@/routes/app.$slug.service-agreements';
 import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.new';
 import '@/routes/app.$slug.service-agreements.$id';
+import { mockUseSearch } from '../../../../support/vi-fixtures';
 
 vi.mock('@repo/react/jsonforms', () => ({
   JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
