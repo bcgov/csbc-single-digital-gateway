@@ -26,7 +26,7 @@ const burnaby = {
 };
 
 describe('WorkspaceSelectionPage Component Test Suite', () => {
-  it('lists the caller workspaces as links into /app/:slug (no auto-redirect)', async () => {
+  it('Should list the caller workspaces as links into /app/:slug (no auto-redirect)', async () => {
     mockAuth(authedUser, { workspaces: [riverton, burnaby] });
     const { router } = renderApp('/app');
 
@@ -41,7 +41,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
     expect(screen.getByText('Member')).toBeInTheDocument();
   });
 
-  it('opens the create workspace modal when clicking New Workspace in header (L43)', async () => {
+  it('Should open the create workspace modal when clicking New Workspace in header (L43)', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app');
 
@@ -78,7 +78,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: /^hello$/i })).toBeInTheDocument();
   });
 
-  it('shows an empty state with a Create workspace action when the user has none', async () => {
+  it('Should show an empty state with a Create workspace action when the user has none', async () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
@@ -93,7 +93,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
     expect(await screen.findByRole('dialog', { name: /create workspace/i })).toBeInTheDocument();
   });
 
-  it('renders loading skeletons and fallback title while loading without user', () => {
+  it('Should render loading skeletons and fallback title while loading without user', () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -113,7 +113,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: /^hello$/i })).toBeInTheDocument();
   });
 
-  it('handles nullish fallback when split returns empty array', () => {
+  it('Should handle nullish fallback when split returns empty array', () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {

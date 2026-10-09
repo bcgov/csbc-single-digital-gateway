@@ -16,7 +16,7 @@ const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 
 describe('service-agreement DTO schemas', () => {
   describe('createServiceAgreementSchema', () => {
-    it('accepts correct payloads with optional workspaceId', () => {
+    it('Should accept correct payloads with optional workspaceId', () => {
       const payload = {
         workspaceId: VALID_UUID,
         data: { schema: { type: 'object' } },
@@ -30,7 +30,7 @@ describe('service-agreement DTO schemas', () => {
       expect(parsedNoWorkspace).toEqual({ data: { schema: {} } });
     });
 
-    it('rejects invalid workspaceId UUID format', () => {
+    it('Should reject invalid workspaceId UUID format', () => {
       const payload = {
         workspaceId: 'invalid-uuid',
         data: {},
@@ -38,7 +38,7 @@ describe('service-agreement DTO schemas', () => {
       expect(createServiceAgreementSchema.safeParse(payload).success).toBe(false);
     });
 
-    it('rejects when data record is missing', () => {
+    it('Should reject when data record is missing', () => {
       expect(createServiceAgreementSchema.safeParse({ workspaceId: VALID_UUID }).success).toBe(
         false,
       );
@@ -46,7 +46,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('updateServiceAgreementSchema', () => {
-    it('accepts valid updates containing data and optional title', () => {
+    it('Should accept valid updates containing data and optional title', () => {
       const payload = {
         title: 'New Policy Agreement',
         data: { optional: true },
@@ -55,7 +55,7 @@ describe('service-agreement DTO schemas', () => {
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects empty title strings or too long titles', () => {
+    it('Should reject empty title strings or too long titles', () => {
       expect(updateServiceAgreementSchema.safeParse({ title: '', data: {} }).success).toBe(false);
       expect(
         updateServiceAgreementSchema.safeParse({ title: 'a'.repeat(256), data: {} }).success,
@@ -64,7 +64,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('listServiceAgreementsSchema', () => {
-    it('accepts optional workspaceId filter', () => {
+    it('Should accept optional workspaceId filter', () => {
       expect(listServiceAgreementsSchema.parse({ workspaceId: VALID_UUID })).toEqual({
         workspaceId: VALID_UUID,
       });
@@ -73,7 +73,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('serviceAgreementSchema', () => {
-    it('validates a correct service agreement payload', () => {
+    it('Should validate a correct service agreement payload', () => {
       const payload = {
         id: VALID_UUID,
         workspaceId: null,
@@ -88,7 +88,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('serviceAgreementVersionSchema', () => {
-    it('validates correct version details', () => {
+    it('Should validate correct version details', () => {
       const payload = {
         id: VALID_UUID,
         version: 1,
@@ -104,7 +104,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('serviceAgreementWithVersionSchema', () => {
-    it('validates nested document and version properties', () => {
+    it('Should validate nested document and version properties', () => {
       const payload = {
         agreement: {
           id: VALID_UUID,
@@ -130,7 +130,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('agreementDefinitionSchema', () => {
-    it('validates schemas and uischemas records', () => {
+    it('Should validate schemas and uischemas records', () => {
       const payload = {
         schema: { type: 'object' },
         uischema: { type: 'VerticalLayout' },
@@ -141,7 +141,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('associatedServiceSchema', () => {
-    it('validates associated service details', () => {
+    it('Should validate associated service details', () => {
       const payload = {
         id: 'srv-1',
         title: 'Waste Management Permit',
@@ -153,7 +153,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('serviceAgreementDetailSchema', () => {
-    it('validates details containing versions, schemas, and services list', () => {
+    it('Should validate details containing versions, schemas, and services list', () => {
       const payload = {
         agreement: {
           id: VALID_UUID,
@@ -176,7 +176,7 @@ describe('service-agreement DTO schemas', () => {
   });
 
   describe('serviceAgreementSummarySchema', () => {
-    it('validates summary containing status and isGlobal boolean flag', () => {
+    it('Should validate summary containing status and isGlobal boolean flag', () => {
       const payload = {
         id: VALID_UUID,
         workspaceId: null,

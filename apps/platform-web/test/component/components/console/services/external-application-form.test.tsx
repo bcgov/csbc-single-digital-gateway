@@ -7,12 +7,12 @@ import {
 } from '@/components/console/services/external-application-form';
 describe('External Application Form Component Test Suite', () => {
   describe('isHttpsUrl', () => {
-    it('returns true for valid https URLs', () => {
+    it('Should return true for valid https URLs', () => {
       expect(isHttpsUrl('https://example.com')).toBe(true);
       expect(isHttpsUrl('https://gov.bc.ca/path?query=1')).toBe(true);
     });
 
-    it('returns false for non-https URLs', () => {
+    it('Should return false for non-https URLs', () => {
       expect(isHttpsUrl('http://example.com')).toBe(false);
       expect(isHttpsUrl('ftp://example.com')).toBe(false);
       expect(isHttpsUrl('not-a-url')).toBe(false);
@@ -20,7 +20,7 @@ describe('External Application Form Component Test Suite', () => {
   });
 
   describe('ExternalApplicationForm', () => {
-    it('renders with default empty state', () => {
+    it('Should render with default empty state', () => {
       const handleCancel = vi.fn();
       const handleSubmit = vi.fn();
 
@@ -39,7 +39,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(screen.getByText('Applicants open this link in a new tab.')).toBeInTheDocument();
     });
 
-    it('renders with initial values', () => {
+    it('Should render with initial values', () => {
       render(
         <ExternalApplicationForm
           initial={{ label: 'Gov BC', url: 'https://gov.bc.ca' }}
@@ -55,7 +55,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(screen.getByRole('button', { name: 'Save' })).not.toBeDisabled();
     });
 
-    it('validates URL on blur', async () => {
+    it('Should validate URL on blur', async () => {
       const user = userEvent.setup();
       render(
         <ExternalApplicationForm
@@ -82,7 +82,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(screen.queryByText('Enter a valid https:// address.')).not.toBeInTheDocument();
     });
 
-    it('calls onSubmit with trimmed values when submitted', async () => {
+    it('Should call onSubmit with trimmed values when submitted', async () => {
       const user = userEvent.setup();
       const handleSubmit = vi.fn();
 
@@ -111,7 +111,7 @@ describe('External Application Form Component Test Suite', () => {
       });
     });
 
-    it('calls onCancel when Cancel button is clicked', async () => {
+    it('Should call onCancel when Cancel button is clicked', async () => {
       const user = userEvent.setup();
       const handleCancel = vi.fn();
 
@@ -130,7 +130,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(handleCancel).toHaveBeenCalled();
     });
 
-    it('disables fields and buttons when submitting', () => {
+    it('Should disable fields and buttons when submitting', () => {
       render(
         <ExternalApplicationForm
           initial={{ label: 'Gov BC', url: 'https://gov.bc.ca' }}
@@ -147,7 +147,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
     });
 
-    it('displays form-level error message when error prop is provided', () => {
+    it('Should display form-level error message when error prop is provided', () => {
       render(
         <ExternalApplicationForm
           submitLabel="Save"
@@ -163,7 +163,7 @@ describe('External Application Form Component Test Suite', () => {
       expect(errorMessage).toHaveTextContent('Something went wrong on the server.');
     });
 
-    it('does not call onSubmit when submitted with invalid values', () => {
+    it('Should not call onSubmit when submitted with invalid values', () => {
       const handleSubmit = vi.fn();
       const { container } = render(
         <ExternalApplicationForm

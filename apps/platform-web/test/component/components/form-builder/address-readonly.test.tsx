@@ -35,33 +35,33 @@ function roundTrip(node: ControlNode): ControlNode {
 }
 
 describe('Address codec — serialize locks to uischema options.fields (rule 5)', () => {
-  it('emits options.fields.country.readOnly = true when the country lock is on', () => {
+  it('Should emit options.fields.country.readOnly = true when the country lock is on', () => {
     const options = optionsOf(addressNode({ readOnlyCountry: true }));
     expect(options.fields).toEqual({ country: { readOnly: true } });
   });
 
-  it('emits options.fields.province.readOnly = true when the province lock is on', () => {
+  it('Should emit options.fields.province.readOnly = true when the province lock is on', () => {
     const options = optionsOf(addressNode({ readOnlyProvince: true }));
     expect(options.fields).toEqual({ province: { readOnly: true } });
   });
 
-  it('omits a sub-field bag whose concerns are all at their defaults', () => {
+  it('Should omit a sub-field bag whose concerns are all at their defaults', () => {
     const options = optionsOf(addressNode({ readOnlyCountry: true, readOnlyProvince: false }));
     expect(options.fields).toEqual({ country: { readOnly: true } });
     expect((options.fields as Record<string, unknown>).province).toBeUndefined();
   });
 
-  it('omits the fields key entirely when no sub-field has a lock', () => {
+  it('Should omit the fields key entirely when no sub-field has a lock', () => {
     const options = optionsOf(addressNode({ readOnlyCountry: false, readOnlyProvince: false }));
     expect(options.fields).toBeUndefined();
   });
 
-  it('keeps options.format = address alongside the fields bag', () => {
+  it('Should keep options.format = address alongside the fields bag', () => {
     const options = optionsOf(addressNode({ readOnlyCountry: true }));
     expect(options.format).toBe('address');
   });
 
-  it('keeps the default VALUES in schema.default, not in the options bag', () => {
+  it('Should keep the default VALUES in schema.default, not in the options bag', () => {
     const node = addressNode({ readOnlyCountry: true });
     const { schema } = serializeModel(modelOf(node));
     const prop = (schema as { properties: Record<string, Record<string, unknown>> }).properties[
@@ -73,23 +73,23 @@ describe('Address codec — serialize locks to uischema options.fields (rule 5)'
 });
 
 describe('Address codec — parse locks back onto the flat model (rules 2, 5)', () => {
-  it('parses options.fields.country.readOnly = true to readOnlyCountry = true', () => {
+  it('Should parse options.fields.country.readOnly = true to readOnlyCountry = true', () => {
     expect(roundTrip(addressNode({ readOnlyCountry: true })).readOnlyCountry).toBe(true);
   });
 
-  it('parses a missing fields key to readOnlyCountry = false and readOnlyProvince = false', () => {
+  it('Should parse a missing fields key to readOnlyCountry = false and readOnlyProvince = false', () => {
     const parsed = roundTrip(addressNode({ readOnlyCountry: false, readOnlyProvince: false }));
     expect(parsed.readOnlyCountry).toBe(false);
     expect(parsed.readOnlyProvince).toBe(false);
   });
 
-  it('yields definite booleans, never undefined, on a freshly parsed address node', () => {
+  it('Should yield definite booleans, never undefined, on a freshly parsed address node', () => {
     const parsed = roundTrip(addressNode({ readOnlyProvince: true }));
     expect(typeof parsed.readOnlyCountry).toBe('boolean');
     expect(typeof parsed.readOnlyProvince).toBe('boolean');
   });
 
-  it('round-trips a locked address field through serialize → parse unchanged', () => {
+  it('Should round-trip a locked address field through serialize → parse unchanged', () => {
     const parsed = roundTrip(addressNode({ readOnlyCountry: true, readOnlyProvince: true }));
     expect(parsed.readOnlyCountry).toBe(true);
     expect(parsed.readOnlyProvince).toBe(true);
@@ -97,12 +97,12 @@ describe('Address codec — parse locks back onto the flat model (rules 2, 5)', 
     expect(parsed.defaultProvince).toBe('British Columbia');
   });
 
-  it('drops the fields key from node.options so options round-trips to empty', () => {
+  it('Should drop the fields key from node.options so options round-trips to empty', () => {
     const parsed = roundTrip(addressNode({ readOnlyCountry: true, readOnlyProvince: true }));
     expect(parsed.options).toEqual({});
   });
 
-  it('does NOT strip a custom option named country/city/province from a non-address field', () => {
+  it('Should not strip a custom option named country/city/province from a non-address field', () => {
     // Guards the reason `fields` is namespaced: parseControl's drop-list is unconditional, so bare
     // sub-field names there would be stripped from EVERY field type's custom options.
     const text: ControlNode = {
@@ -150,27 +150,27 @@ const countrySwitch = () => screen.queryByRole('switch', { name: 'Country read-o
 const provinceSwitch = () => screen.queryByRole('switch', { name: 'Province read-only' });
 
 describe('AddressDefaultsEditor — switch visibility (rule 1)', () => {
-  it('hides the Country read-only switch when there is no default country', () => {
+  it('Should hide the Country read-only switch when there is no default country', () => {
     renderEditor(addressNode({ defaultCountry: '', defaultProvince: '' }));
     expect(countrySwitch()).not.toBeInTheDocument();
   });
 
-  it('shows the Country read-only switch once a default country is set', () => {
+  it('Should show the Country read-only switch once a default country is set', () => {
     renderEditor(addressNode());
     expect(countrySwitch()).toBeInTheDocument();
   });
 
-  it('hides the Province/State read-only switch when there is no default province', () => {
+  it('Should hide the Province/State read-only switch when there is no default province', () => {
     renderEditor(addressNode({ defaultProvince: '' }));
     expect(provinceSwitch()).not.toBeInTheDocument();
   });
 
-  it('shows the Province/State read-only switch once a default province is set', () => {
+  it('Should show the Province/State read-only switch once a default province is set', () => {
     renderEditor(addressNode());
     expect(provinceSwitch()).toBeInTheDocument();
   });
 
-  it('labels the province switch using the country-specific term', () => {
+  it('Should label the province switch using the country-specific term', () => {
     renderEditor(addressNode());
     // Canada's subdivision term is "Province" — the switch label tracks the same per-country labels
     // the field itself uses, so it never reads "State read-only" for a Canadian address.
@@ -179,7 +179,7 @@ describe('AddressDefaultsEditor — switch visibility (rule 1)', () => {
 });
 
 describe('AddressDefaultsEditor — clearing a default turns its lock off (rules 3, 4)', () => {
-  it('sets readOnlyProvince to false when the default COUNTRY changes', async () => {
+  it('Should set readOnlyProvince to false when the default COUNTRY changes', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(addressNode({ readOnlyProvince: true }));
     await user.click(screen.getByLabelText('Default country'));
@@ -189,7 +189,7 @@ describe('AddressDefaultsEditor — clearing a default turns its lock off (rules
     );
   });
 
-  it('sets readOnlyCountry to false (not undefined) when the default country is cleared', async () => {
+  it('Should set readOnlyCountry to false (not undefined) when the default country is cleared', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(addressNode({ readOnlyCountry: true }));
     await user.click(screen.getByRole('button', { name: 'Clear default country' }));
@@ -200,33 +200,33 @@ describe('AddressDefaultsEditor — clearing a default turns its lock off (rules
 });
 
 describe('AddressDefaultsEditor — toggling the switches (rules 2, 6)', () => {
-  it('renders both switches off for a node with defaults but no locks', () => {
+  it('Should render both switches off for a node with defaults but no locks', () => {
     renderEditor(addressNode());
     expect(countrySwitch()).not.toBeChecked();
     expect(provinceSwitch()).not.toBeChecked();
   });
 
-  it('emits readOnlyCountry = true when the country switch is turned on', async () => {
+  it('Should emit readOnlyCountry = true when the country switch is turned on', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(addressNode());
     await user.click(countrySwitch()!);
     expect(onChange).toHaveBeenCalledWith({ readOnlyCountry: true });
   });
 
-  it('emits readOnlyProvince = true when the province switch is turned on', async () => {
+  it('Should emit readOnlyProvince = true when the province switch is turned on', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(addressNode());
     await user.click(provinceSwitch()!);
     expect(onChange).toHaveBeenCalledWith({ readOnlyProvince: true });
   });
 
-  it('reflects an already-locked node as a checked switch', () => {
+  it('Should reflect an already-locked node as a checked switch', () => {
     renderEditor(addressNode({ readOnlyCountry: true, readOnlyProvince: true }));
     expect(countrySwitch()).toBeChecked();
     expect(provinceSwitch()).toBeChecked();
   });
 
-  it('toggles each lock independently of the other', async () => {
+  it('Should toggle each lock independently of the other', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(addressNode({ readOnlyCountry: true }));
     await user.click(provinceSwitch()!);
@@ -236,7 +236,7 @@ describe('AddressDefaultsEditor — toggling the switches (rules 2, 6)', () => {
 });
 
 describe('Address field defaults — new node (rule 2)', () => {
-  it('creates a new address field with both locks false', () => {
+  it('Should create a new address field with both locks false', () => {
     const node = createField('address');
     expect(node.readOnlyCountry).toBe(false);
     expect(node.readOnlyProvince).toBe(false);
@@ -244,7 +244,7 @@ describe('Address field defaults — new node (rule 2)', () => {
 });
 
 describe('AddressDefaultsEditor — province selection and input behaviors', () => {
-  it('selects a default province from the combobox when country has states', async () => {
+  it('Should select a default province from the combobox when country has states', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(
       addressNode({ defaultCountry: 'Canada', defaultProvince: '' }),
@@ -258,7 +258,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     });
   });
 
-  it('clears default province and its lock via combobox clear button', async () => {
+  it('Should clear default province and its lock via combobox clear button', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(
       addressNode({
@@ -275,7 +275,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     });
   });
 
-  it('allows typing and clearing free-text province when country has no states', async () => {
+  it('Should allow typing and clearing free-text province when country has no states', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(
       addressNode({ defaultCountry: 'France', defaultProvince: 'Paris' }),
@@ -295,14 +295,14 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     expect(onChange).toHaveBeenCalledWith({ defaultProvince: '', readOnlyProvince: false });
   });
 
-  it('disables province input and shows placeholder when no country is selected', () => {
+  it('Should disable province input and show placeholder when no country is selected', () => {
     renderEditor(addressNode({ defaultCountry: '', defaultProvince: '' }));
     const input = screen.getByLabelText('Default State / Province');
     expect(input).toBeDisabled();
     expect(input).toHaveAttribute('placeholder', 'Choose a country first');
   });
 
-  it('handles turning switches off from an active state', async () => {
+  it('Should handle turning switches off from an active state', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor(
       addressNode({
@@ -322,7 +322,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     expect(onChange).toHaveBeenCalledWith({ readOnlyProvince: false });
   });
 
-  it('renders safely when node default and lock properties are undefined', () => {
+  it('Should render safely when node default and lock properties are undefined', () => {
     const {
       defaultCountry: _defaultCountry,
       defaultProvince: _defaultProvince,
@@ -343,7 +343,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     expect(provinceSwitch()).not.toBeInTheDocument();
   });
 
-  it('renders safely when defaults are set but lock properties are undefined', () => {
+  it('Should render safely when defaults are set but lock properties are undefined', () => {
     const {
       readOnlyCountry: _readOnlyCountry,
       readOnlyProvince: _readOnlyProvince,
@@ -365,7 +365,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     expect(provinceSwitch()).not.toBeChecked();
   });
 
-  it('renders province combobox when defaultCountry is set but defaultProvince is undefined and states are loading', () => {
+  it('Should render province combobox when defaultCountry is set but defaultProvince is undefined and states are loading', () => {
     const { defaultProvince: _defaultProvince, ...baseNode } = createField('address');
     const nodeNoProvince: ControlNode = {
       ...baseNode,
@@ -383,7 +383,7 @@ describe('AddressDefaultsEditor — province selection and input behaviors', () 
     expect(screen.getByLabelText('Default Province')).toBeInTheDocument();
   });
 
-  it('handles empty query cache gracefully without crash', () => {
+  it('Should handle empty query cache gracefully without crash', () => {
     renderEditor(addressNode({ defaultCountry: '', defaultProvince: '' }), (client) => {
       client.removeQueries({ queryKey: ['geo'] });
     });

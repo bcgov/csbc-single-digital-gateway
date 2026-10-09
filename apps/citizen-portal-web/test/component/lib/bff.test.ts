@@ -5,7 +5,7 @@ import { loginUrl, loginUrlFor, getMe, logout, displayName, type AuthUser } from
 // loginUrlFor carries the current page path across the OIDC round-trip so a citizen who clicks
 // "Log in" lands back where they started (feature 67). The path is URL-encoded into `returnTo`.
 describe('BFF_ORIGIN resolution', () => {
-  it('resolves BFF_ORIGIN from window.__APP_CONFIG__ if available', async () => {
+  it('Should resolves BFF_ORIGIN from window.__APP_CONFIG__ if available', async () => {
     vi.resetModules();
     const originalConfig = (globalThis as any).window.__APP_CONFIG__;
     (globalThis as any).window.__APP_CONFIG__ = { bffOrigin: 'http://window-config-origin' };
@@ -21,7 +21,7 @@ describe('BFF_ORIGIN resolution', () => {
     }
   });
 
-  it('falls back to default localhost URL if window config and env variable are missing', async () => {
+  it('Should fall back to default localhost URL if window config and env variable are missing', async () => {
     vi.resetModules();
     const originalEnv = import.meta.env.VITE_BFF_ORIGIN;
     (import.meta.env as any).VITE_BFF_ORIGIN = '';
@@ -40,20 +40,20 @@ describe('BFF_ORIGIN resolution', () => {
 });
 
 describe('loginUrlFor', () => {
-  it('appends the path as an encoded returnTo query param', () => {
+  it('Should append the path as an encoded returnTo query param', () => {
     expect(loginUrlFor('/services/passport')).toBe(
       `${loginUrl}?returnTo=${encodeURIComponent('/services/passport')}`,
     );
   });
 
-  it('encodes slashes and query characters in the path', () => {
+  it('Should encode slashes and query characters in the path', () => {
     const url = new URL(loginUrlFor('/applications/7?view=summary'));
     expect(url.searchParams.get('returnTo')).toBe('/applications/7?view=summary');
   });
 });
 
 describe('getMe', () => {
-  it('returns AuthUser if fetch is successful', async () => {
+  it('Should return AuthUser if fetch is successful', async () => {
     const mockUser: AuthUser = {
       id: 'usr_123',
       roles: ['citizen'],
@@ -68,14 +68,14 @@ describe('getMe', () => {
     });
   });
 
-  it('returns null on 401 status code', async () => {
+  it('Should return null on 401 status code', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
 
     const user = await getMe();
     expect(user).toBeNull();
   });
 
-  it('throws an error on other non-ok status codes', async () => {
+  it('Should throw an error on other non-ok status codes', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
 
     try {
@@ -88,7 +88,7 @@ describe('getMe', () => {
 });
 
 describe('logout', () => {
-  it('sends POST logout request with credentials', async () => {
+  it('Should send POST logout request with credentials', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
 
     await logout();
@@ -106,7 +106,7 @@ describe('displayName', () => {
     claims: { sub: 'usr_123' },
   };
 
-  it('prefers claims.display_name', () => {
+  it('Should prefer claims.display_name', () => {
     const user = {
       ...baseUser,
       claims: {
@@ -118,7 +118,7 @@ describe('displayName', () => {
     expect(displayName(user)).toBe('Alice');
   });
 
-  it('falls back to claims.email if display_name is missing', () => {
+  it('Should fall back to claims.email if display_name is missing', () => {
     const user = {
       ...baseUser,
       claims: { ...baseUser.claims, email: 'alice@example.com' },
@@ -126,7 +126,7 @@ describe('displayName', () => {
     expect(displayName(user)).toBe('alice@example.com');
   });
 
-  it('falls back to user.id if display_name and email are missing', () => {
+  it('Should fall back to user.id if display_name and email are missing', () => {
     expect(displayName(baseUser)).toBe('usr_123');
   });
 });

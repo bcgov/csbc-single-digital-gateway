@@ -169,7 +169,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       );
     };
 
-    it('renders disabled trigger when disabled prop is true', () => {
+    it('Should render disabled trigger when disabled prop is true', () => {
       renderComponent({ disabled: true });
 
       const triggerBtn = screen.getByRole('button', { name: 'Notifications' });
@@ -178,12 +178,12 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(screen.queryByTestId('mock-notification-center')).not.toBeInTheDocument();
     });
 
-    it('renders the mock notification center by default', () => {
+    it('Should render the mock notification center by default', () => {
       renderComponent();
       expect(screen.getByTestId('mock-notification-center')).toBeInTheDocument();
     });
 
-    it('invalidates queries when subscribeToNotifications receives an event', () => {
+    it('Should invalidate queries when subscribeToNotifications receives an event', () => {
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
       renderComponent();
 
@@ -194,7 +194,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['submissions'] });
     });
 
-    it('triggers markRead mutation when onMarkRead is called', async () => {
+    it('Should trigger markRead mutation when onMarkRead is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-mark-read');
@@ -203,7 +203,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockMarkRead).toHaveBeenCalledWith('d-1');
     });
 
-    it('triggers markAllRead mutation when onMarkAllRead is called', async () => {
+    it('Should trigger markAllRead mutation when onMarkAllRead is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-mark-all-read');
@@ -212,7 +212,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockMarkAllRead).toHaveBeenCalled();
     });
 
-    it('navigates to submission detail when onItemClick is called with valid payload', async () => {
+    it('Should navigate to submission detail when onItemClick is called with valid payload', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-item-click-valid');
@@ -224,7 +224,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('does not navigate when onItemClick is called with missing or invalid payload', async () => {
+    it('Should not navigate when onItemClick is called with missing or invalid payload', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-item-click-invalid');
@@ -233,7 +233,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('navigates to preferences account page when onOpenPreferences is called', async () => {
+    it('Should navigate to preferences account page when onOpenPreferences is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-open-prefs');
@@ -254,7 +254,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       sse.isIntegrationTest = false;
     });
 
-    it('shows the unread badge for a signed-in staff member', async () => {
+    it('Should show the unread badge for a signed-in staff member', async () => {
       mockNotificationsBff({ count: 1 });
       renderApp('/app/riverton');
       expect(
@@ -262,7 +262,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('invalidates the submission family on a realtime notification event', async () => {
+    it('Should invalidate the submission family on a realtime notification event', async () => {
       mockNotificationsBff({ count: 1 });
       const { queryClient } = renderApp('/app/riverton');
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 });
@@ -274,7 +274,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('navigates to the workspace review page for a staff payload and marks it read', async () => {
+    it('Should navigate to the workspace review page for a staff payload and mark it read', async () => {
       const user = userEvent.setup();
       const { calls } = mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');
@@ -297,7 +297,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('does not navigate for a payload-less notification', async () => {
+    it('Should not navigate for a payload-less notification', async () => {
       const user = userEvent.setup();
       mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');

@@ -65,7 +65,7 @@ function ServiceDetailMirror({
 }
 
 describe('ServiceEditor Component Test Suite', () => {
-  it('renders JsonForms with correct props', () => {
+  it('Should render JsonForms with correct props', () => {
     const mockData = { name: 'Riverton' };
     const mockOnChange = vi.fn();
 
@@ -88,7 +88,7 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(props.readonly).toBe(false);
   });
 
-  it('calls onChange when JsonForms calls onChange and readonly is false', () => {
+  it('Should call onChange when JsonForms calls onChange and readonly is false', () => {
     const mockOnChange = vi.fn();
 
     render(
@@ -107,7 +107,7 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(mockOnChange).toHaveBeenCalledWith({ title: 'New Title' });
   });
 
-  it('does not call onChange when JsonForms calls onChange and readonly is true', () => {
+  it('Should not call onChange when JsonForms calls onChange and readonly is true', () => {
     const mockOnChange = vi.fn();
 
     render(
@@ -125,14 +125,14 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('handles definition when uischema elements is missing or not an array (L38)', () => {
+  it('Should handle definition when uischema elements is missing or not an array (L38)', () => {
     render(
       <ServiceEditor definition={{ schema: {}, uischema: {} }} data={{}} onChange={vi.fn()} />,
     );
     expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
   });
 
-  it('does not call onChange when next data is identical to current data', () => {
+  it('Should not call onChange when next data is identical to current data', () => {
     const mockOnChange = vi.fn();
     const data = { title: 'Same Title' };
 
@@ -153,7 +153,7 @@ describe('ServiceEditor Component Test Suite', () => {
       state.isIntegrationTest = false;
     });
 
-    it('renders the contact-methods section outside the title/about card', async () => {
+    it('Should render the contact-methods section outside the title/about card', async () => {
       const { container } = render(<ServiceDetailMirror />);
       const titleField = await screen.findByRole('textbox', { name: /title/i }, { timeout: 10000 });
       const addButton = screen.getByRole('button', { name: /add contact method/i });
@@ -164,7 +164,7 @@ describe('ServiceEditor Component Test Suite', () => {
       expect(card).not.toContainElement(addButton); // contact methods live outside it
     });
 
-    it('adds a contact method while preserving other fields (no feedback loop)', async () => {
+    it('Should add a contact method while preserving other fields (no feedback loop)', async () => {
       const user = userEvent.setup();
       render(<ServiceDetailMirror />);
       await screen.findByRole('button', { name: /add contact method/i }, { timeout: 10000 });

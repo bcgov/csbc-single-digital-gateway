@@ -62,7 +62,7 @@ describe('Submissions E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s submission endpoints without a session', async () => {
+  it('Should return 401 for submission endpoints without a session', async () => {
     expect((await http().get(`/v1/submissions?workspaceId=${UUID}`)).status).toBe(401);
     expect((await http().get(`/v1/submissions/${UUID}`)).status).toBe(401);
     expect(
@@ -70,7 +70,7 @@ describe('Submissions E2E Test Suite', () => {
     ).toBe(401);
   });
 
-  it('400s a list without a valid workspaceId query when fetching submissions', async () => {
+  it('Should return 400 for a list without a valid workspaceId query when fetching submissions', async () => {
     expect(
       (
         await http()
@@ -80,7 +80,7 @@ describe('Submissions E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s a list with out-of-range paging, an unknown sort, or an invalid status', async () => {
+  it('Should return 400 for a list with out-of-range paging, an unknown sort, or an invalid status', async () => {
     expect(
       (
         await http()
@@ -104,7 +104,7 @@ describe('Submissions E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s a review with an invalid decision', async () => {
+  it('Should return 400 for a review with an invalid decision', async () => {
     expect(
       (
         await http()

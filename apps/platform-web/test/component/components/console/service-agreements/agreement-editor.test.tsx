@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('AgreementEditor Component Test Suite', () => {
-  it('renders JsonForms with correct props and allows changes when not readonly', () => {
+  it('Should render JsonForms with correct props and allow changes when not readonly', () => {
     const onChange = vi.fn();
     const data = { title: 'Old Title' };
 
@@ -53,7 +53,7 @@ describe('AgreementEditor Component Test Suite', () => {
     expect(onChange).toHaveBeenCalledWith({ title: 'Updated Title' });
   });
 
-  it('does not trigger onChange when readonly is true', () => {
+  it('Should not trigger onChange when readonly is true', () => {
     const onChange = vi.fn();
     const data = { title: 'Old Title' };
 

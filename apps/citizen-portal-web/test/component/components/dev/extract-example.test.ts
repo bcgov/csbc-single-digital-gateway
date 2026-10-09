@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { extractExample } from '@/components/dev/extract-example';
 
 describe('extractExample Unit Test Suite', () => {
-  it('extracts and dedents code between line comments (// #region and // #endregion)', () => {
+  it('Should extracts and dedents code between line comments (// #region and // #endregion)', () => {
     const source = `
 import React from 'react';
 
@@ -19,7 +19,7 @@ export default Example;
     expect(result).toBe(`export function Example() {\n  return <div>Hello World</div>;\n}`);
   });
 
-  it('extracts and dedents code between JSX comments ({/* #region */} and {/* #endregion */})', () => {
+  it('Should extracts and dedents code between JSX comments ({/* #region */} and {/* #endregion */})', () => {
     const source = `
 <div>
   {/* #region JsxSection */}
@@ -33,7 +33,7 @@ export default Example;
     expect(result).toBe(`<span>Line 1</span>\n<span>Line 2</span>`);
   });
 
-  it('handles names with special regex characters safely', () => {
+  it('Should handle names with special regex characters safely', () => {
     const source = `
 // #region Foo.Bar$Baz(1)+[test]?
 const value = 42;
@@ -44,7 +44,7 @@ const value = 42;
     expect(result).toBe('const value = 42;');
   });
 
-  it('throws an error if #region marker is not found in source', () => {
+  it('Should throw an error if #region marker is not found in source', () => {
     const source = `
 // #region RealRegion
 const a = 1;
@@ -56,7 +56,7 @@ const a = 1;
     );
   });
 
-  it('throws an error if matching #endregion marker is not found after #region', () => {
+  it('Should throw an error if matching #endregion marker is not found after #region', () => {
     const source = `
 // #region UnclosedRegion
 const a = 1;
@@ -67,7 +67,7 @@ const a = 1;
     );
   });
 
-  it('handles empty or whitespace-only extracted body (indents.length === 0 branch in dedent)', () => {
+  it('Should handle empty or whitespace-only extracted body (indents.length === 0 branch in dedent)', () => {
     const source = `
 // #region EmptyRegion
 
@@ -78,7 +78,7 @@ const a = 1;
     expect(result).toBe('');
   });
 
-  it('dedents multi-line content preserving relative indentation and ignoring empty lines', () => {
+  it('Should dedents multi-line content preserving relative indentation and ignoring empty lines', () => {
     const source = `
     // #region NestedBlock
     function parent() {
@@ -97,7 +97,7 @@ const a = 1;
     );
   });
 
-  it('handles mixed start and end comment marker styles with tabs and spaces', () => {
+  it('Should handle mixed start and end comment marker styles with tabs and spaces', () => {
     const source = `
 \t  {/* #region MixedMarker */}
 \t  const x = 'mixed';

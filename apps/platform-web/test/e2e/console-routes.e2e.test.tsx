@@ -23,21 +23,21 @@ function renderScoped(path: string) {
 }
 
 describe('Console Routes Integration Test Suite', () => {
-  it('renders the Overview placeholder at /app/:slug', async () => {
+  it('Should render the Overview placeholder at /app/:slug', async () => {
     renderScoped('/app/riverton');
     expect(
       await screen.findByText(/Create new service/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
-  it('renders the Services empty state at /app/:slug/services', async () => {
+  it('Should render the Services empty state at /app/:slug/services', async () => {
     renderScoped('/app/riverton/services');
     expect(
       await screen.findByText(/No services yet/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
-  it('renders the Submissions empty state and status tabs at /app/:slug/submissions', async () => {
+  it('Should render the Submissions empty state and status tabs at /app/:slug/submissions', async () => {
     renderScoped('/app/riverton/submissions');
     expect(
       await screen.findByText(/No submissions yet/i, undefined, { timeout: 32000 }),
@@ -45,14 +45,14 @@ describe('Console Routes Integration Test Suite', () => {
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
-  it('renders the Team empty state at /app/:slug/team', async () => {
+  it('Should render the Team empty state at /app/:slug/team', async () => {
     renderScoped('/app/riverton/team');
     expect(
       await screen.findByText(/Just you so far/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
-  it('renders the Shared Resources hub at /app/:slug/shared-resources', async () => {
+  it('Should render the Shared Resources hub at /app/:slug/shared-resources', async () => {
     renderScoped('/app/riverton/shared-resources');
     expect(
       await screen.findByRole('heading', { name: /shared resources/i }, { timeout: 32000 }),
@@ -63,7 +63,7 @@ describe('Console Routes Integration Test Suite', () => {
     );
   });
 
-  it('renders the Settings page with a danger zone at /app/:slug/settings', async () => {
+  it('Should render the Settings page with a danger zone at /app/:slug/settings', async () => {
     renderScoped('/app/riverton/settings');
     expect(
       await screen.findByText('Workspace name', undefined, { timeout: 32000 }),
@@ -71,7 +71,7 @@ describe('Console Routes Integration Test Suite', () => {
     expect(screen.getByText(/Danger zone/i)).toBeInTheDocument();
   });
 
-  it('renders the user-scoped Account page prefilled with the signed-in user at /app/account', async () => {
+  it('Should render the user-scoped Account page prefilled with the signed-in user at /app/account', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/account');
     expect(

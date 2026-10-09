@@ -21,14 +21,14 @@ describe('Database Wiring E2E Test Suite', () => {
     await app.close();
   });
 
-  it('makes the Drizzle client injectable via the DATABASE_CLIENT token', () => {
+  it('Should make the Drizzle client injectable via the DATABASE_CLIENT token', () => {
     const db = app.get<{ select: unknown; $client: unknown }>(DATABASE_CLIENT);
     expect(db).toBeDefined();
     expect(typeof db.select).toBe('function');
     expect(db.$client).toBeDefined();
   });
 
-  it('keeps health endpoints working alongside the database module', async () => {
+  it('Should keep health endpoints working alongside the database module', async () => {
     const res = await request(app.getHttpServer()).get('/health/live');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');

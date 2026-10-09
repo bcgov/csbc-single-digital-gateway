@@ -15,7 +15,7 @@ vi.mock('@/lib/bff', () => ({
 
 describe('Auth Module Unit Test Suite', () => {
   describe('authQueryOptions', () => {
-    it('returns query configuration options with correct key and function', () => {
+    it('Should return query configuration options with correct key and function', () => {
       const options = authQueryOptions();
       expect(options.queryKey).toEqual(['auth', 'me']);
       expect(options.queryFn).toBe(getMe);
@@ -24,7 +24,7 @@ describe('Auth Module Unit Test Suite', () => {
   });
 
   describe('useAuth', () => {
-    it('subscribes to query state by calling useQuery hook', () => {
+    it('Should subscribe to query state by calling useQuery hook', () => {
       useAuth();
       expect(useQuery).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -35,7 +35,7 @@ describe('Auth Module Unit Test Suite', () => {
   });
 
   describe('initials helper', () => {
-    it('extracts uppercase initials for first two words in name', () => {
+    it('Should extract uppercase initials for first two words in name', () => {
       expect(initials('Maya Reyes')).toBe('MR');
       expect(initials('Maya Reyes Smith')).toBe('MR');
       expect(initials('lewis')).toBe('L');
@@ -43,19 +43,19 @@ describe('Auth Module Unit Test Suite', () => {
       expect(initials('lowercase name')).toBe('LN');
     });
 
-    it('returns question mark placeholder for empty names', () => {
+    it('Should return question mark placeholder for empty names', () => {
       expect(initials('')).toBe('?');
       expect(initials('   ')).toBe('?');
     });
   });
 
   describe('roleLabel helper', () => {
-    it('returns first role capitalized', () => {
+    it('Should return first role capitalized', () => {
       expect(roleLabel(['admin', 'member'])).toBe('Admin');
       expect(roleLabel(['editor'])).toBe('Editor');
     });
 
-    it('falls back to Member if roles array is empty', () => {
+    it('Should fall back to Member if roles array is empty', () => {
       expect(roleLabel([])).toBe('Member');
     });
   });

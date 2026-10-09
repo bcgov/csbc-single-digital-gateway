@@ -31,7 +31,7 @@ describe('FormsService', () => {
       definition: { schema: {}, uischema: {} },
     };
 
-    it('successfully creates a form and version inside a transaction', async () => {
+    it('Should successfully create a form and version inside a transaction', async () => {
       // 1. requireMembership check
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
       // 2. resolveType lookup
@@ -75,13 +75,13 @@ describe('FormsService', () => {
       });
     });
 
-    it('throws NotFoundException if user is not a workspace member', async () => {
+    it('Should throw NotFoundException if user is not a workspace member', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // no membership
 
       await expect(service.create('user-1', mockInput)).rejects.toThrow(NotFoundException);
     });
 
-    it('throws UnprocessableEntityException if type has no published version', async () => {
+    it('Should throw UnprocessableEntityException if type has no published version', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]); // member
       dbMock.limit.mockResolvedValueOnce([]); // type not found / not published
 
@@ -90,7 +90,7 @@ describe('FormsService', () => {
       );
     });
 
-    it('throws BadRequestException if the resolved type is not a form kind', async () => {
+    it('Should throw BadRequestException if the resolved type is not a form kind', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]); // member
       dbMock.limit.mockResolvedValueOnce([
         {
@@ -103,7 +103,7 @@ describe('FormsService', () => {
       await expect(service.create('user-1', mockInput)).rejects.toThrow(BadRequestException);
     });
 
-    it('throws Error if document insert returned no row when creating a form', async () => {
+    it('Should throw Error if document insert returned no row when creating a form', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
       dbMock.limit.mockResolvedValueOnce([
         {
@@ -119,7 +119,7 @@ describe('FormsService', () => {
       );
     });
 
-    it('throws Error if document version insert returned no row', async () => {
+    it('Should throw Error if document version insert returned no row', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
       dbMock.limit.mockResolvedValueOnce([
         {
@@ -138,7 +138,7 @@ describe('FormsService', () => {
   });
 
   describe('get', () => {
-    it('successfully retrieves a form and its latest version', async () => {
+    it('Should successfully retrieve a form and its latest version', async () => {
       const mockDoc = createMockDoc({});
       const mockFormVersion = createMockFormVersion({});
 
@@ -168,7 +168,7 @@ describe('FormsService', () => {
       });
     });
 
-    it('throws NotFoundException if the document has no versions', async () => {
+    it('Should throw NotFoundException if the document has no versions', async () => {
       const mockDoc = createMockDoc({});
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
@@ -177,7 +177,7 @@ describe('FormsService', () => {
       await expect(service.get('user-1', 'doc-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if the document does not exist or user is not a member', async () => {
+    it('Should throw NotFoundException if the document does not exist or user is not a member', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // requireDocument fails
 
       await expect(service.get('user-1', 'doc-1')).rejects.toThrow(NotFoundException);
@@ -190,7 +190,7 @@ describe('FormsService', () => {
       title: 'Updated Form Title',
     };
 
-    it('successfully updates a draft form version and the document title', async () => {
+    it('Should successfully update a draft form version and the document title', async () => {
       const mockDoc = createMockDoc({
         title: 'Old Form Title',
       });
@@ -221,7 +221,7 @@ describe('FormsService', () => {
       });
     });
 
-    it('throws NotFoundException if the version is not found when updating schema', async () => {
+    it('Should throw NotFoundException if the version is not found when updating schema', async () => {
       const mockDoc = createMockDoc({});
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
@@ -232,7 +232,7 @@ describe('FormsService', () => {
       );
     });
 
-    it('throws ConflictException if the version is not in draft status', async () => {
+    it('Should throw ConflictException if the version is not in draft status', async () => {
       const mockDoc = createMockDoc({});
       const mockFormVersion = createMockFormVersion({
         status: 'published', // not draft
@@ -246,7 +246,7 @@ describe('FormsService', () => {
       );
     });
 
-    it('throws NotFoundException if updating version query returned no row', async () => {
+    it('Should throw NotFoundException if updating version query returned no row', async () => {
       const mockDoc = createMockDoc({});
       const mockFormVersion = createMockFormVersion({});
 
@@ -259,7 +259,7 @@ describe('FormsService', () => {
       );
     });
 
-    it('successfully updates a draft form version without updating the document title if title is omitted', async () => {
+    it('Should successfully update a draft form version without updating the document title if title is omitted', async () => {
       const mockDoc = createMockDoc({
         title: 'Old Form Title',
       });

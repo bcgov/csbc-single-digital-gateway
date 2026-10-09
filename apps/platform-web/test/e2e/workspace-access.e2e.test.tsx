@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe('accessing a workspace by slug', () => {
-  it('shows a not-found state when the slug 404s', async () => {
+  it('Should show a not-found state when the slug 404s', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/nope');
     expect(
@@ -17,7 +17,7 @@ describe('accessing a workspace by slug', () => {
     ).toBeInTheDocument();
   });
 
-  it('disables nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
+  it('Should disable nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/nope');
 
@@ -50,7 +50,7 @@ async function confirmDelete(): Promise<void> {
 }
 
 describe('Workspace Settings Integration Test Suite', () => {
-  it('saves a new workspace name via PATCH', async () => {
+  it('Should save a new workspace name via PATCH', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton/settings');
     const user = userEvent.setup();
@@ -70,7 +70,7 @@ describe('Workspace Settings Integration Test Suite', () => {
 });
 
 describe('deleting a workspace from settings', () => {
-  it('confirms, deletes, and returns to the selection page listing the remaining workspace', async () => {
+  it('Should confirm, delete, and return to the selection page listing the remaining workspace', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [adminWorkspace, townsville] });
     const { router } = renderApp('/app/riverton/settings');
 
@@ -89,7 +89,7 @@ describe('deleting a workspace from settings', () => {
     ).toHaveAttribute('href', '/app/townsville');
   });
 
-  it('shows the empty state when the last workspace is deleted', async () => {
+  it('Should show the empty state when the last workspace is deleted', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const { router } = renderApp('/app/riverton/settings');
 

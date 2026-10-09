@@ -61,7 +61,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('Should display profile details and allows role/status updates when viewed by admin', async () => {
+    it('Should display profile details and allow role/status updates when viewed by admin', async () => {
       const fetchMock = mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' });
       const user = userEvent.setup();
       renderApp('/app/riverton/team/m2'); // Viewing Sam Lee (member, active)
@@ -132,7 +132,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument();
     });
 
-    it('allows owner to transfer workspace ownership to active member', async () => {
+    it('Should allow owner to transfer workspace ownership to active member', async () => {
       const fetchMock = mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' }); // Maya Reyes (owner u1) viewing Sam Lee (m2)
       const user = userEvent.setup();
       renderApp('/app/riverton/team/m2');
@@ -175,7 +175,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       });
     });
 
-    it('prevents mutable operations on current workspace owner', async () => {
+    it('Should prevent mutable operations on current workspace owner', async () => {
       mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' }); // Maya Reyes (owner u1) viewing Maya Reyes (m1)
       renderApp('/app/riverton/team/m1');
 
@@ -219,7 +219,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(screen.getByText('No email on file')).toBeInTheDocument();
     });
 
-    it('shows error message if saving changes fails', async () => {
+    it('Should show error message if saving changes fails', async () => {
       mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test', failedApi: true });
 
       const user = userEvent.setup();
@@ -236,7 +236,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       );
     });
 
-    it('shows error message if transferring ownership fails', async () => {
+    it('Should show error message if transferring ownership fails', async () => {
       mockMembersBff(
         { items: teamMembers },
         {
@@ -329,7 +329,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(screen.getByText('Active')).toBeInTheDocument();
     });
 
-    it('allows owner to cancel workspace ownership transfer dialog', async () => {
+    it('Should allow owner to cancel workspace ownership transfer dialog', async () => {
       mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' });
       const user = userEvent.setup();
       renderApp('/app/riverton/team/m2');
@@ -347,7 +347,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(screen.getByRole('button', { name: 'Make owner' })).toBeInTheDocument();
     });
 
-    it('handles workspace with missing or null ID', async () => {
+    it('Should handle workspace with missing or null ID', async () => {
       mockMembersBff(
         { items: [] },
         {
@@ -444,7 +444,7 @@ describe('MemberProfilePage Component Test Suite', () => {
   });
 
   describe('member profile — workspace owner', () => {
-    it('locks the role/status controls and explains it on the owner profile', async () => {
+    it('Should lock the role/status controls and explain it on the owner profile', async () => {
       mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' });
       renderApp('/app/riverton/team/m1');
 
@@ -463,7 +463,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(screen.queryByRole('button', { name: 'Make owner' })).not.toBeInTheDocument();
     });
 
-    it('lets the owner transfer ownership to another active member', async () => {
+    it('Should let the owner transfer ownership to another active member', async () => {
       const fetchMock = mockMembersBff({ items: teamMembers }, { testFile: 'team-member.test' });
       const user = userEvent.setup();
       renderApp('/app/riverton/team/m2');
@@ -490,7 +490,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       expect(JSON.parse(String(transferCall?.[1]?.body))).toEqual({ userId: 'u2' });
     });
 
-    it('shows a regular member another member’s role/status read-only (no form)', async () => {
+    it('Should show a regular member another member’s role/status read-only (no form)', async () => {
       const viewer = { ...authedUser, id: 'u3' }; // a plain member, not an admin or the owner
       mockMembersBff(
         { items: teamMembers },

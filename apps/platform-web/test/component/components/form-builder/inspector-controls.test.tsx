@@ -5,7 +5,7 @@ import { Row, SegmentedToggle } from '@/components/form-builder/inspector-contro
 
 describe('Inspector Controls Unit Test Suite', () => {
   describe('Row component', () => {
-    it('renders label with htmlFor and children', () => {
+    it('Should render label with htmlFor and children', () => {
       render(
         <Row label="Field Label" htmlFor="field-input">
           <input id="field-input" placeholder="Enter text" />
@@ -26,7 +26,7 @@ describe('Inspector Controls Unit Test Suite', () => {
       { value: 'option-c', label: 'Option C' },
     ];
 
-    it('renders toggle items without fullWidth', () => {
+    it('Should render toggle items without fullWidth', () => {
       const handleChange = vi.fn();
       const { container } = render(
         <SegmentedToggle
@@ -48,7 +48,7 @@ describe('Inspector Controls Unit Test Suite', () => {
       expect(optionB).toHaveAttribute('aria-pressed', 'false');
     });
 
-    it('renders toggle items with fullWidth', () => {
+    it('Should render toggle items with fullWidth', () => {
       const handleChange = vi.fn();
       const { container } = render(
         <SegmentedToggle
@@ -70,7 +70,7 @@ describe('Inspector Controls Unit Test Suite', () => {
       expect(optionA).toHaveClass('flex-1');
     });
 
-    it('calls onValueChange with the newly selected option when another item is clicked', async () => {
+    it('Should call onValueChange with the newly selected option when another item is clicked', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
@@ -82,7 +82,7 @@ describe('Inspector Controls Unit Test Suite', () => {
       expect(handleChange).toHaveBeenCalledWith('option-b');
     });
 
-    it('retains the current value when the active option is clicked (unselecting is prevented)', async () => {
+    it('Should retain the current value when the active option is clicked (unselecting is prevented)', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 

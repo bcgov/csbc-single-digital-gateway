@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, renderApp } from '../support/render-app';
 import { ISO } from '../support/fixtures';
 import { mockServicesBff } from '../support/mock-services-bff';
-import { service } from '../support/testHelpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -34,8 +33,8 @@ const draftVersion = {
 };
 
 describe('Console Services Integration Test Suite', () => {
-  it('lists a workspace’s services', async () => {
-    mockServicesBff(service(), { user: authedUser, definition, draftVersion });
+  it('Should list a workspace’s services', async () => {
+    mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/');
     expect(
       await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 }),
@@ -43,8 +42,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('requests the paged list with the default sort', async () => {
-    const fetchMock = mockServicesBff(service(), { user: authedUser, definition, draftVersion });
+  it('Should request the paged list with the default sort', async () => {
+    const fetchMock = mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 });
 
@@ -57,8 +56,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
   });
 
-  it('opens the New service modal (title + description) from the services list New button', async () => {
-    mockServicesBff(service(), { user: authedUser, definition, draftVersion });
+  it('Should open the New service modal (title + description) from the services list New button', async () => {
+    mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     const user = userEvent.setup();
 
@@ -73,8 +72,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
-    const fetchMock = mockServicesBff(service(), { user: authedUser, definition, draftVersion });
+  it('Should tab the detail, list methods, and publish via the summary modal', async () => {
+    const fetchMock = mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/s1/old/edit');
     const user = userEvent.setup();
 

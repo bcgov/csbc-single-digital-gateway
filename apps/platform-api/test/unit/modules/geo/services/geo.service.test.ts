@@ -17,7 +17,7 @@ describe('GeoService Unit Test Suite', () => {
   });
 
   describe('listCountries', () => {
-    it('should map countries with hasStates and hasPostal correctly', async () => {
+    it('Should map countries with hasStates and hasPostal correctly', async () => {
       const countryRows = [
         {
           id: 1,
@@ -83,7 +83,7 @@ describe('GeoService Unit Test Suite', () => {
       ]);
     });
 
-    it('should handle empty countries list', async () => {
+    it('Should handle empty countries list', async () => {
       mockResponse([], countries, 'select');
       mockResponse([], states, 'select');
 
@@ -94,7 +94,7 @@ describe('GeoService Unit Test Suite', () => {
   });
 
   describe('listStates', () => {
-    it('should return states list for a valid positive integer country id', async () => {
+    it('Should return states list for a valid positive integer country id', async () => {
       const stateRows = [
         {
           id: 10,
@@ -117,7 +117,7 @@ describe('GeoService Unit Test Suite', () => {
       expect(result).toEqual(stateRows);
     });
 
-    it('should return empty array if country has no states', async () => {
+    it('Should return empty array if country has no states', async () => {
       mockResponse([], states, 'select');
 
       const result = await service.listStates('999');
@@ -125,7 +125,7 @@ describe('GeoService Unit Test Suite', () => {
       expect(result).toEqual([]);
     });
 
-    it('should throw BadRequestException when country id is not a positive integer', async () => {
+    it('Should throw BadRequestException when country id is not a positive integer', async () => {
       await expect(service.listStates('abc')).rejects.toThrow(BadRequestException);
       await expect(service.listStates('0')).rejects.toThrow(BadRequestException);
       await expect(service.listStates('-1')).rejects.toThrow(BadRequestException);

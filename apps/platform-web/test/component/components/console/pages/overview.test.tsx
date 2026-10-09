@@ -76,7 +76,7 @@ function renderOverview({
 }
 
 describe('OverviewPage Component Test Suite', () => {
-  it('renders the section headings for the redesigned layout', () => {
+  it('Should render the section headings for the redesigned layout', () => {
     renderOverview();
 
     expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
@@ -86,14 +86,14 @@ describe('OverviewPage Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: 'Services' })).toBeInTheDocument();
   });
 
-  it('renders the two analytics placeholder cards', () => {
+  it('Should render the two analytics placeholder cards', () => {
     renderOverview();
 
     expect(screen.getByText('Page Views')).toBeInTheDocument();
     expect(screen.getByText('Unique Visitors')).toBeInTheDocument();
   });
 
-  it('renders the Resources accordion triggers and expands Legal accordion', async () => {
+  it('Should render the Resources accordion triggers and expand Legal accordion', async () => {
     const user = userEvent.setup();
     renderOverview();
 
@@ -106,7 +106,7 @@ describe('OverviewPage Component Test Suite', () => {
     expect(screen.getByText('Privacy')).toBeInTheDocument();
   });
 
-  it('opens the New service modal when the Create-new-service card is clicked', async () => {
+  it('Should open the New service modal when the Create-new-service card is clicked', async () => {
     const user = userEvent.setup();
     renderOverview();
 
@@ -117,7 +117,7 @@ describe('OverviewPage Component Test Suite', () => {
     expect(await screen.findByTestId('new-service-modal')).toBeInTheDocument();
   });
 
-  it('renders the 3 most-recently-updated services as service cards', () => {
+  it('Should render the 3 most-recently-updated services as service cards', () => {
     renderOverview({
       items: [
         service({ id: 'srv-1', title: 'Parking Permits', status: 'published' }),
@@ -131,19 +131,19 @@ describe('OverviewPage Component Test Suite', () => {
     expect(screen.getByRole('link', { name: /Dog Licences/ })).toBeInTheDocument();
   });
 
-  it('shows the empty state when the workspace has no services', () => {
+  it('Should show the empty state when the workspace has no services', () => {
     renderOverview({ items: [] });
 
     expect(screen.getByText('No services yet — create one to get started.')).toBeInTheDocument();
   });
 
-  it('renders loading skeletons when workspace data is missing', () => {
+  it('Should render loading skeletons when workspace data is missing', () => {
     const { container } = renderOverview({ seedWorkspace: false, seedServices: false });
 
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
   });
 
-  it('renders loading skeletons when recent services query is pending', () => {
+  it('Should render loading skeletons when recent services query is pending', () => {
     const { container } = renderOverview({ seedWorkspace: true, seedServices: false });
 
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);

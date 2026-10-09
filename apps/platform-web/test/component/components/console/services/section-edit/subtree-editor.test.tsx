@@ -169,7 +169,7 @@ beforeEach(() => {
 });
 
 describe('SubtreeSectionEditor — flow-variant subtree', () => {
-  it('mounts a FlowActionProvider so the flow layout renders its save bar', () => {
+  it('Should mount a FlowActionProvider so the flow layout renders its save bar', () => {
     renderSubtreeEditor({ variant: 'flow' });
 
     expect(flowRef.current).not.toBeNull();
@@ -184,7 +184,7 @@ describe('SubtreeSectionEditor — flow-variant subtree', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
   });
 
-  it('persists through updateDraft with the whole merged data object when Save & next runs', async () => {
+  it('Should persist through updateDraft with the whole merged data object when Save & next runs', async () => {
     renderSubtreeEditor({ variant: 'flow' });
 
     await flowRef.current?.onSave({ details: { a: 'edited' }, untouched: { by: 'this window' } });
@@ -194,7 +194,7 @@ describe('SubtreeSectionEditor — flow-variant subtree', () => {
     });
   });
 
-  it('leaves the keys outside this window intact in the saved payload', async () => {
+  it('Should leave the keys outside this window intact in the saved payload', async () => {
     renderSubtreeEditor({ variant: 'flow' });
 
     await flowRef.current?.onSave({ details: { a: 'edited' }, untouched: { by: 'this window' } });
@@ -203,7 +203,7 @@ describe('SubtreeSectionEditor — flow-variant subtree', () => {
     expect(input.data).toHaveProperty('untouched', { by: 'this window' });
   });
 
-  it('surfaces a save failure without closing the window', async () => {
+  it('Should surface a save failure without closing the window', async () => {
     updateDraftMock.mockRejectedValue(new Error('Draft is locked'));
     const { onClose } = renderSubtreeEditor({ variant: 'flow' });
 
@@ -219,7 +219,7 @@ describe('SubtreeSectionEditor — flow-variant subtree', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Draft is locked'));
   });
 
-  it('closes the window when Save & exit resolves', async () => {
+  it('Should close the window when Save & exit resolves', async () => {
     const { onClose } = renderSubtreeEditor({ variant: 'flow' });
 
     await flowRef.current?.onSave({ details: { a: 'x' } });
@@ -230,20 +230,20 @@ describe('SubtreeSectionEditor — flow-variant subtree', () => {
 });
 
 describe('SubtreeSectionEditor — non-flow subtree (regression)', () => {
-  it('still renders the FormRunner Submit button as before', () => {
+  it('Should still render the FormRunner Submit button as before', () => {
     renderSubtreeEditor();
 
     expect(runnerRef.current?.onSubmit).toBeTypeOf('function');
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  it('still mounts no FlowActionProvider', () => {
+  it('Should still mount no FlowActionProvider', () => {
     renderSubtreeEditor();
 
     expect(flowRef.current).toBeNull();
   });
 
-  it('still saves and closes through the existing Submit path', async () => {
+  it('Should still save and close through the existing Submit path', async () => {
     const user = userEvent.setup();
     const { onClose } = renderSubtreeEditor();
 
@@ -255,7 +255,7 @@ describe('SubtreeSectionEditor — non-flow subtree (regression)', () => {
     });
   });
 
-  it('does not treat an unrecognised variant as flow', () => {
+  it('Should not treat an unrecognised variant as flow', () => {
     renderSubtreeEditor({ variant: 'stepper' });
 
     expect(flowRef.current).toBeNull();
@@ -267,21 +267,21 @@ describe('SubtreeSectionEditor — non-flow subtree (regression)', () => {
  * Feature 177 — the editor owns flow knowledge, dirty tracking, and both ports.
  */
 describe('SubtreeSectionEditor — step control (feature 177)', () => {
-  it('mounts a FlowStepProvider carrying the resolved step id', () => {
+  it('Should mount a FlowStepProvider carrying the resolved step id', () => {
     renderSubtreeEditor({ variant: 'flow', stepId: 'details' });
 
     expect(stepRef.current?.stepId).toBe('details');
     expect(typeof stepRef.current?.onStepChange).toBe('function');
   });
 
-  it('navigates the URL to the first step id when the URL carries no step', () => {
+  it('Should navigate the URL to the first step id when the URL carries no step', () => {
     const { go } = renderSubtreeEditor({ variant: 'flow', stepId: null });
 
     // `replace`, so a bare link doesn't leave a redundant history entry behind it.
     expect(go).toHaveBeenCalledWith('overview', { replace: true });
   });
 
-  it('replaces an unknown step id with the resolved first step', () => {
+  it('Should replace an unknown step id with the resolved first step', () => {
     // What a link shared before the category was relabelled looks like.
     const { go } = renderSubtreeEditor({ variant: 'flow', stepId: 'renamed-away' });
 
@@ -289,19 +289,19 @@ describe('SubtreeSectionEditor — step control (feature 177)', () => {
     expect(stepRef.current?.stepId).toBe('overview');
   });
 
-  it('clears a step segment addressed at a non-flow section', () => {
+  it('Should clear a step segment addressed at a non-flow section', () => {
     const { go } = renderSubtreeEditor({ stepId: 'overview' });
 
     expect(go).toHaveBeenCalledWith(undefined, { replace: true });
   });
 
-  it('does not re-navigate once the URL already names the current step', () => {
+  it('Should not re-navigate once the URL already names the current step', () => {
     const { go } = renderSubtreeEditor({ variant: 'flow', stepId: 'overview' });
 
     expect(go).not.toHaveBeenCalled();
   });
 
-  it('passes a step change straight through to the router', () => {
+  it('Should pass a step change straight through to the router', () => {
     const { go } = renderSubtreeEditor({ variant: 'flow', stepId: 'overview' });
 
     stepRef.current?.onStepChange('details');
@@ -310,7 +310,7 @@ describe('SubtreeSectionEditor — step control (feature 177)', () => {
     expect(go).toHaveBeenCalledWith('details');
   });
 
-  it('mounts no FlowStepProvider for a non-flow section', () => {
+  it('Should mount no FlowStepProvider for a non-flow section', () => {
     renderSubtreeEditor();
 
     expect(stepRef.current).toBeNull();
@@ -318,7 +318,7 @@ describe('SubtreeSectionEditor — step control (feature 177)', () => {
 });
 
 describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
-  it('is not dirty on mount, including after JSONForms emits its mount change', () => {
+  it('Should be not dirty on mount, including after JSONForms emits its mount change', () => {
     renderSubtreeEditor({ variant: 'flow' });
     expect(isDirty()).toBe(false);
 
@@ -328,7 +328,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(false);
   });
 
-  it('is dirty once the data differs from the last persisted version', () => {
+  it('Should be dirty once the data differs from the last persisted version', () => {
     renderSubtreeEditor({ variant: 'flow' });
 
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
@@ -336,7 +336,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(true);
   });
 
-  it('is not dirty again when the data is edited back to the persisted value', () => {
+  it('Should be not dirty again when the data is edited back to the persisted value', () => {
     renderSubtreeEditor({ variant: 'flow' });
 
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
@@ -345,7 +345,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(false);
   });
 
-  it('clears the dirty flag synchronously when a save succeeds, before invalidateQueries resolves', async () => {
+  it('Should clear the dirty flag synchronously when a save succeeds, before invalidateQueries resolves', async () => {
     const { client } = renderSubtreeEditor({ variant: 'flow' });
     const dirtyDuringInvalidate: boolean[] = [];
     vi.spyOn(client, 'invalidateQueries').mockImplementation(async () => {
@@ -362,7 +362,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(false);
   });
 
-  it('stays dirty when a save fails', async () => {
+  it('Should stay dirty when a save fails', async () => {
     updateDraftMock.mockRejectedValue(new Error('Draft is locked'));
     renderSubtreeEditor({ variant: 'flow' });
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
@@ -372,7 +372,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(true);
   });
 
-  it('saves the latest data when the guard dialog asks it to', async () => {
+  it('Should save the latest data when the guard dialog asks it to', async () => {
     renderSubtreeEditor({ variant: 'flow' });
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
 
@@ -384,7 +384,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(isDirty()).toBe(false);
   });
 
-  it('does not also close a non-flow window when the dialog does the saving', async () => {
+  it('Should not also close a non-flow window when the dialog does the saving', async () => {
     const { onClose } = renderSubtreeEditor();
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
 
@@ -395,7 +395,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('keeps ONE definition object across re-renders, so an in-flight edit is never wiped', () => {
+  it('Should keep ONE definition object across re-renders, so an in-flight edit is never wiped', () => {
     renderSubtreeEditor({ variant: 'flow', stepId: 'overview' });
     const first = runnerRef.current?.definition;
 
@@ -410,7 +410,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(runnerRef.current?.definition).toBe(first);
   });
 
-  it('puts the last persisted data back when the dialog discards', () => {
+  it('Should put the last persisted data back when the dialog discards', () => {
     renderSubtreeEditor({ variant: 'flow', stepId: 'overview' });
     edit({ details: { a: 'edited' }, untouched: { by: 'this window' } });
     expect(isDirty()).toBe(true);
@@ -424,7 +424,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(updateDraftMock).not.toHaveBeenCalled();
   });
 
-  it('disables the dialog Save while the current flow step owns a validation error', () => {
+  it('Should disable the dialog Save while the current flow step owns a validation error', () => {
     renderSubtreeEditor({ variant: 'flow', stepId: 'overview' });
     expect(guardRef.current?.saveDisabled).toBe(false);
 
@@ -434,14 +434,14 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(guardRef.current?.saveDisabledReason).toContain('validation error');
   });
 
-  it('leaves the dialog Save enabled for a non-flow section', () => {
+  it('Should leave the dialog Save enabled for a non-flow section', () => {
     renderSubtreeEditor();
 
     expect(guardRef.current?.onSave).toBeTypeOf('function');
     expect(guardRef.current?.saveDisabled).toBe(false);
   });
 
-  it('renders flow subtree without step control when step prop is omitted (covers lines 184 and 235)', () => {
+  it('Should render flow subtree without step control when step prop is omitted (covers lines 184 and 235)', () => {
     renderSubtreeEditor({ variant: 'flow', withStep: false });
 
     // Action provider is mounted for flow, but step provider is omitted
@@ -449,7 +449,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(stepRef.current).toBeNull();
   });
 
-  it('renders an empty state message when the section element has no elements array (line 17)', () => {
+  it('Should render an empty state message when the section element has no elements array (line 17)', () => {
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
@@ -474,7 +474,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     ).toBeInTheDocument();
   });
 
-  it('mounts FlowStepProvider with stepId null when flow categorization has no categories (line 240)', () => {
+  it('Should mount FlowStepProvider with stepId null when flow categorization has no categories (line 240)', () => {
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     const go = vi.fn();
     render(
@@ -502,7 +502,7 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(stepRef.current?.stepId).toBeNull();
   });
 
-  it('displays default error message when save rejects with a non-Error instance', async () => {
+  it('Should display default error message when save rejects with a non-Error instance', async () => {
     updateDraftMock.mockRejectedValue('unknown failure string');
     renderSubtreeEditor({ variant: 'flow' });
 

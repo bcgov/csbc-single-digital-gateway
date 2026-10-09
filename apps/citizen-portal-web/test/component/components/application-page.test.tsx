@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 describe('Citizen Application Page', () => {
-  it('lets an authenticated citizen fill and submit, then confirms', async () => {
+  it('Should let an authenticated citizen fill and submit, then confirms', async () => {
     const fetchMock = createMockBff();
     const user = userEvent.setup();
     await renderApply();
@@ -66,7 +66,7 @@ describe('Citizen Application Page', () => {
     );
   });
 
-  it('prompts anonymous visitors to log in', async () => {
+  it('Should prompt anonymous visitors to log in', async () => {
     createMockBff({ me: new Response(null, { status: 401 }) });
     await renderApply();
     expect(
@@ -76,7 +76,7 @@ describe('Citizen Application Page', () => {
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
-  it('renders unavailable state when form fetch fails', async () => {
+  it('Should render unavailable state when form fetch fails', async () => {
     createMockBff({ servicesOptions: { formNotFound: true } });
     await renderApply();
 
@@ -88,7 +88,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders unavailable state when draft fetch fails', async () => {
+  it('Should render unavailable state when draft fetch fails', async () => {
     createMockBff({ applicationsOptions: { failedResponse: true } });
     await renderApply();
 
@@ -97,7 +97,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles draft response with missing data property', async () => {
+  it('Should handle draft response with missing data property', async () => {
     createMockBff({ applicationsOptions: { hasNoData: true } });
     await renderApply();
 
@@ -106,7 +106,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows an error message if submission fails', async () => {
+  it('Should show an error message if submission fails', async () => {
     createMockBff({ applicationsOptions: { submissionFailed: true } });
     const user = userEvent.setup();
     await renderApply();
@@ -120,7 +120,7 @@ describe('Citizen Application Page', () => {
     expect(await screen.findByText('Could not submit — please try again.')).toBeInTheDocument();
   });
 
-  it('autosaves input changes after debounce and shows saving/saved states', async () => {
+  it('Should autosave input changes after debounce and shows saving/saved states', async () => {
     let resolvePatch: ((value: Response) => void) | undefined;
     const patchPromise = new Promise<Response>((resolve) => {
       resolvePatch = resolve;
@@ -150,7 +150,7 @@ describe('Citizen Application Page', () => {
     expect(await screen.findByText('Draft saved', {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
-  it('clears active timer on unmount, and handles submit when timer is null', async () => {
+  it('Should clear active timer on unmount, and handles submit when timer is null', async () => {
     let resolvePost!: (value: Response) => void;
     const postPromise = new Promise<Response>((resolve) => {
       resolvePost = resolve;
@@ -193,7 +193,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('cancels pending autosave timer when submitting an application', async () => {
+  it('Should cancel pending autosave timer when submitting an application', async () => {
     let resolvePost!: (value: Response) => void;
     const postPromise = new Promise<Response>((resolve) => {
       resolvePost = resolve;
@@ -224,7 +224,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders loading skeleton when form fetch is pending', async () => {
+  it('Should render loading skeleton when form fetch is pending', async () => {
     let resolveForm!: (value: Response) => void;
     const formPromise = new Promise<Response>((resolve) => {
       resolveForm = resolve;
@@ -240,7 +240,7 @@ describe('Citizen Application Page', () => {
     });
   });
 
-  it('renders loading skeleton when draft or agreements are pending', async () => {
+  it('Should render loading skeleton when draft or agreements are pending', async () => {
     let resolveDraft!: (value: Response) => void;
     const draftPromise = new Promise<Response>((resolve) => {
       resolveDraft = resolve;
@@ -253,7 +253,7 @@ describe('Citizen Application Page', () => {
     });
   });
 
-  it('renders unavailable state when agreements fetch fails', async () => {
+  it('Should render unavailable state when agreements fetch fails', async () => {
     createMockBff({ agreements: new Response(null, { status: 500 }) });
     await renderApply();
     expect(
@@ -261,7 +261,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders consent gate when agreements are pending, lets user continue after accept', async () => {
+  it('Should render consent gate when agreements are pending, lets user continue after accept', async () => {
     const agreements = [
       {
         agreementVersionId: 'av-req',
@@ -319,7 +319,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles 422 submission error, autosaves answers, and triggers consent gate refetch', async () => {
+  it('Should handle 422 submission error, autosaves answers, and triggers consent gate refetch', async () => {
     const fetchMock = createMockBff({
       applicationsOptions: { submissionUnprocessed: true },
     });

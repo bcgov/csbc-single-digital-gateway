@@ -68,7 +68,7 @@ describe('ServiceVersionsService', () => {
       createdAt: new Date('2026-07-12T00:00:00.000Z'),
     };
 
-    it('successfully updates a draft version and syncs title/applications', async () => {
+    it('Should successfully update a draft version and sync title/applications', async () => {
       // 1. servicesService.requireDocument
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
@@ -107,7 +107,7 @@ describe('ServiceVersionsService', () => {
       expect(result.data).toEqual({ title: 'Updated Title' });
     });
 
-    it('throws ConflictException if version is not a draft', async () => {
+    it('Should throw ConflictException if version is not a draft', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -118,7 +118,7 @@ describe('ServiceVersionsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('successfully resolves and inserts a new application', async () => {
+    it('Should successfully resolve and insert a new application', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -161,7 +161,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('reorders applications successfully when applicationOrder is provided', async () => {
+    it('Should reorder applications successfully when applicationOrder is provided', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -195,7 +195,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.set).toHaveBeenCalledWith({ position: 1 });
     });
 
-    it('throws Error if version update returned no row', async () => {
+    it('Should throw Error if version update returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -211,7 +211,7 @@ describe('ServiceVersionsService', () => {
       ).rejects.toThrow(new Error('document version mutation returned no row'));
     });
 
-    it('updates document title using input.title if provided', async () => {
+    it('Should update document title using input.title if provided', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -232,7 +232,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.set).toHaveBeenCalledWith({ title: 'Explicit Title Input' });
     });
 
-    it('does not update document title if title is empty or whitespace', async () => {
+    it('Should not update document title if title is empty or whitespace', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -252,7 +252,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.update).not.toHaveBeenCalledWith(documents);
     });
 
-    it('does not update document title if title is undefined', async () => {
+    it('Should not update document title if title is undefined', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -271,7 +271,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.update).not.toHaveBeenCalledWith(documents);
     });
 
-    it('successfully deletes a dropped application reference if referenced elsewhere', async () => {
+    it('Should successfully delete a dropped application reference if referenced elsewhere', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -295,7 +295,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.delete).toHaveBeenCalledWith(documentReferences);
     });
 
-    it('throws ConflictException if a dropped reference is not referenced elsewhere', async () => {
+    it('Should throw ConflictException if a dropped reference is not referenced elsewhere', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -320,7 +320,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.delete).not.toHaveBeenCalled();
     });
 
-    it('successfully updates label and position of a kept application reference', async () => {
+    it('Should successfully update label and position of a kept application reference', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -350,7 +350,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.set).toHaveBeenCalledWith({ label: 'Updated Label', position: 5 });
     });
 
-    it('throws ConflictException if a dropped reference query returns empty counts', async () => {
+    it('Should throw ConflictException if a dropped reference query returns empty counts', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -375,7 +375,7 @@ describe('ServiceVersionsService', () => {
       expect(txMock.delete).not.toHaveBeenCalled();
     });
 
-    it('ignores kept application references that do not exist in the database', async () => {
+    it('Should ignore kept application references that do not exist in the database', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -404,7 +404,7 @@ describe('ServiceVersionsService', () => {
   });
 
   describe('publish', () => {
-    it('successfully validates and publishes a draft service version', async () => {
+    it('Should successfully validate and publish a draft service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       // select calls in tx:
@@ -449,7 +449,7 @@ describe('ServiceVersionsService', () => {
       expect(result.status).toBe('published');
     });
 
-    it('throws UnprocessableEntityException if validation fails', async () => {
+    it('Should throw UnprocessableEntityException if validation fails', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi
         .fn()
@@ -468,7 +468,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws UnprocessableEntityException if no application forms are referenced', async () => {
+    it('Should throw UnprocessableEntityException if no application forms are referenced', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi
         .fn()
@@ -485,7 +485,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws NotFoundException if the version is not found when publishing a service version', async () => {
+    it('Should throw NotFoundException if the version is not found when publishing a service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi.fn().mockReturnValueOnce(createMockQuery([])); // version not found
 
@@ -494,7 +494,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws ConflictException if trying to publish a non-draft version', async () => {
+    it('Should throw ConflictException if trying to publish a non-draft version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi
         .fn()
@@ -509,7 +509,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws UnprocessableEntityException if a referenced form has no structure', async () => {
+    it('Should throw UnprocessableEntityException if a referenced form has no structure', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi
         .fn()
@@ -536,7 +536,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws Error if publish mutation returns no row', async () => {
+    it('Should throw Error if publish mutation returns no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       txMock.select = vi
         .fn()
@@ -563,7 +563,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('skips publishing application if targetVersionId is null', async () => {
+    it('Should skip publishing application if targetVersionId is null', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       txMock.select = vi
@@ -609,7 +609,7 @@ describe('ServiceVersionsService', () => {
   });
 
   describe('archive', () => {
-    it('archives an active service version', async () => {
+    it('Should archive an active service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -630,7 +630,7 @@ describe('ServiceVersionsService', () => {
       expect(result.status).toBe('archived');
     });
 
-    it('throws ConflictException if already archived', async () => {
+    it('Should throw ConflictException if already archived', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -641,7 +641,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws Error if archive mutation returns no row when archiving a service version', async () => {
+    it('Should throw Error if archive mutation returns no row when archiving a service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -653,7 +653,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws NotFoundException if the version is not found when archiving a service version', async () => {
+    it('Should throw NotFoundException if the version is not found when archiving a service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi.fn().mockReturnValueOnce(createMockQuery([]));
 
@@ -664,7 +664,7 @@ describe('ServiceVersionsService', () => {
   });
 
   describe('discardVersion', () => {
-    it('discards a draft version via discardVersionTx', async () => {
+    it('Should discard a draft version via discardVersionTx', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -675,7 +675,7 @@ describe('ServiceVersionsService', () => {
       expect(vi.mocked(discardVersionTx)).toHaveBeenCalledWith(txMock, 'service-1', 'version-1');
     });
 
-    it('throws ConflictException if trying to discard a published version', async () => {
+    it('Should throw ConflictException if trying to discard a published version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -686,7 +686,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('throws NotFoundException if the version is not found when discarding a service version', async () => {
+    it('Should throw NotFoundException if the version is not found when discarding a service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       dbMock.select = vi.fn().mockReturnValueOnce(createMockQuery([]));
 
@@ -697,7 +697,7 @@ describe('ServiceVersionsService', () => {
   });
 
   describe('addVersion', () => {
-    it('adds a new version by copying from the latest', async () => {
+    it('Should add a new version by copying from the latest', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -733,7 +733,7 @@ describe('ServiceVersionsService', () => {
       expect(result.version).toBe(2);
     });
 
-    it('throws Error if addVersion mutation returns no row', async () => {
+    it('Should throw Error if addVersion mutation returns no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -749,7 +749,7 @@ describe('ServiceVersionsService', () => {
       );
     });
 
-    it('adds a new version as version 1 when no prior version exists', async () => {
+    it('Should add a new version as version 1 when no prior version exists', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',

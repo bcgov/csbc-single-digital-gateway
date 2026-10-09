@@ -68,7 +68,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(within(danaRow).getByText('Suspended')).toBeInTheDocument();
   });
 
-  it('hides Add member action when viewed by non-admin member', async () => {
+  it('Should hide Add member action when viewed by non-admin member', async () => {
     mockMembersBff(
       { items: teamList },
       { testFile: 'team.test', workspaces: [mockWorkspaceMember] },
@@ -82,7 +82,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Add member' })).not.toBeInTheDocument();
   });
 
-  it('navigates to member profile page when a row is clicked', async () => {
+  it('Should navigate to member profile page when a row is clicked', async () => {
     mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     const { router } = renderApp('/app/riverton/team');
     const user = userEvent.setup();
@@ -100,7 +100,7 @@ describe('TeamPage Component Test Suite', () => {
     );
   });
 
-  it('opens add member modal when clicking Add member button', async () => {
+  it('Should open add member modal when clicking Add member button', async () => {
     mockMembersBff({ items: teamList }, { testFile: 'team.test' });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -138,7 +138,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('handles workspace with missing/null id gracefully for the team page component', async () => {
+  it('Should handle workspace with missing/null id gracefully for the team page component', async () => {
     const mockWorkspaceNoId = {
       ...adminWorkspace,
       id: null as any,

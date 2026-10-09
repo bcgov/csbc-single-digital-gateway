@@ -24,7 +24,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     controller = new AdminDocumentTypesV1Controller(typesServiceMock, versionsServiceMock);
   });
 
-  it('list returns items from types service when calling the admin controller list method', async () => {
+  it('Should list returns items from types service when calling the admin controller list method', async () => {
     const mockList = createMockList();
     typesServiceMock.adminList.mockResolvedValue(mockList);
 
@@ -33,7 +33,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual({ items: mockList });
   });
 
-  it('get returns a single type from types service when calling the admin controller get method', async () => {
+  it('Should get returns a single type from types service when calling the admin controller get method', async () => {
     const mockType = { id: 'type-1', name: 'Type 1', versions: [] };
     typesServiceMock.adminGet.mockResolvedValue(mockType);
 
@@ -42,7 +42,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual(mockType);
   });
 
-  it('addVersion adds a new version via versions service', async () => {
+  it('Should addVersion adds a new version via versions service', async () => {
     const mockTypeVersion = createMockTypeVersion({ definition: { field: 'test' } });
     versionsServiceMock.addVersion.mockResolvedValue(mockTypeVersion);
 
@@ -51,7 +51,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual(mockTypeVersion);
   });
 
-  it('editVersion edits a draft version via versions service', async () => {
+  it('Should editVersion edits a draft version via versions service', async () => {
     const mockTypeVersion = createMockTypeVersion({ definition: { field: 'updated' } });
     versionsServiceMock.editDraft.mockResolvedValue(mockTypeVersion);
 
@@ -64,14 +64,14 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual(mockTypeVersion);
   });
 
-  it('deleteVersion deletes a draft version via versions service', async () => {
+  it('Should deleteVersion deletes a draft version via versions service', async () => {
     versionsServiceMock.deleteDraft.mockResolvedValue(undefined);
 
     await controller.deleteVersion('type-1', 'v-1');
     expect(versionsServiceMock.deleteDraft).toHaveBeenCalledWith('type-1', 'v-1');
   });
 
-  it('publish publishes a draft version via versions service', async () => {
+  it('Should publish publishes a draft version via versions service', async () => {
     const mockTypeVersion = createMockTypeVersion({ status: 'published' });
     versionsServiceMock.publish.mockResolvedValue(mockTypeVersion);
 
@@ -80,7 +80,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual(mockTypeVersion);
   });
 
-  it('archive archives a version via versions service', async () => {
+  it('Should archive archives a version via versions service', async () => {
     const mockTypeVersion = createMockTypeVersion({ status: 'archived' });
     versionsServiceMock.archive.mockResolvedValue(mockTypeVersion);
 

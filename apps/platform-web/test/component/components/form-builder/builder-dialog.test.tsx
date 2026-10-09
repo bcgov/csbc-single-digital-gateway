@@ -18,7 +18,7 @@ vi.mock('@/components/form-builder/form-builder', () => ({
 }));
 
 describe('FormBuilderDialog Component Test Suite', () => {
-  it('does not render content when open is false', () => {
+  it('Should not render content when open is false', () => {
     const handleChange = vi.fn();
 
     render(
@@ -35,7 +35,7 @@ describe('FormBuilderDialog Component Test Suite', () => {
     expect(screen.queryByTestId('mock-form-builder')).not.toBeInTheDocument();
   });
 
-  it('renders custom title and FormBuilder component when open is true', () => {
+  it('Should render custom title and FormBuilder component when open is true', () => {
     render(
       <FormBuilderDialog
         open={true}
@@ -50,7 +50,7 @@ describe('FormBuilderDialog Component Test Suite', () => {
     expect(screen.getByTestId('mock-form-builder')).toBeInTheDocument();
   });
 
-  it('falls back to Design form title when title is empty', () => {
+  it('Should fall back to Design form title when title is empty', () => {
     render(
       <FormBuilderDialog
         open={true}
@@ -64,7 +64,7 @@ describe('FormBuilderDialog Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: 'Design form' })).toBeInTheDocument();
   });
 
-  it('propagates value changes from FormBuilder through onChange handler', async () => {
+  it('Should propagate value changes from FormBuilder through onChange handler', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 

@@ -148,7 +148,7 @@ describe('StageBuilder Component Test Suite', () => {
       vi.clearAllMocks();
     });
 
-    it('renders correctly with default form name and stages in build tab', () => {
+    it('Should render correctly with default form name and stages in build tab', () => {
       render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
       expect(screen.getByLabelText('Form name')).toHaveValue('Application Form Flow');
@@ -162,7 +162,7 @@ describe('StageBuilder Component Test Suite', () => {
       expect(screen.getByText('Stage Node: Stage One')).toBeInTheDocument();
     });
 
-    it('switches to preview tab and renders StagePreview', async () => {
+    it('Should switch to preview tab and render StagePreview', async () => {
       const user = userEvent.setup();
       render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
@@ -174,7 +174,7 @@ describe('StageBuilder Component Test Suite', () => {
       expect(screen.getByText('Previewing: Application Form Flow')).toBeInTheDocument();
     });
 
-    it('triggers onChange when modifying form metadata (name & description)', async () => {
+    it('Should trigger onChange when modifying form metadata (name & description)', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
@@ -198,7 +198,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('triggers onChange when clicking Add Stage', async () => {
+    it('Should trigger onChange when clicking Add Stage', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
@@ -216,7 +216,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('handles StageNode callback triggers: Add Page and Remove Page', async () => {
+    it('Should handle StageNode callback triggers: Add Page and Remove Page', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
@@ -283,7 +283,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('handles StageNode callback trigger: Remove Stage', async () => {
+    it('Should handle StageNode callback trigger: Remove Stage', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
@@ -305,7 +305,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('opens FormBuilderDialog when selecting a page, saves edits, and closes dialog', async () => {
+    it('Should open FormBuilderDialog when selecting a page, saves edits, and close dialog', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(<StageBuilder value={initialStageDefinition} onChange={handleChange} />);
@@ -347,7 +347,7 @@ describe('StageBuilder Component Test Suite', () => {
       expect(screen.queryByTestId('mock-form-builder-dialog')).not.toBeInTheDocument();
     });
 
-    it('renders optional title and actions toolbars and handles empty metadata fallbacks', () => {
+    it('Should render optional title and actions toolbars and handle empty metadata fallbacks', () => {
       const emptyMetaVal = {
         ...initialStageDefinition,
         name: undefined,
@@ -369,7 +369,7 @@ describe('StageBuilder Component Test Suite', () => {
       expect(screen.getByLabelText('Description')).toHaveValue('');
     });
 
-    it('does not delete stage when confirmation is declined', async () => {
+    it('Should not delete stage when confirmation is declined', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
@@ -384,7 +384,7 @@ describe('StageBuilder Component Test Suite', () => {
       expect(handleChange).not.toHaveBeenCalled();
     });
 
-    it('handles page reordering, stage renaming, and relative stage insertions', async () => {
+    it('Should handle page reordering, stage renaming, and relative stage insertions', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
 
@@ -424,7 +424,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('handles edge deletion correctly', async () => {
+    it('Should handle edge deletion correctly', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       const modelWithEdges: MultiStageDefinition = {
@@ -443,7 +443,7 @@ describe('StageBuilder Component Test Suite', () => {
       );
     });
 
-    it('covers fallback logic when stages and edges are undefined/null', () => {
+    it('Should cover fallback logic when stages and edges are undefined/null', () => {
       const valueWithNulls = {
         name: 'Null Meta',
         description: 'None',
@@ -457,7 +457,7 @@ describe('StageBuilder Component Test Suite', () => {
       unmount();
     });
 
-    it('covers FormBuilderDialog onOpenChange true branch', async () => {
+    it('Should cover FormBuilderDialog onOpenChange true branch', async () => {
       const user = userEvent.setup();
       render(<StageBuilder value={initialStageDefinition} onChange={vi.fn()} />);
 
@@ -474,14 +474,14 @@ describe('StageBuilder Component Test Suite', () => {
   });
 
   describe('StageBuilder (render-safety)', () => {
-    it('renders the canvas toolbar + form panel without crashing', () => {
+    it('Should render the canvas toolbar + form panel without crashing', () => {
       render(<StageBuilderMirror />);
       expect(screen.getByRole('button', { name: /add stage/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/form name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     });
 
-    it('renders a partial definition with no edges without crashing (regression)', () => {
+    it('Should render a partial definition with no edges without crashing (regression)', () => {
       // A template-derived form stores `{ stages }` with no `edges` — must not throw on `edges.map`.
       const partial = {
         stages: [{ id: 's1', name: 'Stage 1', position: { x: 0, y: 0 }, pages: [] }],

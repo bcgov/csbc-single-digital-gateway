@@ -27,7 +27,7 @@ const DEV_PAGES: { path: string; component?: string }[] = [
 ];
 
 describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {
-  it(`has no unjustified axe violations for path ${path}`, async () => {
+  it(`Should not have unjustified axe violations for path ${path}`, async () => {
     const { container } = await renderRoute(path);
     // "Developer reference" is DevPageLayout's own header label — unlike an <h1>, page content
     // never duplicates it, so it's a reliable "the route has rendered" signal on every /dev page.
@@ -46,7 +46,7 @@ describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {
 describe('/dev/form-elements interactions', () => {
   const knownExceptions = getA11yMetadata('form-elements').knownExceptions;
 
-  it('has no unjustified axe violations with the enum-select dropdown open', async () => {
+  it('Should not have unjustified axe violations with the enum-select dropdown open', async () => {
     const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
@@ -62,7 +62,7 @@ describe('/dev/form-elements interactions', () => {
     await expectNoUnjustifiedA11yViolations(container, knownExceptions);
   }, 15000);
 
-  it('has no unjustified axe violations with the toggle switch checked', async () => {
+  it('Should not have unjustified axe violations with the toggle switch checked', async () => {
     const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
@@ -73,7 +73,7 @@ describe('/dev/form-elements interactions', () => {
     await expectNoUnjustifiedA11yViolations(container, knownExceptions);
   }, 15000);
 
-  it('has no unjustified axe violations with a date picker calendar open', async () => {
+  it('Should not have unjustified axe violations with a date picker calendar open', async () => {
     const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
@@ -89,7 +89,7 @@ describe('/dev/form-elements interactions', () => {
     await expectNoUnjustifiedA11yViolations(container, knownExceptions);
   }, 15000);
 
-  it('has no unjustified axe violations with the add-contact-method dialog open', async () => {
+  it('Should not have unjustified axe violations with the add-contact-method dialog open', async () => {
     const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 

@@ -33,7 +33,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('list', () => {
-    it('returns references list from the service wrapped in an items object', async () => {
+    it('Should return references list from the service wrapped in an items object', async () => {
       const mockList = createMockList('ref-1', 'Ref 1');
       referencesServiceMock.list.mockResolvedValue(mockList);
 
@@ -49,7 +49,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('add', () => {
-    it('adds a reference via the service', async () => {
+    it('Should add a reference via the service', async () => {
       const body: AddReferenceDto = {
         targetVersionId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         relation: 'application_form',
@@ -74,7 +74,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('remove', () => {
-    it('removes a reference via the service', async () => {
+    it('Should remove a reference via the service', async () => {
       referencesServiceMock.remove.mockResolvedValue(undefined);
 
       await controller.remove(mockUser, 'service-1', 'version-1', 'ref-1');
@@ -89,7 +89,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('archive', () => {
-    it('archives a reference via the service', async () => {
+    it('Should archive a reference via the service', async () => {
       referencesServiceMock.archive.mockResolvedValue(undefined);
 
       await controller.archive(mockUser, 'service-1', 'version-1', 'ref-1');
@@ -104,7 +104,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('createForm', () => {
-    it('creates a referenced form via the service', async () => {
+    it('Should create a referenced form via the service', async () => {
       const body: CreateReferencedFormDto = {
         typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
         title: 'New Referenced Form',
@@ -125,7 +125,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('createExternal', () => {
-    it('creates a referenced external application via the service', async () => {
+    it('Should create a referenced external application via the service', async () => {
       const body = {
         label: 'External App',
         url: 'https://example.com/apply',
@@ -146,7 +146,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('updateExternal', () => {
-    it('updates a referenced external application via the service', async () => {
+    it('Should update a referenced external application via the service', async () => {
       const body = {
         label: 'New External Label',
         url: 'https://example.com/new-apply',
@@ -174,7 +174,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('listAgreements', () => {
-    it('returns agreements list from the agreements service wrapped in an items object', async () => {
+    it('Should return agreements list from the agreements service wrapped in an items object', async () => {
       const mockList = createMockList('ref-agreement-1', 'Reference Agreement 1', 'Agreement 1');
       agreementRefsServiceMock.list.mockResolvedValue(mockList);
 
@@ -190,7 +190,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('attachAgreement', () => {
-    it('attaches an agreement reference via the agreements service', async () => {
+    it('Should attach an agreement reference via the agreements service', async () => {
       const body = { agreementDocumentId: 'agreement-doc-123' };
       const mockResult = { id: 'ref-agreement-1', agreementDocumentId: 'agreement-doc-123' };
       agreementRefsServiceMock.attach.mockResolvedValue(mockResult);
@@ -208,7 +208,7 @@ describe('ServiceReferencesV1Controller', () => {
   });
 
   describe('detachAgreement', () => {
-    it('detaches an agreement reference via the agreements service', async () => {
+    it('Should detach an agreement reference via the agreements service', async () => {
       agreementRefsServiceMock.detach.mockResolvedValue(undefined);
 
       await controller.detachAgreement(mockUser, 'service-1', 'version-1', 'ref-agreement-1');

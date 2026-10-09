@@ -24,7 +24,7 @@ const members = addMembers([
 ]);
 
 describe('Team List E2E Test Suite', () => {
-  it('renders members and drives the browse API from search + sort', async () => {
+  it('Should render members and drive the browse API from search + sort', async () => {
     const fetchMock = mockMembersBff({ items: members }, { testFile: 'team-list.e2e.test' });
     renderApp('/app/riverton/team');
     // Wait on a table-unique member (the authed user's own name appears in the profile menu).

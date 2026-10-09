@@ -35,7 +35,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('workspacesQueryOptions', () => {
-    it('should return workspaces list query options', async () => {
+    it('Should return workspaces list query options', async () => {
       const opts = workspacesQueryOptions();
       expect(opts.queryKey).toEqual(['workspaces', 'list']);
       expect(opts.staleTime).toBe(60 * 1000);
@@ -67,7 +67,7 @@ describe('Workspaces Unit Test Suite', () => {
       );
     });
 
-    it('should throw if workspaces list fetch fails', async () => {
+    it('Should throw if workspaces list fetch fails', async () => {
       const opts = workspacesQueryOptions();
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
@@ -78,7 +78,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('useWorkspaces', () => {
-    it('should invoke useQuery with workspaces list options and select selector', () => {
+    it('Should invoke useQuery with workspaces list options and select selector', () => {
       useWorkspaces();
       expect(useQuery).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -101,7 +101,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('workspaceBySlugQueryOptions', () => {
-    it('should return query options and fetch workspace by slug', async () => {
+    it('Should return query options and fetch workspace by slug', async () => {
       const opts = workspaceBySlugQueryOptions('my-slug');
       expect(opts.queryKey).toEqual(['workspaces', 'by-slug', 'my-slug']);
       expect(opts.staleTime).toBe(60 * 1000);
@@ -116,7 +116,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should return null if workspace slug is not found (404)', async () => {
+    it('Should return null if workspace slug is not found (404)', async () => {
       const opts = workspaceBySlugQueryOptions('my-slug');
       mockFetch.mockResolvedValueOnce(mockResponse(404, null, false));
 
@@ -124,7 +124,7 @@ describe('Workspaces Unit Test Suite', () => {
       expect(res).toBeNull();
     });
 
-    it('should throw for non-404 failing status codes', async () => {
+    it('Should throw for non-404 failing status codes', async () => {
       const opts = workspaceBySlugQueryOptions('my-slug');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
@@ -135,7 +135,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('workspaceMembersQueryOptions', () => {
-    it('should return query options to list workspace members', async () => {
+    it('Should return query options to list workspace members', async () => {
       const opts = workspaceMembersQueryOptions('ws-id-123');
       expect(opts.queryKey).toEqual(['workspaces', 'members', 'ws-id-123']);
       expect(opts.staleTime).toBe(30 * 1000);
@@ -150,7 +150,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should throw error when list workspace members fails', async () => {
+    it('Should throw error when list workspace members fails', async () => {
       const opts = workspaceMembersQueryOptions('ws-id-123');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
@@ -161,7 +161,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('workspaceAddableStaffQueryOptions', () => {
-    it('should query addable staff without query term', async () => {
+    it('Should query addable staff without query term', async () => {
       const opts = workspaceAddableStaffQueryOptions('ws-id-123', '');
       expect(opts.queryKey).toEqual(['workspaces', 'addable-staff', 'ws-id-123', '']);
       expect(opts.staleTime).toBe(30 * 1000);
@@ -182,7 +182,7 @@ describe('Workspaces Unit Test Suite', () => {
       );
     });
 
-    it('should query addable staff with trimmed query term', async () => {
+    it('Should query addable staff with trimmed query term', async () => {
       const opts = workspaceAddableStaffQueryOptions('ws-id-123', '  John Doe  ');
       expect(opts.queryKey).toEqual(['workspaces', 'addable-staff', 'ws-id-123', 'John Doe']);
 
@@ -197,7 +197,7 @@ describe('Workspaces Unit Test Suite', () => {
       );
     });
 
-    it('should throw error when staff search fails', async () => {
+    it('Should throw error when staff search fails', async () => {
       const opts = workspaceAddableStaffQueryOptions('ws-id-123', '');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
@@ -208,7 +208,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('addWorkspaceMember', () => {
-    it('should call POST to add a workspace member', async () => {
+    it('Should call POST to add a workspace member', async () => {
       const mockMember = { id: 'm-1', userId: 'u-1', role: 'admin' };
       mockFetch.mockResolvedValueOnce(mockResponse(200, mockMember));
 
@@ -222,7 +222,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should throw when adding member fails', async () => {
+    it('Should throw when adding member fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(400, null, false));
 
       await expect(
@@ -234,7 +234,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('updateWorkspaceMember', () => {
-    it('should call PATCH to update workspace member details', async () => {
+    it('Should call PATCH to update workspace member details', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(200, null));
 
       await updateWorkspaceMember('ws-id-123', 'mem-id-456', {
@@ -252,7 +252,7 @@ describe('Workspaces Unit Test Suite', () => {
       );
     });
 
-    it('should throw when updating member fails', async () => {
+    it('Should throw when updating member fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
       await expect(
@@ -264,7 +264,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('transferWorkspaceOwnership', () => {
-    it('should call POST to transfer workspace ownership', async () => {
+    it('Should call POST to transfer workspace ownership', async () => {
       const mockWorkspace = { id: 'ws-id-123', ownerId: 'u-2' };
       mockFetch.mockResolvedValueOnce(mockResponse(200, mockWorkspace));
 
@@ -281,7 +281,7 @@ describe('Workspaces Unit Test Suite', () => {
       );
     });
 
-    it('should throw when transferring ownership fails', async () => {
+    it('Should throw when transferring ownership fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(403, null, false));
 
       await expect(
@@ -291,7 +291,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('createWorkspace', () => {
-    it('should call POST to create a workspace', async () => {
+    it('Should call POST to create a workspace', async () => {
       const mockWorkspace = { id: 'ws-id-123', name: 'New WS' };
       mockFetch.mockResolvedValueOnce(mockResponse(200, mockWorkspace));
 
@@ -305,7 +305,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should throw when creating workspace fails', async () => {
+    it('Should throw when creating workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
       await expect(createWorkspace('New WS').catch((e: any) => e.message)).resolves.toContain(
@@ -315,7 +315,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('updateWorkspace', () => {
-    it('should call PATCH to rename a workspace', async () => {
+    it('Should call PATCH to rename a workspace', async () => {
       const mockWorkspace = { id: 'ws-id-123', name: 'Updated Name' };
       mockFetch.mockResolvedValueOnce(mockResponse(200, mockWorkspace));
 
@@ -329,7 +329,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should throw when renaming workspace fails', async () => {
+    it('Should throw when renaming workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
       await expect(
@@ -339,7 +339,7 @@ describe('Workspaces Unit Test Suite', () => {
   });
 
   describe('deleteWorkspace', () => {
-    it('should call DELETE to delete a workspace', async () => {
+    it('Should call DELETE to delete a workspace', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(200, null));
 
       await deleteWorkspace('ws-id-123');
@@ -349,7 +349,7 @@ describe('Workspaces Unit Test Suite', () => {
       });
     });
 
-    it('should throw when deleting workspace fails', async () => {
+    it('Should throw when deleting workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
       await expect(deleteWorkspace('ws-id-123').catch((e: any) => e.message)).resolves.toContain(

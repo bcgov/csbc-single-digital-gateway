@@ -9,7 +9,7 @@ import { DocumentTypesService } from '../../../../src/modules/document-types/ser
 import { DocumentTypeVersionsService } from '../../../../src/modules/document-types/services/document-type-versions.service';
 
 describe('DocumentTypesModule Unit Test Suite', () => {
-  it('should compile DocumentTypesModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile DocumentTypesModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
@@ -45,7 +45,7 @@ describe('DocumentTypesModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly for DocumentTypesModule', () => {
+  it('Should verify metadata declaration directly for DocumentTypesModule', () => {
     const controllers = Reflect.getMetadata('controllers', DocumentTypesModule) as any[];
     const providers = Reflect.getMetadata('providers', DocumentTypesModule) as any[];
 

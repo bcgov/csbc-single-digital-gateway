@@ -430,7 +430,7 @@ afterEach(() => {
 
 describe.each(CASES)('a11y: $path — $scenario', (testCase) => {
   it(
-    `has no unjustified axe violations for path ${testCase.path}`,
+    `Should have no unjustified axe violations for path ${testCase.path}`,
     async () => {
       const { container } = await renderRoute(testCase.path, testCase.fetchImpl());
       await testCase.ready();

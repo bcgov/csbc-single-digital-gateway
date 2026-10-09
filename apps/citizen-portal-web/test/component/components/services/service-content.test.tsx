@@ -27,7 +27,7 @@ vi.mock('@repo/react/jsonforms-renderers-display', () => ({
 }));
 
 describe('Breadcrumb Component', () => {
-  it('renders nothing if trail is empty', () => {
+  it('Should render nothing if trail is empty', () => {
     render(<Breadcrumb trail={[]} />);
     const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
     expect(nav).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('Breadcrumb Component', () => {
     expect(items.length).toBe(0);
   });
 
-  it('renders a mix of links and plain text breadcrumbs with separators in between', () => {
+  it('Should render a mix of links and plain text breadcrumbs with separators in between', () => {
     const trail = [
       { label: 'Home', href: '/' },
       { label: 'Services', href: '/services' },
@@ -91,7 +91,7 @@ describe('ServiceContent Component', () => {
     age: 18,
   };
 
-  it('passes all elements through when omit list is empty', () => {
+  it('Should pass all elements through when omit list is empty', () => {
     render(<ServiceContent schema={mockSchema} uischema={mockUiSchema} data={mockData} />);
 
     const formsContainer = screen.getByTestId('json-forms');
@@ -112,7 +112,7 @@ describe('ServiceContent Component', () => {
     expect(screen.getByText('Renderers count: 1')).toBeInTheDocument();
   });
 
-  it('filters out specified elements using omit list', () => {
+  it('Should filter out specified elements using omit list', () => {
     render(
       <ServiceContent
         schema={mockSchema}
@@ -130,7 +130,7 @@ describe('ServiceContent Component', () => {
     expect(passedUiSchema.elements[0].scope).toBe('#/properties/age');
   });
 
-  it('handles empty uischema elements gracefully', () => {
+  it('Should handle empty uischema elements gracefully', () => {
     const emptyUiSchema = { type: 'VerticalLayout' };
     render(
       <ServiceContent
@@ -146,7 +146,7 @@ describe('ServiceContent Component', () => {
     expect(passedUiSchema.elements).toBeUndefined();
   });
 
-  it('keeps elements without scope property when filtering', () => {
+  it('Should keep elements without scope property when filtering', () => {
     const layoutUiSchema = {
       type: 'VerticalLayout',
       elements: [
@@ -169,7 +169,7 @@ describe('ServiceContent Component', () => {
     expect(passedUiSchema.elements[0].type).toBe('VerticalLayout');
   });
 
-  it('covers the fallback branch for empty pop', () => {
+  it('Should covers the fallback branch for empty pop', () => {
     /* eslint-disable no-extend-native, no-underscore-dangle */
     const originalSplit = String.prototype.split;
     const originalPop = Array.prototype.pop;
@@ -236,7 +236,7 @@ describe('ServiceContent — omit reaches nested controls (feature 174)', () => 
     ],
   };
 
-  it('omits a contact_methods control nested inside a Group', () => {
+  it('Should omit a contact_methods control nested inside a Group', () => {
     render(
       <ServiceContent
         schema={{ type: 'object' }}
@@ -257,7 +257,7 @@ describe('ServiceContent — omit reaches nested controls (feature 174)', () => 
     );
   });
 
-  it('still omits the same field at the flat legacy path', () => {
+  it('Should still omits the same field at the flat legacy path', () => {
     render(
       <ServiceContent
         schema={{ type: 'object' }}
@@ -278,7 +278,7 @@ describe('ServiceContent — omit reaches nested controls (feature 174)', () => 
     expect(ui.elements[0].scope).toBe('#/properties/about');
   });
 
-  it('leaves a Group untouched when nothing inside it is omitted', () => {
+  it('Should leave a Group untouched when nothing inside it is omitted', () => {
     render(
       <ServiceContent
         schema={{ type: 'object' }}

@@ -43,7 +43,7 @@ const agreements = [
 ];
 
 describe('Service Agreements Console Integration Test Suite', () => {
-  it('opens the New agreement modal (title + description) at /new', async () => {
+  it('Should open the New agreement modal (title + description) at /new', async () => {
     mockServiceAgreementsBff(workspaceAgreement, {
       testFile: 'service-agreements-console.e2e.test',
       agreements,
@@ -59,7 +59,7 @@ describe('Service Agreements Console Integration Test Suite', () => {
     expect(within(modal).getByRole('button', { name: /create agreement/i })).toBeInTheDocument();
   });
 
-  it('drives the paginated browse API from the search + sort controls', async () => {
+  it('Should drive the paginated browse API from the search + sort controls', async () => {
     const fetchMock = mockServiceAgreementsBff(workspaceAgreement, {
       testFile: 'service-agreements-console.e2e.test',
       agreements,
@@ -82,7 +82,7 @@ describe('Service Agreements Console Integration Test Suite', () => {
     await waitFor(() => expect(pageCall((url) => url.includes('sort=title'))).toBe(true));
   });
 
-  it('admin surface lists global agreements only', async () => {
+  it('Should admin surface lists global agreements only', async () => {
     const admin = { ...authedUser, roles: ['admin'] };
     mockServiceAgreementsBff(workspaceAgreement, {
       testFile: 'service-agreements-console.e2e.test',

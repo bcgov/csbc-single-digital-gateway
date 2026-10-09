@@ -27,7 +27,7 @@ describe('Admin Shell Integration Test Suite', () => {
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
 
-  it('renders the Document Types placeholder at /admin/document-types', async () => {
+  it('Should render the Document Types placeholder at /admin/document-types', async () => {
     mockAuth(adminUser);
     renderApp('/admin/document-types');
     expect(
@@ -35,7 +35,7 @@ describe('Admin Shell Integration Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('redirects a non-admin away from /admin to /app', async () => {
+  it('Should redirect a non-admin away from /admin to /app', async () => {
     mockAuth(authedUser, { workspaces: [] });
     const { router } = renderApp('/admin');
 
@@ -45,7 +45,7 @@ describe('Admin Shell Integration Test Suite', () => {
 });
 
 describe('admin entry in the account menu', () => {
-  it('shows an Admin link for admins', async () => {
+  it('Should show an Admin link for admins', async () => {
     mockAuth(adminUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton');
 
@@ -59,7 +59,7 @@ describe('admin entry in the account menu', () => {
     );
   });
 
-  it('hides the Admin link for non-admins', async () => {
+  it('Should hide the Admin link for non-admins', async () => {
     mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton');
 

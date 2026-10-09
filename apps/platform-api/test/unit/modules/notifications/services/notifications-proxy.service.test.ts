@@ -52,7 +52,7 @@ describe('NotificationsProxyService', () => {
   });
 
   describe('request', () => {
-    it('should request and return JSON response on success', async () => {
+    it('Should request and return JSON response on success', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const responsePayload = { data: 'test' };
       const responseMock = {
@@ -77,7 +77,7 @@ describe('NotificationsProxyService', () => {
       expect(result).toEqual(responsePayload);
     });
 
-    it('should serialize and send request body if provided', async () => {
+    it('Should serialize and send request body if provided', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const requestBody = { foo: 'bar' };
       const responseMock = {
@@ -102,21 +102,21 @@ describe('NotificationsProxyService', () => {
       );
     });
 
-    it('throws BadGatewayException if network request fails', async () => {
+    it('Should throw BadGatewayException if network request fails', async () => {
       mockGetToken.mockResolvedValue('test-token');
       vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Connection failure'));
 
       await expect(service.request('GET', '/v1/test-path')).rejects.toThrow(BadGatewayException);
     });
 
-    it('throws BadGatewayException when request fetch throws a non-Error object', async () => {
+    it('Should throw BadGatewayException when request fetch throws a non-Error object', async () => {
       mockGetToken.mockResolvedValue('test-token');
       vi.mocked(globalThis.fetch).mockRejectedValue('Raw string network error');
 
       await expect(service.request('GET', '/v1/test-path')).rejects.toThrow(BadGatewayException);
     });
 
-    it('throws NotFoundException on upstream 404 response', async () => {
+    it('Should throw NotFoundException on upstream 404 response', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const responseMock = { ok: false, status: 404 };
       vi.mocked(globalThis.fetch).mockResolvedValue(responseMock as any);
@@ -124,7 +124,7 @@ describe('NotificationsProxyService', () => {
       await expect(service.request('GET', '/v1/test-path')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws BadRequestException on upstream 400 response', async () => {
+    it('Should throw BadRequestException on upstream 400 response', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const responseMock = { ok: false, status: 400 };
       vi.mocked(globalThis.fetch).mockResolvedValue(responseMock as any);
@@ -132,7 +132,7 @@ describe('NotificationsProxyService', () => {
       await expect(service.request('GET', '/v1/test-path')).rejects.toThrow(BadRequestException);
     });
 
-    it('invalidates token and throws BadGatewayException on upstream 401 response', async () => {
+    it('Should invalidate token and throw BadGatewayException on upstream 401 response', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const responseMock = { ok: false, status: 401 };
       vi.mocked(globalThis.fetch).mockResolvedValue(responseMock as any);
@@ -141,7 +141,7 @@ describe('NotificationsProxyService', () => {
       expect(mockInvalidate).toHaveBeenCalled();
     });
 
-    it('throws BadGatewayException on other upstream error status codes', async () => {
+    it('Should throw BadGatewayException on other upstream error status codes', async () => {
       mockGetToken.mockResolvedValue('test-token');
       const responseMock = { ok: false, status: 500 };
       vi.mocked(globalThis.fetch).mockResolvedValue(responseMock as any);
@@ -151,7 +151,7 @@ describe('NotificationsProxyService', () => {
   });
 
   describe('pipeStream', () => {
-    it('throws BadGatewayException if connection fails', async () => {
+    it('Should throw BadGatewayException if connection fails', async () => {
       const reqMock = { on: vi.fn() } as unknown as Request;
       const resMock = {} as unknown as ExpressResponse;
       mockGetToken.mockResolvedValue('test-token');
@@ -162,7 +162,7 @@ describe('NotificationsProxyService', () => {
       );
     });
 
-    it('throws BadGatewayException when pipeStream fetch throws a non-Error object', async () => {
+    it('Should throw BadGatewayException when pipeStream fetch throws a non-Error object', async () => {
       const reqMock = { on: vi.fn() } as unknown as Request;
       const resMock = {} as unknown as ExpressResponse;
       mockGetToken.mockResolvedValue('test-token');
@@ -173,7 +173,7 @@ describe('NotificationsProxyService', () => {
       );
     });
 
-    it('throws BadGatewayException if upstream returns non-ok status', async () => {
+    it('Should throw BadGatewayException if upstream returns non-ok status', async () => {
       const reqMock = { on: vi.fn() } as unknown as Request;
       const resMock = {} as unknown as ExpressResponse;
       mockGetToken.mockResolvedValue('test-token');
@@ -186,7 +186,7 @@ describe('NotificationsProxyService', () => {
       expect(mockInvalidate).toHaveBeenCalled();
     });
 
-    it('throws BadGatewayException without invalidating token if upstream returns non-ok status other than 401', async () => {
+    it('Should throw BadGatewayException without invalidating token if upstream returns non-ok status other than 401', async () => {
       const reqMock = { on: vi.fn() } as unknown as Request;
       const resMock = {} as unknown as ExpressResponse;
       mockGetToken.mockResolvedValue('test-token');
@@ -200,7 +200,7 @@ describe('NotificationsProxyService', () => {
       expect(mockInvalidate).not.toHaveBeenCalled();
     });
 
-    it('pipes events successfully to response stream', async () => {
+    it('Should pipe events successfully to response stream', async () => {
       const reqCloseCallbacks: any[] = [];
       const reqMock = {
         on: vi.fn().mockImplementation((event, callback) => {
@@ -249,7 +249,7 @@ describe('NotificationsProxyService', () => {
       expect(resMock.end).toHaveBeenCalled();
     });
 
-    it('aborts upstream connection when client drops (req close event)', async () => {
+    it('Should abort upstream connection when client drops (req close event)', async () => {
       const reqCloseCallbacks: any[] = [];
       const reqMock = {
         on: vi.fn().mockImplementation((event, callback) => {
@@ -290,7 +290,7 @@ describe('NotificationsProxyService', () => {
   });
 
   describe('compiler generated branch coverage', () => {
-    it('covers SWC parameter metadata helper branches when config service is undefined', async () => {
+    it('Should cover SWC parameter metadata helper branches when config service is undefined', async () => {
       vi.resetModules();
       vi.doMock('@nestjs/config', () => ({
         ConfigService: undefined,

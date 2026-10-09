@@ -211,7 +211,7 @@ beforeEach(() => {
 });
 
 describe('SectionEditPage', () => {
-  it('renders as a page, not a dialog', async () => {
+  it('Should render as a page, not a dialog', async () => {
     render(<SectionEditPage />);
 
     // The section name lives in the breadcrumb, not a page heading — the editor owns the whole area.
@@ -219,21 +219,21 @@ describe('SectionEditPage', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('puts a breadcrumb at the top through the app-level chrome', () => {
+  it('Should put a breadcrumb at the top through the app-level chrome', () => {
     render(<SectionEditPage />);
 
     expect(chromeRef.current?.breadcrumb).toBeTruthy();
     expect(chromeRef.current?.title).toBe('Service description');
   });
 
-  it('still registers a breadcrumb when the section cannot be resolved (the only way back)', () => {
+  it('Should still register a breadcrumb when the section cannot be resolved (the only way back)', () => {
     queryRef.current = { data: undefined, isPending: false, isError: true };
     render(<SectionEditPage />);
 
     expect(chromeRef.current?.breadcrumb).toBeTruthy();
   });
 
-  it('scopes required to the section so another section cannot block Save', async () => {
+  it('Should scope required to the section so another section cannot block Save', async () => {
     render(<SectionEditPage />);
     // `eligibility` is required by the service schema but lives outside this section.
     expect(JSON.parse((await screen.findByTestId('scoped-required')).textContent ?? '')).toEqual([
@@ -248,7 +248,7 @@ describe('SectionEditPage', () => {
     expect(uischema.elements).toEqual([{ type: 'Control', scope: '#/properties/summary' }]);
   });
 
-  it('saves the whole merged data object so other sections survive', async () => {
+  it('Should save the whole merged data object so other sections survive', async () => {
     render(<SectionEditPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
@@ -258,7 +258,7 @@ describe('SectionEditPage', () => {
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['services'] });
   });
 
-  it('navigates back to the version permalink anchor after a save', async () => {
+  it('Should navigate back to the version permalink anchor after a save', async () => {
     render(<SectionEditPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
@@ -269,7 +269,7 @@ describe('SectionEditPage', () => {
     });
   });
 
-  it('refuses to edit a non-draft version', async () => {
+  it('Should refuse to edit a non-draft version', async () => {
     queryRef.current = { data: detail({ status: 'published' }), isPending: false, isError: false };
     render(<SectionEditPage />);
 
@@ -277,7 +277,7 @@ describe('SectionEditPage', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
   });
 
-  it('explains a section the definition no longer carries', async () => {
+  it('Should explain a section the definition no longer carries', async () => {
     const stale = detail();
     stale.definitions['tv-1'] = {
       schema: SCHEMA,
@@ -289,7 +289,7 @@ describe('SectionEditPage', () => {
     expect(await screen.findByText(/no longer part of the service definition/)).toBeInTheDocument();
   });
 
-  it('surfaces an unregistered editor key instead of a blank page', async () => {
+  it('Should surface an unregistered editor key instead of a blank page', async () => {
     const named = detail();
     named.definitions['tv-1'] = {
       schema: SCHEMA,
@@ -311,21 +311,21 @@ describe('SectionEditPage', () => {
     expect(await screen.findByText(/No editor is registered for/)).toBeInTheDocument();
   });
 
-  it('reports a failed load', async () => {
+  it('Should report a failed load', async () => {
     queryRef.current = { data: undefined, isPending: false, isError: true };
     render(<SectionEditPage />);
 
     expect(await screen.findByText(/couldn’t be loaded/)).toBeInTheDocument();
   });
 
-  it('renders a loading spinner while service query is pending (line 115)', () => {
+  it('Should render a loading spinner while service query is pending (line 115)', () => {
     queryRef.current = { data: undefined, isPending: true, isError: false };
     const { container } = render(<SectionEditPage />);
 
     expect(container.querySelector('.flex.justify-center.py-8')).toBeInTheDocument();
   });
 
-  it('handles empty route params and fallback titles gracefully', () => {
+  it('Should handle empty route params and fallback titles gracefully', () => {
     paramsRef.current = {};
     const untitledDetail = detail();
     (untitledDetail.service as any).title = undefined;
@@ -336,7 +336,7 @@ describe('SectionEditPage', () => {
     expect(chromeRef.current?.description).toBe('Section of Service');
   });
 
-  it('navigates without replacing when options is omitted in go (line 80)', async () => {
+  it('Should navigate without replacing when options is omitted in go (line 80)', async () => {
     SECTION_EDITORS['custom-test-editor'] = ({ step }: SectionEditorProps) => (
       <button type="button" onClick={() => step?.go('step-two')}>
         Next Step
@@ -374,13 +374,13 @@ describe('SectionEditPage — canonical (no versionId) route', () => {
     paramsRef.current = { slug: 'riverton', id: 'svc-1', sectionId: 'service-description' };
   });
 
-  it('edits the sole draft version when nothing is published', async () => {
+  it('Should edit the sole draft version when nothing is published', async () => {
     render(<SectionEditPage />);
 
     expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  it('navigates back to the canonical details anchor after a save', async () => {
+  it('Should navigate back to the canonical details anchor after a save', async () => {
     render(<SectionEditPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
@@ -391,7 +391,7 @@ describe('SectionEditPage — canonical (no versionId) route', () => {
     });
   });
 
-  it('refuses the edit once a published version exists (it resolves to that one)', async () => {
+  it('Should refuse the edit once a published version exists (it resolves to that one)', async () => {
     queryRef.current = { data: detail({ status: 'published' }), isPending: false, isError: false };
     render(<SectionEditPage />);
 
@@ -411,7 +411,7 @@ describe('SectionEditPage — step routing (feature 177)', () => {
     queryRef.current = { data: flowDetail(), isPending: false, isError: false };
   });
 
-  it('passes the stepId from the route params to the editor', () => {
+  it('Should pass the stepId from the route params to the editor', () => {
     paramsRef.current = { ...paramsRef.current, stepId: 'details' };
     render(<SectionEditPage />);
 
@@ -419,20 +419,20 @@ describe('SectionEditPage — step routing (feature 177)', () => {
     expect(editNavigations()).toEqual([]);
   });
 
-  it('passes a null step id when the URL carries no step segment', () => {
+  it('Should pass a null step id when the URL carries no step segment', () => {
     render(<SectionEditPage />);
 
     expect(editNavigations()[0]?.params).toMatchObject({ stepId: 'overview' });
   });
 
-  it('resolves an unknown step id rather than dead-ending on it', () => {
+  it('Should resolve an unknown step id rather than dead-ending on it', () => {
     paramsRef.current = { ...paramsRef.current, stepId: 'renamed-away' };
     render(<SectionEditPage />);
 
     expect(editNavigations()[0]?.params).toMatchObject({ stepId: 'overview' });
   });
 
-  it('navigates on the canonical route template when there is no versionId', () => {
+  it('Should navigate on the canonical route template when there is no versionId', () => {
     paramsRef.current = { slug: 'riverton', id: 'svc-1', sectionId: 'service-description' };
     render(<SectionEditPage />);
 
@@ -446,7 +446,7 @@ describe('SectionEditPage — step routing (feature 177)', () => {
     });
   });
 
-  it('navigates on the version permalink template when there is a versionId', () => {
+  it('Should navigate on the version permalink template when there is a versionId', () => {
     render(<SectionEditPage />);
 
     const [navigation] = editNavigations();
@@ -456,7 +456,7 @@ describe('SectionEditPage — step routing (feature 177)', () => {
     expect(navigation?.params).toMatchObject({ versionId: 'ver-2', stepId: 'overview' });
   });
 
-  it('replaces rather than pushes when the navigator is asked to', () => {
+  it('Should replace rather than pushes when the navigator is asked to', () => {
     render(<SectionEditPage />);
 
     // Correcting an address the user never chose must not leave a history entry behind it.

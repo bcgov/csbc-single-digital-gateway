@@ -25,7 +25,7 @@ describe('Service Agreements Unit Test Suite', () => {
     mockFetch.mockReset();
   });
 
-  it('queries agreements with workspaceId', async () => {
+  it('Should query agreements with workspaceId', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { items: [{ id: 'a1', title: 'TOS' }] }));
 
     const options = agreementsQueryOptions('w1');
@@ -39,7 +39,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(items[0]?.title).toBe('TOS');
   });
 
-  it('queries global agreements when workspaceId is null', async () => {
+  it('Should query global agreements when workspaceId is null', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { items: [] }));
 
     const options = agreementsQueryOptions(null);
@@ -51,7 +51,7 @@ describe('Service Agreements Unit Test Suite', () => {
     });
   });
 
-  it('queries a single agreement detail by id', async () => {
+  it('Should query a single agreement detail by id', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { agreement: { id: 'a1' } }));
 
     const options = agreementQueryOptions('a1');
@@ -64,7 +64,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(detail.agreement.id).toBe('a1');
   });
 
-  it('creates an agreement', async () => {
+  it('Should create an agreement', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { agreement: { id: 'a2' } }));
 
     const result = await createAgreement({ workspaceId: 'w1', data: { title: 'TOS' } });
@@ -77,7 +77,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(result.agreement.id).toBe('a2');
   });
 
-  it('updates an agreement draft', async () => {
+  it('Should update an agreement draft', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'v1' }));
 
     const result = await updateAgreementDraft('a1', 'v1', { data: { title: 'New' } });
@@ -90,7 +90,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(result.id).toBe('v1');
   });
 
-  it('adds an agreement version', async () => {
+  it('Should add an agreement version', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'v2' }));
 
     const result = await addAgreementVersion('a1');
@@ -101,7 +101,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(result.id).toBe('v2');
   });
 
-  it('publishes an agreement version', async () => {
+  it('Should publish an agreement version', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'v2', status: 'published' }));
 
     const result = await publishAgreementVersion('a1', 'v2');
@@ -115,7 +115,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(result.status).toBe('published');
   });
 
-  it('queries workspace default agreements', async () => {
+  it('Should query workspace default agreements', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { items: [{ id: 'def-1' }] }));
 
     const options = workspaceDefaultAgreementsQueryOptions('w1');
@@ -129,7 +129,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(items[0]?.id).toBe('def-1');
   });
 
-  it('adds workspace default agreement', async () => {
+  it('Should add workspace default agreement', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'def-2' }));
 
     const result = await addDefaultAgreement('w1', 'a1');
@@ -142,7 +142,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(result.id).toBe('def-2');
   });
 
-  it('removes workspace default agreement', async () => {
+  it('Should remove workspace default agreement', async () => {
     mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await removeDefaultAgreement('w1', 'def-2');
@@ -155,7 +155,7 @@ describe('Service Agreements Unit Test Suite', () => {
     );
   });
 
-  it('throws descriptive error on failure responses', async () => {
+  it('Should throw descriptive error on failure responses', async () => {
     // 1. Generic error status
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
     let err1: Error | undefined;
@@ -196,7 +196,7 @@ describe('Service Agreements Unit Test Suite', () => {
     expect(err3?.message).toBe('Validation failed: Field A is required; Field B must be positive');
   });
 
-  it('throws simple failure error on removeDefaultAgreement failure', async () => {
+  it('Should throw simple failure error on removeDefaultAgreement failure', async () => {
     mockFetch.mockResolvedValue(mockResponse(403, null, false));
     let err: Error | undefined;
     try {

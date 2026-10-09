@@ -31,7 +31,7 @@ const staff = [
 ];
 
 describe('Add Member Modal Component Test Suite', () => {
-  it('lets an admin search staff, pick a role, and add a member', async () => {
+  it('Should let an admin search staff, pick a role, and add a member', async () => {
     const fetchMock = mockMembersBff(members, {
       testFile: 'add-member-modal.test',
       role: 'admin',
@@ -70,7 +70,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('hides the Add member action from non-admins', async () => {
+  it('Should hide the Add member action from non-admins', async () => {
     mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'member', staff });
     renderApp('/app/riverton/team');
 
@@ -102,7 +102,7 @@ describe('Add Member Modal Component Test Suite', () => {
     expect(within(dialog).getByText('No email on file')).toBeInTheDocument();
   });
 
-  it('shows error message if add member API fails', async () => {
+  it('Should show error message if add member API fails', async () => {
     mockMembersBff(members, {
       testFile: 'add-member-modal.test',
       role: 'admin',
@@ -140,7 +140,7 @@ describe('Add Member Modal Component Test Suite', () => {
     expect(await within(dialog).findByText('No staff found.')).toBeInTheDocument();
   });
 
-  it('shows spinner when addable staff list is loading', async () => {
+  it('Should show spinner when addable staff list is loading', async () => {
     let resolveStaff: ((r: Response) => void) | null = null;
     mockMembersBff(members, {
       testFile: 'add-member-modal.test',
@@ -166,7 +166,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('disables dialog buttons and shows spinner while add mutation is pending', async () => {
+  it('Should disable dialog buttons and show spinner while add mutation is pending', async () => {
     let resolveAdd: ((r: Response) => void) | null = null;
     mockMembersBff(members, {
       testFile: 'add-member-modal.test',
@@ -215,7 +215,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('lets an admin search staff, pick a member role, and add a member', async () => {
+  it('Should let an admin search staff, pick a member role, and add a member', async () => {
     const fetchMock = mockMembersBff(members, {
       testFile: 'add-member-modal.test',
       role: 'admin',
@@ -244,7 +244,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('lets the user change the selected staff member', async () => {
+  it('Should let the user change the selected staff member', async () => {
     mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -262,7 +262,7 @@ describe('Add Member Modal Component Test Suite', () => {
     expect(within(dialog).queryByRole('button', { name: 'Change' })).not.toBeInTheDocument();
   });
 
-  it('closes the dialog when Cancel is clicked or Escape is pressed', async () => {
+  it('Should close the dialog when Cancel is clicked or Escape is pressed', async () => {
     mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -292,7 +292,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('handles staff with undefined id using fallback and handles onOpenChange true branch', async () => {
+  it('Should handle staff with undefined id using fallback and handle onOpenChange true branch', async () => {
     const staffWithNoId = [
       { id: undefined as unknown as string, displayName: 'No ID User', email: 'noid@riverton.gov' },
     ];
@@ -322,7 +322,7 @@ describe('Add Member Modal Component Test Suite', () => {
     });
   });
 
-  it('triggers onOpenChange true branch when dialog passes true to onOpenChange', async () => {
+  it('Should trigger onOpenChange true branch when dialog passes true to onOpenChange', async () => {
     mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');

@@ -30,14 +30,14 @@ const mockServiceVersions: ServiceVersion[] = [
 ];
 
 describe('VersionPicker Component Test Suite', () => {
-  it('renders the selected version in the trigger button', () => {
+  it('Should render the selected version in the trigger button', () => {
     render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
     const trigger = screen.getByRole('button', { name: /version v1/i });
     expect(trigger).toBeInTheDocument();
   });
 
-  it('renders all versions in reversed order inside dropdown', async () => {
+  it('Should render all versions in reversed order inside dropdown', async () => {
     const user = userEvent.setup();
     render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
@@ -53,7 +53,7 @@ describe('VersionPicker Component Test Suite', () => {
     expect(items[1]).toHaveTextContent('published');
   });
 
-  it('highlights the selected version in the dropdown menu', async () => {
+  it('Should highlight the selected version in the dropdown menu', async () => {
     const user = userEvent.setup();
     render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
@@ -67,7 +67,7 @@ describe('VersionPicker Component Test Suite', () => {
     expect(inactiveItem).not.toHaveClass('font-semibold');
   });
 
-  it('calls onSelect when a version item is clicked', async () => {
+  it('Should call onSelect when a version item is clicked', async () => {
     const user = userEvent.setup();
     const handleSelect = vi.fn();
     render(

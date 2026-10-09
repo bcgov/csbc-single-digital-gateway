@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 describe('SharedResourcesPage Component Test Suite', () => {
-  it('renders the hub with a Service Agreements card linking into the section with slug param', () => {
+  it('Should render the hub with a Service Agreements card linking into the section with slug param', () => {
     render(<SharedResourcesPage />);
 
     expect(screen.getByRole('heading', { name: 'Shared Resources' })).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('SharedResourcesPage Component Test Suite', () => {
     expect(link).toHaveAttribute('href', '/app/riverton/service-agreements');
   });
 
-  it('handles undefined slug parameter by falling back to empty string', () => {
+  it('Should handle undefined slug parameter by falling back to empty string', () => {
     paramsRef.current = {};
     render(<SharedResourcesPage />);
 

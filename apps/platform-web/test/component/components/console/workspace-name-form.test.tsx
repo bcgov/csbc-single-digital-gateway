@@ -39,7 +39,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     });
   });
 
-  it('renders input as disabled and save button as disabled when canEdit is false', () => {
+  it('Should render input as disabled and save button as disabled when canEdit is false', () => {
     renderForm(queryClient, { canEdit: false });
 
     const input = screen.getByLabelText('Workspace name');
@@ -49,7 +49,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it('handles clean/dirty logic and Cancel button click correctly', async () => {
+  it('Should handle clean/dirty logic and Cancel button click correctly', async () => {
     const user = userEvent.setup();
     renderForm(queryClient, { initialName: 'Original Name', canEdit: true });
 
@@ -76,7 +76,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it('submits form successfully, calls updateWorkspace, and invalidates workspace query', async () => {
+  it('Should submit form successfully, calls updateWorkspace, and invalidate workspace query', async () => {
     const user = userEvent.setup();
     vi.mocked(updateWorkspace).mockResolvedValue({} as any);
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -99,7 +99,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['workspaces'] });
   });
 
-  it('renders alert message when workspace update fails', async () => {
+  it('Should render alert message when workspace update fails', async () => {
     const user = userEvent.setup();
     vi.mocked(updateWorkspace).mockRejectedValue(new Error('API failure'));
 
@@ -116,7 +116,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     );
   });
 
-  it('disables save and cancel buttons when name is changed to whitespace only', async () => {
+  it('Should disable save and cancel buttons when name is changed to whitespace only', async () => {
     const user = userEvent.setup();
     renderForm(queryClient, { initialName: 'My Workspace', canEdit: true });
     const input = screen.getByLabelText('Workspace name');
@@ -132,7 +132,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it('does not submit if the form is clean', () => {
+  it('Should not submit if the form is clean', () => {
     renderForm(queryClient, { initialName: 'My Workspace', canEdit: true });
     const input = screen.getByLabelText('Workspace name');
     const form = input.closest('form')!;
@@ -142,7 +142,7 @@ describe('WorkspaceNameForm Component Test Suite', () => {
     expect(updateWorkspace).not.toHaveBeenCalled();
   });
 
-  it('disables buttons while updateWorkspace mutation is pending', async () => {
+  it('Should disable buttons while updateWorkspace mutation is pending', async () => {
     const user = userEvent.setup();
     let resolveUpdate: ((v: any) => void) | null = null;
     vi.mocked(updateWorkspace).mockImplementation(

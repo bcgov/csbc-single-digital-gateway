@@ -19,7 +19,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 describe('SectionEditBreadcrumb Component Test Suite', () => {
-  it('renders breadcrumb trail with canonical details link when versionId is undefined', () => {
+  it('Should render breadcrumb trail with canonical details link when versionId is undefined', () => {
     render(
       <SectionEditBreadcrumb
         slug="riverton"
@@ -50,7 +50,7 @@ describe('SectionEditBreadcrumb Component Test Suite', () => {
     expect(pageLabel.tagName).not.toBe('A');
   });
 
-  it('renders breadcrumb trail with version permalink details link when versionId is provided', () => {
+  it('Should render breadcrumb trail with version permalink details link when versionId is provided', () => {
     render(
       <SectionEditBreadcrumb
         slug="riverton"

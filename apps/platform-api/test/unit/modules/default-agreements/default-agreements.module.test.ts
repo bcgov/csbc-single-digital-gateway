@@ -7,7 +7,7 @@ import { DefaultAgreementsV1Controller } from '../../../../src/modules/default-a
 import { DefaultAgreementsService } from '../../../../src/modules/default-agreements/services/default-agreements.service';
 
 describe('DefaultAgreementsModule Unit Test Suite', () => {
-  it('should compile DefaultAgreementsModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile DefaultAgreementsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
@@ -35,7 +35,7 @@ describe('DefaultAgreementsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly for DefaultAgreementsModule', () => {
+  it('Should verify metadata declaration directly for DefaultAgreementsModule', () => {
     const controllers = Reflect.getMetadata('controllers', DefaultAgreementsModule) as any[];
     const providers = Reflect.getMetadata('providers', DefaultAgreementsModule) as any[];
 

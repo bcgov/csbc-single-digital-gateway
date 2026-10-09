@@ -66,7 +66,7 @@ describe('SubmissionsService', () => {
   });
 
   describe('list', () => {
-    it('throws NotFoundException if the user is not a member of the workspace', async () => {
+    it('Should throw NotFoundException if the user is not a member of the workspace', async () => {
       // requireMembership returns empty
       mockResponse(tableResponses, workspaceMembers, []);
 
@@ -75,7 +75,7 @@ describe('SubmissionsService', () => {
       );
     });
 
-    it('returns a list of submissions for a member', async () => {
+    it('Should return a list of submissions for a member', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -118,7 +118,7 @@ describe('SubmissionsService', () => {
       expect(result.total).toBe(1);
     });
 
-    it('filters list of submissions by status if specified', async () => {
+    it('Should filter list of submissions by status if specified', async () => {
       const mockSub1 = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -166,7 +166,7 @@ describe('SubmissionsService', () => {
       expect(result.items[0]?.id).toBe('sub-1');
     });
 
-    it('filters list of submissions by search query q', async () => {
+    it('Should filter list of submissions by search query q', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -201,7 +201,7 @@ describe('SubmissionsService', () => {
       expect(result.total).toBe(1);
     });
 
-    it('handles whitespace search query q and sort by status', async () => {
+    it('Should handle whitespace search query q and sort by status', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -244,13 +244,13 @@ describe('SubmissionsService', () => {
   });
 
   describe('get', () => {
-    it('throws NotFoundException if the submission does not exist', async () => {
+    it('Should throw NotFoundException if the submission does not exist', async () => {
       mockResponse(tableResponses, submissions, []);
 
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if the user is not a member of the workspace', async () => {
+    it('Should throw NotFoundException if the user is not a member of the workspace', async () => {
       const mockSub = { id: 'sub-1', workspaceId: 'ws-1' };
       mockResponse(tableResponses, submissions, [mockSub]);
       mockResponse(tableResponses, workspaceMembers, []);
@@ -258,7 +258,7 @@ describe('SubmissionsService', () => {
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if toSummary returns null', async () => {
+    it('Should throw NotFoundException if toSummary returns null', async () => {
       const mockSub = { id: 'sub-1', workspaceId: 'ws-1' };
       mockResponse(tableResponses, submissions, [mockSub]);
       mockResponse(tableResponses, workspaceMembers, [{ userId: 'user-1' }]);
@@ -267,7 +267,7 @@ describe('SubmissionsService', () => {
       await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('successfully retrieves a submission and details', async () => {
+    it('Should successfully retrieve a submission and details', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -346,7 +346,7 @@ describe('SubmissionsService', () => {
   });
 
   describe('review', () => {
-    it('throws ConflictException if submission is not in a reviewable status', async () => {
+    it('Should throw ConflictException if submission is not in a reviewable status', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -364,7 +364,7 @@ describe('SubmissionsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('throws NotFoundException if latest version is not found', async () => {
+    it('Should throw NotFoundException if latest version is not found', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -382,7 +382,7 @@ describe('SubmissionsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('successfully processes review for an anonymous submission (userId is null)', async () => {
+    it('Should successfully process review for an anonymous submission (userId is null)', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -437,7 +437,7 @@ describe('SubmissionsService', () => {
       expect(result.applicantName).toBe('Anonymous');
     });
 
-    it('successfully processes review and enqueues notification for a registered user', async () => {
+    it('Should successfully process review and enqueue notification for a registered user', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -498,7 +498,7 @@ describe('SubmissionsService', () => {
   });
 
   describe('toSummary fallbacks', () => {
-    it('uses fallback values when metadata/version/service/form/applicant are missing or null', async () => {
+    it('Should use fallback values when metadata/version/service/form/applicant are missing or null', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -535,7 +535,7 @@ describe('SubmissionsService', () => {
       ]);
     });
 
-    it('uses fallback values for detail when form or version is missing', async () => {
+    it('Should use fallback values for detail when form or version is missing', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -572,7 +572,7 @@ describe('SubmissionsService', () => {
       });
     });
 
-    it('handles review notification when owner has no email', async () => {
+    it('Should handle review notification when owner has no email', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -615,7 +615,7 @@ describe('SubmissionsService', () => {
       );
     });
 
-    it('handles list with search query when search expression is falsy', async () => {
+    it('Should handle list with search query when search expression is falsy', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',
@@ -645,7 +645,7 @@ describe('SubmissionsService', () => {
       }
     });
 
-    it('uses draft status when latestVersion returns null in toSummary', async () => {
+    it('Should use draft status when latestVersion returns null in toSummary', async () => {
       const mockSub = {
         id: 'sub-1',
         workspaceId: 'ws-1',

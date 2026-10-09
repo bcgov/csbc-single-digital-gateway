@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe('Notification Settings Component Test Suite', () => {
-  it('renders seeded toggles and saves changes through the platform BFF', async () => {
+  it('Should render seeded toggles and save changes through the platform BFF', async () => {
     const user = userEvent.setup();
     const { puts } = mockNotificationsBff({ testFile: 'notification-settings.test' });
     renderApp('/app/account');
@@ -39,7 +39,7 @@ describe('Notification Settings Component Test Suite', () => {
     expect(body.channels.some((c) => c.channel === 'in_app')).toBe(false);
   });
 
-  it('allows modifying contact email and trims whitespace', async () => {
+  it('Should allow modifying contact email and trim whitespace', async () => {
     const user = userEvent.setup();
     const { puts } = mockNotificationsBff({ testFile: 'notification-settings.test' });
     renderApp('/app/account');
@@ -68,7 +68,7 @@ describe('Notification Settings Component Test Suite', () => {
     expect(body.email).toBe('john@example.com');
   });
 
-  it('allows clearing contact email (sets it to null)', async () => {
+  it('Should allow clearing contact email (sets it to null)', async () => {
     const user = userEvent.setup();
     const { puts } = mockNotificationsBff({ testFile: 'notification-settings.test' });
     renderApp('/app/account');
@@ -93,7 +93,7 @@ describe('Notification Settings Component Test Suite', () => {
     expect(body.email).toBeNull();
   });
 
-  it('renders skeleton loader when preferences query is loading', async () => {
+  it('Should render skeleton loader when preferences query is loading', async () => {
     mockNotificationsBff({ delayGet: true, testFile: 'notification-settings.test' });
     renderApp('/app/account');
 
@@ -106,7 +106,7 @@ describe('Notification Settings Component Test Suite', () => {
     expect(skeleton).toBeInTheDocument();
   });
 
-  it('renders error card when preferences query fails', async () => {
+  it('Should render error card when preferences query fails', async () => {
     mockNotificationsBff({ getError: true, testFile: 'notification-settings.test' });
     renderApp('/app/account');
 
@@ -119,7 +119,7 @@ describe('Notification Settings Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('displays API error alert when saving preferences fails', async () => {
+  it('Should display API error alert when saving preferences fails', async () => {
     const user = userEvent.setup();
     mockNotificationsBff({ putError: true, testFile: 'notification-settings.test' });
     renderApp('/app/account');
@@ -138,7 +138,7 @@ describe('Notification Settings Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('disables save button and displays loading text while save is in progress', async () => {
+  it('Should disable save button and display loading text while save is in progress', async () => {
     mockNotificationsBff({ delayPut: true, testFile: 'notification-settings.test' });
     renderApp('/app/account');
 
@@ -163,7 +163,7 @@ describe('Notification Settings Component Test Suite', () => {
     });
   });
 
-  it('handles null contact email state on mount', async () => {
+  it('Should handle null contact email state on mount', async () => {
     mockNotificationsBff({ nullEmail: true, testFile: 'notification-settings.test' });
     renderApp('/app/account');
 

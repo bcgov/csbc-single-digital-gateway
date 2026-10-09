@@ -71,7 +71,7 @@ describe('Inspector Component Test Suite', () => {
     description: 'Please answer accurately.',
   };
 
-  it('renders form-level settings when node is null', async () => {
+  it('Should render form-level settings when node is null', async () => {
     const user = userEvent.setup();
     const handleChangeForm = vi.fn();
 
@@ -104,7 +104,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeForm).toHaveBeenCalledWith({ description: 'Please answer accurately.!' });
   });
 
-  it('flags an empty form title as required for the inspector component', () => {
+  it('Should flag an empty form title as required for the inspector component', () => {
     render(
       <Inspector
         node={null}
@@ -119,7 +119,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('renders container settings when node is a ContainerNode', async () => {
+  it('Should render container settings when node is a ContainerNode', async () => {
     const user = userEvent.setup();
     const handleChangeContainer = vi.fn();
     const node: ContainerNode = {
@@ -151,7 +151,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeContainer).toHaveBeenCalledWith({ label: 'Main Section!' });
   });
 
-  it('renders a Columns input (not Section title) for a grid container (feature 169)', () => {
+  it('Should render a Columns input (not Section title) for a grid container (feature 169)', () => {
     const handleChangeContainer = vi.fn();
     const node: ContainerNode = {
       kind: 'container',
@@ -188,7 +188,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeContainer).toHaveBeenLastCalledWith({ columns: 2 });
   });
 
-  it('renders display inspector when node is a DisplayNode', () => {
+  it('Should render display inspector when node is a DisplayNode', () => {
     const handleChangeDisplay = vi.fn();
     const node: DisplayNode = {
       kind: 'display',
@@ -219,7 +219,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeDisplay).toHaveBeenCalledWith({ text: 'updated display text' });
   });
 
-  it('renders control inspector with basic settings; no editable field key (feature 159)', async () => {
+  it('Should render control inspector with basic settings; no editable field key (feature 159)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -263,7 +263,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenCalledWith({ required: true });
   });
 
-  it('flags an empty field label as required (feature 159)', () => {
+  it('Should flag an empty field label as required (feature 159)', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'text',
@@ -286,7 +286,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByLabelText('Label')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('shows a muted, click-to-copy field ID for a control field (feature 159)', async () => {
+  it('Should show a muted, click-to-copy field ID for a control field (feature 159)', async () => {
     const user = userEvent.setup(); // installs a clipboard stub (jsdom's is getter-only)
     const node: ControlNode = {
       kind: 'control',
@@ -375,7 +375,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.queryByText('Display as')).not.toBeInTheDocument();
   });
 
-  it('renders the choice options editor and edits value/label independently (feature 156 Step 2)', async () => {
+  it('Should render the choice options editor and edit value/label independently (feature 156 Step 2)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -436,7 +436,7 @@ describe('Inspector Component Test Suite', () => {
     });
   });
 
-  it('renders value + label inputs for every choice field (radio) — feature 156 Step 2', async () => {
+  it('Should render value + label inputs for every choice field (radio) — feature 156 Step 2', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -534,7 +534,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenLastCalledWith({ combobox: true });
   });
 
-  it('renders text field settings: placeholder, multiline and max length (feature 158)', async () => {
+  it('Should render text field settings: placeholder, multiline and max length (feature 158)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -589,7 +589,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.queryByLabelText('Input mask')).not.toBeInTheDocument();
   });
 
-  it('orders each choice option Label-then-Value inside a capped scroll list (feature 156 Step 2)', () => {
+  it('Should order each choice option Label-then-Value inside a capped scroll list (feature 156 Step 2)', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'checkboxes',
@@ -628,7 +628,7 @@ describe('Inspector Component Test Suite', () => {
     expect(scroller?.className).toContain('max-h-');
   });
 
-  it('renders slider config settings for slider field type', async () => {
+  it('Should render slider config settings for slider field type', async () => {
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
@@ -675,7 +675,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenCalledWith({ step: 5 });
   });
 
-  it('renders number type, min and max settings for number field type', async () => {
+  it('Should render number type, min and max settings for number field type', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -726,7 +726,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenCalledWith({ max: undefined });
   });
 
-  it('shows an error when the number field max is below its min', () => {
+  it('Should show an error when the number field max is below its min', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'number',
@@ -754,7 +754,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByText(/max.*must be.*min|maximum must be/i)).toBeInTheDocument();
   });
 
-  it('shows a decimal-places control for a decimal number and edits it', () => {
+  it('Should show a decimal-places control for a decimal number and edit it', () => {
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
@@ -788,7 +788,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
   });
 
-  it('hides the decimal-places control for an integer number', () => {
+  it('Should hide the decimal-places control for an integer number', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'number',
@@ -814,7 +814,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.queryByLabelText('Decimal places')).not.toBeInTheDocument();
   });
 
-  it('defaults empty values in Container and Control inspectors when properties are omitted', () => {
+  it('Should default empty values in Container and Control inspectors when properties are omitted', () => {
     const nodeContainer: ContainerNode = {
       kind: 'container',
       layout: 'group',
@@ -884,7 +884,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByLabelText('Step')).toHaveValue(1);
   });
 
-  it('shows warning message when EnumOptions list is empty', () => {
+  it('Should show warning message when EnumOptions list is empty', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'select',
@@ -910,7 +910,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByText('Add at least one option.')).toBeInTheDocument();
   });
 
-  it('handles missing/undefined enumOptions in EnumOptionsEditor', () => {
+  it('Should handle missing/undefined enumOptions in EnumOptionsEditor', () => {
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'select',
@@ -936,12 +936,12 @@ describe('Inspector Component Test Suite', () => {
   });
 
   describe('Accordion group inspector settings', () => {
-    it('renders the item-noun input for an accordiongroup node', () => {
+    it('Should render the item-noun input for an accordiongroup node', () => {
       renderControlInspector(accordionNode);
       expect(screen.getByLabelText('Item noun')).toHaveValue('item');
     });
 
-    it('emits itemLabel when the author types a noun', async () => {
+    it('Should emit itemLabel when the author types a noun', async () => {
       const user = userEvent.setup();
       const onChangeControl = renderControlInspector(accordionNode);
 
@@ -950,7 +950,7 @@ describe('Inspector Component Test Suite', () => {
       expect(onChangeControl).toHaveBeenCalledWith({ itemLabel: 'items' });
     });
 
-    it('renders the default-open control with None, First and All', () => {
+    it('Should render the default-open control with None, First and All', () => {
       renderControlInspector(accordionNode);
       expect(screen.getByRole('button', { name: 'None' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'First' })).toBeInTheDocument();
@@ -959,7 +959,7 @@ describe('Inspector Component Test Suite', () => {
       expect(screen.queryByRole('button', { name: /specific/i })).not.toBeInTheDocument();
     });
 
-    it('emits defaultOpen when the author picks an option', async () => {
+    it('Should emit defaultOpen when the author picks an option', async () => {
       const user = userEvent.setup();
       const onChangeControl = renderControlInspector(accordionNode);
 
@@ -968,7 +968,7 @@ describe('Inspector Component Test Suite', () => {
       expect(onChangeControl).toHaveBeenCalledWith({ defaultOpen: 'first' });
     });
 
-    it('keeps both controls controlled (createField sets them explicitly)', () => {
+    it('Should keep both controls controlled (createField sets them explicitly)', () => {
       // The lesson from the address read-only switches — an undefined value makes an uncontrolled input.
       const fresh = createField('accordiongroup');
       expect(fresh.itemLabel).toBe('item');
@@ -979,19 +979,19 @@ describe('Inspector Component Test Suite', () => {
       expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('renders Min and Max item inputs, blank when unbounded', () => {
+    it('Should render Min and Max item inputs, blank when unbounded', () => {
       renderControlInspector(accordionNode);
       expect(screen.getByLabelText('Min items')).toHaveValue(null);
       expect(screen.getByLabelText('Max items')).toHaveValue(null);
     });
 
-    it('shows the authored bounds', () => {
+    it('Should show the authored bounds', () => {
       renderControlInspector({ ...accordionNode, minItems: 2, maxItems: 5 });
       expect(screen.getByLabelText('Min items')).toHaveValue(2);
       expect(screen.getByLabelText('Max items')).toHaveValue(5);
     });
 
-    it('marks the field required when a minimum is entered', async () => {
+    it('Should mark the field required when a minimum is entered', async () => {
       const user = userEvent.setup();
       const onChangeControl = renderControlInspector(accordionNode);
 
@@ -1002,7 +1002,7 @@ describe('Inspector Component Test Suite', () => {
       );
     });
 
-    it('does not render accordion settings for a non-accordiongroup node', () => {
+    it('Should not render accordion settings for a non-accordiongroup node', () => {
       renderControlInspector({ ...accordionNode, fieldType: 'text' });
       expect(screen.queryByLabelText('Item noun')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'None' })).not.toBeInTheDocument();
@@ -1010,17 +1010,17 @@ describe('Inspector Component Test Suite', () => {
   });
 
   describe('Section inspector settings', () => {
-    it('renders the Section title row for a section container', () => {
+    it('Should render the Section title row for a section container', () => {
       renderContainerInspector(containerNode({ label: 'Applicant details' }));
       expect(screen.getByLabelText('Section title')).toHaveValue('Applicant details');
     });
 
-    it('renders the Description row for a section container', () => {
+    it('Should render the Description row for a section container', () => {
       renderContainerInspector(containerNode({ description: 'Tell us who you are.' }));
       expect(screen.getByLabelText('Description')).toHaveValue('Tell us who you are.');
     });
 
-    it('emits the description when the author types one', async () => {
+    it('Should emit the description when the author types one', async () => {
       const user = userEvent.setup();
       const onChangeContainer = renderContainerInspector(containerNode({ description: '' }));
 
@@ -1029,7 +1029,7 @@ describe('Inspector Component Test Suite', () => {
       expect(onChangeContainer).toHaveBeenCalledWith({ description: 'X' });
     });
 
-    it('does not offer a Description row for a group container', () => {
+    it('Should not offer a Description row for a group container', () => {
       // Only a Section serializes options.description (doc 172, rule 10).
       renderContainerInspector(containerNode({ layout: 'group', label: 'G' }));
       expect(screen.getByLabelText('Section title')).toBeInTheDocument();
@@ -1038,7 +1038,7 @@ describe('Inspector Component Test Suite', () => {
   });
 
   describe('Inspector full branch and onClear coverage', () => {
-    it('resets copied state after timeout on FieldIdBadge', async () => {
+    it('Should reset copied state after timeout on FieldIdBadge', async () => {
       const user = userEvent.setup();
       const node: ControlNode = {
         kind: 'control',
@@ -1069,7 +1069,7 @@ describe('Inspector Component Test Suite', () => {
       );
     });
 
-    it('supports editing option label, moving up/down, removing, out-of-bounds move, and Add option button in ChoiceOptionsEditor', () => {
+    it('Should support editing option label, moving up/down, removing, out-of-bounds move, and Add option button in ChoiceOptionsEditor', () => {
       const handleChangeControl = vi.fn();
       const node: ControlNode = {
         kind: 'control',
@@ -1181,7 +1181,7 @@ describe('Inspector Component Test Suite', () => {
       });
     });
 
-    it('handles onClear for placeholder, mask, maxLength, label, and parsePositiveInt in TextSettings/ControlInspector', () => {
+    it('Should handle onClear for placeholder, mask, maxLength, label, and parsePositiveInt in TextSettings/ControlInspector', () => {
       const handleChangeControl = vi.fn();
       const node: ControlNode = {
         kind: 'control',
@@ -1252,7 +1252,7 @@ describe('Inspector Component Test Suite', () => {
       expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: 100 });
     });
 
-    it('handles NumberSettings onClear, parseBound, parseDecimals, and boundsInverted', () => {
+    it('Should handle NumberSettings onClear, parseBound, parseDecimals, and boundsInverted', () => {
       const handleChangeControl = vi.fn();
       const node: ControlNode = {
         kind: 'control',
@@ -1343,7 +1343,7 @@ describe('Inspector Component Test Suite', () => {
       expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: 3 });
     });
 
-    it('covers fallbacks for numberType and renderAs, required toggle on accordiongroup, and address fieldType', () => {
+    it('Should cover fallbacks for numberType and renderAs, required toggle on accordiongroup, and address fieldType', () => {
       const handleChangeControl = vi.fn();
 
       // 1. numberType fallback to 'decimal'
@@ -1444,7 +1444,7 @@ describe('Inspector Component Test Suite', () => {
       expect(screen.getByText('Default country')).toBeInTheDocument();
     });
 
-    it('handles Slider settings in ControlInspector', () => {
+    it('Should handle Slider settings in ControlInspector', () => {
       const handleChangeControl = vi.fn();
       const node: ControlNode = {
         kind: 'control',
@@ -1483,7 +1483,7 @@ describe('Inspector Component Test Suite', () => {
       expect(handleChangeControl).toHaveBeenCalledWith({ step: 1 });
     });
 
-    it('handles onClear for form title in form settings', () => {
+    it('Should handle onClear for form title in form settings', () => {
       const handleChangeForm = vi.fn();
       render(
         <Inspector
@@ -1506,7 +1506,7 @@ describe('Inspector Component Test Suite', () => {
       expect(handleChangeForm).toHaveBeenCalledWith({ title: '' });
     });
 
-    it('handles onClear for container section title and covers grid fallback values', () => {
+    it('Should handle onClear for container section title and cover grid fallback values', () => {
       const handleChangeContainer = vi.fn();
       const node: ContainerNode = {
         kind: 'container',

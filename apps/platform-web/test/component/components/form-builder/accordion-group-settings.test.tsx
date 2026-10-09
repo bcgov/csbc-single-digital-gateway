@@ -12,7 +12,7 @@ const accordionNode = (patch: Partial<ControlNode> = {}): ControlNode => ({
 });
 
 describe('AccordionGroupSettings Component Test Suite', () => {
-  it('renders with populated values and updates itemLabel on change and onClear', async () => {
+  it('Should render with populated values and update itemLabel on change and onClear', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const node = accordionNode({
@@ -39,7 +39,7 @@ describe('AccordionGroupSettings Component Test Suite', () => {
     expect(onChange).toHaveBeenCalledWith({ itemLabel: 'item' });
   });
 
-  it('updates minItems and maxItems using item bound helpers (including line 68)', () => {
+  it('Should update minItems and maxItems using item bound helpers (including line 68)', () => {
     const onChange = vi.fn();
     const node = accordionNode({ minItems: 1, maxItems: 3 });
 
@@ -66,7 +66,7 @@ describe('AccordionGroupSettings Component Test Suite', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ maxItems: undefined }));
   });
 
-  it('renders default fallback values when node properties are undefined', () => {
+  it('Should render default fallback values when node properties are undefined', () => {
     const {
       itemLabel: _itemLabel,
       minItems: _minItems,
@@ -95,7 +95,7 @@ describe('AccordionGroupSettings Component Test Suite', () => {
     expect(screen.getByLabelText('Max items')).toHaveValue(null);
   });
 
-  it('updates defaultOpen option on toggle change', async () => {
+  it('Should update defaultOpen option on toggle change', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const node = accordionNode({ defaultOpen: 'none' });

@@ -29,7 +29,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('list', () => {
-    it('requests the recipient notifications list from the proxy', async () => {
+    it('Should request the recipient notifications list from the proxy', async () => {
       const mockResult = { items: [], total: 0 };
       proxyMock.request.mockResolvedValue(mockResult);
 
@@ -44,7 +44,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('stream', () => {
-    it('pipes the SSE notification stream through the proxy', async () => {
+    it('Should pipe the SSE notification stream through the proxy', async () => {
       const req = {} as Request;
       const res = {} as Response;
       proxyMock.pipeStream.mockResolvedValue(undefined);
@@ -60,7 +60,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('unreadCount', () => {
-    it('requests the unread count from the proxy', async () => {
+    it('Should request the unread count from the proxy', async () => {
       const mockCount = { count: 5 };
       proxyMock.request.mockResolvedValue(mockCount);
 
@@ -75,7 +75,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('readAll', () => {
-    it('sends the read-all request through the proxy', async () => {
+    it('Should send the read-all request through the proxy', async () => {
       const mockResult = { success: true };
       proxyMock.request.mockResolvedValue(mockResult);
 
@@ -90,7 +90,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('markRead', () => {
-    it('sends the read request for a specific delivery to the proxy', async () => {
+    it('Should send the read request for a specific delivery to the proxy', async () => {
       const mockItem = { id: 'delivery-123', read: true };
       proxyMock.request.mockResolvedValue(mockItem);
 
@@ -105,7 +105,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('preferences', () => {
-    it('requests notification preferences from the proxy', async () => {
+    it('Should request notification preferences from the proxy', async () => {
       const mockPrefs = { email: true };
       proxyMock.request.mockResolvedValue(mockPrefs);
 
@@ -120,7 +120,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('updatePreferences', () => {
-    it('sends updated preferences to the proxy', async () => {
+    it('Should send updated preferences to the proxy', async () => {
       const body = { email: 'test@example.com' };
       const mockPrefs = {
         userId: 'user-123',
@@ -141,7 +141,7 @@ describe('MyNotificationsV1Controller', () => {
   });
 
   describe('compiler generated branch coverage', () => {
-    it('covers SWC parameter metadata helper branches when proxy service is undefined', async () => {
+    it('Should cover SWC parameter metadata helper branches when proxy service is undefined', async () => {
       vi.resetModules();
       vi.doMock(
         '../../../../../src/modules/notifications/services/notifications-proxy.service',

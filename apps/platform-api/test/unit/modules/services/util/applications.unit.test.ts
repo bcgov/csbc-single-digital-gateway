@@ -17,41 +17,41 @@ import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('applications utility tests', () => {
   describe('structureFromDefinition', () => {
-    it('returns basic-form structure', () => {
+    it('Should return basic-form structure', () => {
       const def = { schema: { type: 'object' }, uischema: { type: 'Vertical' } };
       const res = structureFromDefinition('basic-form', def);
       expect(res).toEqual({ schema: { type: 'object' }, uischema: { type: 'Vertical' } });
     });
 
-    it('returns basic-form default structure if keys are missing', () => {
+    it('Should return basic-form default structure if keys are missing', () => {
       const res = structureFromDefinition('basic-form', {});
       expect(res).toEqual({ schema: {}, uischema: {} });
     });
 
-    it('returns multi-stage-form structure', () => {
+    it('Should return multi-stage-form structure', () => {
       const def = { stages: [{ id: 's1' }], edges: [{ id: 'e1' }] };
       const res = structureFromDefinition('multi-stage-form', def);
       expect(res).toEqual({ stages: [{ id: 's1' }], edges: [{ id: 'e1' }] });
     });
 
-    it('returns multi-stage-form default structure if keys are missing', () => {
+    it('Should return multi-stage-form default structure if keys are missing', () => {
       const res = structureFromDefinition('multi-stage-form', {});
       expect(res).toEqual({ stages: [], edges: [] });
     });
 
-    it('returns null for other kinds', () => {
+    it('Should return null for other kinds', () => {
       const res = structureFromDefinition('service', {});
       expect(res).toBeNull();
     });
   });
 
   describe('formHasStructure', () => {
-    it('returns false if definition is null or undefined', () => {
+    it('Should return false if definition is null or undefined', () => {
       expect(formHasStructure('basic-form', null)).toBe(false);
       expect(formHasStructure('basic-form', undefined)).toBe(false);
     });
 
-    it('validates basic-form structure', () => {
+    it('Should validate basic-form structure', () => {
       const hasFields = {
         schema: {
           properties: { name: { type: 'string' } },
@@ -67,7 +67,7 @@ describe('applications utility tests', () => {
       expect(formHasStructure('basic-form', {})).toBe(false);
     });
 
-    it('validates multi-stage-form structure', () => {
+    it('Should validate multi-stage-form structure', () => {
       const validMultiStage = {
         stages: [
           {
@@ -101,7 +101,7 @@ describe('applications utility tests', () => {
       expect(formHasStructure('multi-stage-form', {})).toBe(false);
     });
 
-    it('returns false for other kinds', () => {
+    it('Should return false for other kinds', () => {
       expect(formHasStructure('service', { schema: { properties: { x: 1 } } })).toBe(false);
     });
   });
@@ -114,7 +114,7 @@ describe('applications utility tests', () => {
       dbMock = mocks.dbMockQuery;
     });
 
-    it('resolves an existing application successfully', async () => {
+    it('Should resolve an existing application successfully', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -148,7 +148,7 @@ describe('applications utility tests', () => {
       });
     });
 
-    it('throws NotFoundException if target version is not found when resolving applications', async () => {
+    it('Should throw NotFoundException if target version is not found when resolving applications', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const input = [
@@ -165,7 +165,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if target is in a different workspace when resolving applications', async () => {
+    it('Should throw BadRequestException if target is in a different workspace when resolving applications', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -190,7 +190,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if the service references itself when resolving applications', async () => {
+    it('Should throw BadRequestException if the service references itself when resolving applications', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -215,7 +215,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if the target document is not a form kind', async () => {
+    it('Should throw BadRequestException if the target document is not a form kind', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -240,7 +240,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('resolves a new application successfully', async () => {
+    it('Should resolve a new application successfully', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -277,7 +277,7 @@ describe('applications utility tests', () => {
       });
     });
 
-    it('throws UnprocessableEntityException if the type is not found or has no published version', async () => {
+    it('Should throw UnprocessableEntityException if the type is not found or has no published version', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const input = [
@@ -294,7 +294,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if the new form type is not a form kind', async () => {
+    it('Should throw BadRequestException if the new form type is not a form kind', async () => {
       dbMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -336,7 +336,7 @@ describe('applications utility tests', () => {
       });
     });
 
-    it('inserts an existing application relation directly', async () => {
+    it('Should insert an existing application relation directly', async () => {
       const app = {
         id: 'app-id',
         label: 'Submit Application',
@@ -353,7 +353,7 @@ describe('applications utility tests', () => {
       expect(txMock.insert).toHaveBeenCalledWith(documentReferences);
     });
 
-    it('creates a new form document and draft version, then inserts its reference', async () => {
+    it('Should create a new form document and draft version, then inserts its reference', async () => {
       const app = {
         id: undefined,
         label: 'Submit Application',
@@ -378,7 +378,7 @@ describe('applications utility tests', () => {
       expect(txMock.insert).toHaveBeenNthCalledWith(3, documentReferences);
     });
 
-    it('throws Error if form document insert returned no row when submitting an application', async () => {
+    it('Should throw Error if form document insert returned no row when submitting an application', async () => {
       const app = {
         id: undefined,
         label: 'Submit Application',
@@ -399,7 +399,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws Error if form version insert returned no row when submitting an application', async () => {
+    it('Should throw Error if form version insert returned no row when submitting an application', async () => {
       const app = {
         id: undefined,
         label: 'Submit Application',

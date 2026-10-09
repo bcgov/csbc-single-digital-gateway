@@ -19,7 +19,7 @@ describe('Palette Component Test Suite', () => {
       isDragging: false,
     } as any);
   });
-  it('renders all component groups and fields by default', () => {
+  it('Should render all component groups and fields by default', () => {
     render(<Palette onAdd={vi.fn()} />);
 
     // Renders group headers
@@ -34,7 +34,7 @@ describe('Palette Component Test Suite', () => {
     expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument();
   });
 
-  it('triggers onAdd callback when clicking a component button', async () => {
+  it('Should trigger onAdd callback when clicking a component button', async () => {
     const user = userEvent.setup();
     const handleAdd = vi.fn();
     render(<Palette onAdd={handleAdd} />);
@@ -45,7 +45,7 @@ describe('Palette Component Test Suite', () => {
     expect(handleAdd).toHaveBeenCalledWith('text');
   });
 
-  it('filters components based on search query', async () => {
+  it('Should filter components based on search query', async () => {
     const user = userEvent.setup();
     render(<Palette onAdd={vi.fn()} />);
 
@@ -63,7 +63,7 @@ describe('Palette Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Boolean' })).not.toBeInTheDocument();
   });
 
-  it('matches components by their keywords', async () => {
+  it('Should match components by their keywords', async () => {
     const user = userEvent.setup();
     render(<Palette onAdd={vi.fn()} />);
 
@@ -76,7 +76,7 @@ describe('Palette Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Text' })).not.toBeInTheDocument();
   });
 
-  it('shows empty state when no components match query', async () => {
+  it('Should show empty state when no components match query', async () => {
     const user = userEvent.setup();
     render(<Palette onAdd={vi.fn()} />);
 
@@ -88,7 +88,7 @@ describe('Palette Component Test Suite', () => {
     expect(screen.queryByText('Core')).not.toBeInTheDocument();
   });
 
-  it('resets query when onClear is triggered on search input', async () => {
+  it('Should reset query when onClear is triggered on search input', async () => {
     const user = userEvent.setup();
     render(<Palette onAdd={vi.fn()} />);
 
@@ -103,7 +103,7 @@ describe('Palette Component Test Suite', () => {
     expect(screen.getByRole('button', { name: 'Number' })).toBeInTheDocument();
   });
 
-  it('renders palette item with dragging state when isDragging is true', () => {
+  it('Should render palette item with dragging state when isDragging is true', () => {
     vi.mocked(useDraggable).mockReturnValue({
       ref: () => {},
       isDragging: true,

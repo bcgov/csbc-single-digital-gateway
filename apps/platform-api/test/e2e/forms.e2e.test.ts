@@ -57,13 +57,13 @@ describe('Forms E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s form endpoints without a session', async () => {
+  it('Should return 401 for form endpoints without a session', async () => {
     expect((await http().get(`/v1/forms/${UUID}`)).status).toBe(401);
     expect((await http().post('/v1/forms').send({})).status).toBe(401);
     expect((await http().patch(`/v1/forms/${UUID}/versions/${UUID}`).send({})).status).toBe(401);
   });
 
-  it('400s invalid create + patch bodies for a signed-in user', async () => {
+  it('Should return 400 for invalid create + patch bodies for a signed-in user', async () => {
     const staff = seedUser(['staff']);
     expect((await http().post('/v1/forms').set('x-test-user', staff).send({})).status).toBe(400);
     expect(

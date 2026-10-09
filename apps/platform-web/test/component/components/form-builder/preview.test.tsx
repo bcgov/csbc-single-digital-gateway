@@ -17,7 +17,7 @@ vi.mock('@repo/react/form-runner', () => ({
 }));
 
 describe('Preview Component Test Suite', () => {
-  it('renders FormRunner with definition and empty default data state', () => {
+  it('Should render FormRunner with definition and empty default data state', () => {
     render(<Preview definition={mockDefinition as any} />);
 
     expect(screen.getByTestId('mock-form-runner')).toBeInTheDocument();
@@ -26,7 +26,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByText(/Full Name/)).toBeInTheDocument();
   });
 
-  it('renders the form title and description as a header', () => {
+  it('Should render the form title and description as a header', () => {
     render(
       <Preview
         definition={
@@ -46,7 +46,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByText('Fill this out')).toBeInTheDocument();
   });
 
-  it('renders only title when description is omitted or empty', () => {
+  it('Should render only title when description is omitted or empty', () => {
     render(
       <Preview
         definition={
@@ -65,7 +65,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: 'Only Title Form' })).toBeInTheDocument();
   });
 
-  it('renders only description when title is omitted or empty', () => {
+  it('Should render only description when title is omitted or empty', () => {
     render(
       <Preview
         definition={
@@ -85,7 +85,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByText('Only Description Text')).toBeInTheDocument();
   });
 
-  it('handles non-string title and description safely without rendering header', () => {
+  it('Should handle non-string title and description safely without rendering header', () => {
     render(
       <Preview
         definition={
@@ -104,7 +104,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
   });
 
-  it('updates form runner data on onChange triggers for the preview component', async () => {
+  it('Should update form runner data on onChange triggers for the preview component', async () => {
     const user = userEvent.setup();
     render(<Preview definition={mockDefinition as any} />);
 

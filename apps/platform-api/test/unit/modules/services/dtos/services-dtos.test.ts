@@ -13,7 +13,7 @@ import { VALID_UUID_1, VALID_UUID_2, VALID_UUID_3, UUID } from '../../../../util
 
 describe('service DTO schemas', () => {
   describe('applicationFormRefSchema', () => {
-    it('validates mode existing with a valid uuid versionId', () => {
+    it('Should validate mode existing with a valid uuid versionId', () => {
       const payload = {
         mode: 'existing',
         versionId: VALID_UUID_1,
@@ -22,7 +22,7 @@ describe('service DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('validates mode new with valid uuid typeId and non-empty title', () => {
+    it('Should validate mode new with valid uuid typeId and non-empty title', () => {
       const payload = {
         mode: 'new',
         typeId: VALID_UUID_2,
@@ -33,7 +33,7 @@ describe('service DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('rejects invalid inputs', () => {
+    it('Should reject invalid inputs', () => {
       expect(
         applicationFormRefSchema.safeParse({ mode: 'existing', versionId: 'invalid' }).success,
       ).toBe(false);
@@ -44,7 +44,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('applicationInputSchema', () => {
-    it('validates a correct application input', () => {
+    it('Should validate a correct application input', () => {
       const payload = {
         id: VALID_UUID_1,
         label: 'Apply Now',
@@ -60,7 +60,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('createServiceSchema', () => {
-    it('validates a valid createService payload', () => {
+    it('Should validate a valid createService payload', () => {
       const payload = {
         workspaceId: VALID_UUID_1,
         title: 'Service Title',
@@ -80,7 +80,7 @@ describe('service DTO schemas', () => {
       const result = createServiceSchema.safeParse(payload);
       expect(result.success).toBe(true);
     });
-    it('createServiceSchema requires a uuid workspaceId and a non-empty title', () => {
+    it('Should require a uuid workspaceId and a non-empty title in createServiceSchema', () => {
       expect(
         createServiceSchema.safeParse({ workspaceId: VALID_UUID_3, title: 'Permit' }).success,
       ).toBe(true);
@@ -93,18 +93,18 @@ describe('service DTO schemas', () => {
       );
     });
 
-    it('listServicesQuerySchema requires a uuid workspaceId', () => {
+    it('Should require a uuid workspaceId in listServicesQuerySchema', () => {
       expect(listServicesQuerySchema.safeParse({ workspaceId: VALID_UUID_3 }).success).toBe(true);
       expect(listServicesQuerySchema.safeParse({}).success).toBe(false);
     });
 
-    it('updateVersionDataSchema requires a data object; applications are optional', () => {
+    it('Should require a data object in updateVersionDataSchema with optional applications', () => {
       expect(updateVersionDataSchema.safeParse({ data: { title: 'x' } }).success).toBe(true);
       expect(updateVersionDataSchema.safeParse({ data: 'nope' }).success).toBe(false);
       expect(updateVersionDataSchema.safeParse({}).success).toBe(false);
     });
 
-    it('createServiceSchema accepts applications (existing + new form) and defaults them empty', () => {
+    it('Should accept applications (existing + new form) and default them to empty in createServiceSchema', () => {
       const parsed = createServiceSchema.safeParse({ workspaceId: VALID_UUID_3, title: 'Permit' });
       expect(parsed.success && parsed.data.applications).toEqual([]);
       expect(
@@ -130,7 +130,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('updateVersionDataSchema', () => {
-    it('validates a valid updateVersion payload', () => {
+    it('Should validate a valid updateVersion payload', () => {
       const payload = {
         data: { someData: 123 },
         title: 'New Title',
@@ -141,7 +141,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('toServiceDto', () => {
-    it('maps Document row to ServiceResponse DTO', () => {
+    it('Should map Document row to ServiceResponse DTO', () => {
       const mockService = {
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -163,7 +163,7 @@ describe('service DTO schemas', () => {
       });
     });
 
-    it('throws Error if workspaceId is null', () => {
+    it('Should throw Error if workspaceId is null', () => {
       const mockServiceError = {
         id: 'service-1',
         workspaceId: null,
@@ -179,7 +179,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('toServiceVersionDto', () => {
-    it('maps DocumentVersion row to ServiceVersionResponse DTO', () => {
+    it('Should map DocumentVersion row to ServiceVersionResponse DTO', () => {
       const mockServiceVersionPublished = {
         id: 'version-1',
         documentId: 'service-1',
@@ -205,7 +205,7 @@ describe('service DTO schemas', () => {
       });
     });
 
-    it('maps null publishedAt and defined archivedAt correctly', () => {
+    it('Should map null publishedAt and defined archivedAt correctly', () => {
       const mockServiceVersionArchived = {
         id: 'version-1',
         documentId: 'service-1',
@@ -233,7 +233,7 @@ describe('service DTO schemas', () => {
   });
 
   describe('service DTO schemas', () => {
-    it('createServiceSchema requires a uuid workspaceId and a non-empty title', () => {
+    it('Should require a uuid workspaceId and a non-empty title in createServiceSchema', () => {
       expect(createServiceSchema.safeParse({ workspaceId: UUID, title: 'Permit' }).success).toBe(
         true,
       );
@@ -244,18 +244,18 @@ describe('service DTO schemas', () => {
       expect(createServiceSchema.safeParse({ workspaceId: UUID, title: '' }).success).toBe(false);
     });
 
-    it('listServicesQuerySchema requires a uuid workspaceId', () => {
+    it('Should require a uuid workspaceId in listServicesQuerySchema', () => {
       expect(listServicesQuerySchema.safeParse({ workspaceId: UUID }).success).toBe(true);
       expect(listServicesQuerySchema.safeParse({}).success).toBe(false);
     });
 
-    it('updateVersionDataSchema requires a data object; applications are optional', () => {
+    it('Should require a data object in updateVersionDataSchema with optional applications', () => {
       expect(updateVersionDataSchema.safeParse({ data: { title: 'x' } }).success).toBe(true);
       expect(updateVersionDataSchema.safeParse({ data: 'nope' }).success).toBe(false);
       expect(updateVersionDataSchema.safeParse({}).success).toBe(false);
     });
 
-    it('updateVersionDataSchema accepts an optional applicationOrder of uuids (feature 132)', () => {
+    it('Should accept an optional applicationOrder of uuids in updateVersionDataSchema (feature 132)', () => {
       expect(
         updateVersionDataSchema.safeParse({ data: {}, applicationOrder: [UUID, UUID] }).success,
       ).toBe(true);
@@ -269,7 +269,7 @@ describe('service DTO schemas', () => {
       ).toBe(false);
     });
 
-    it('createServiceSchema accepts applications (existing + new form) and defaults them empty', () => {
+    it('Should accept applications (existing + new form) and default them to empty in createServiceSchema', () => {
       const parsed = createServiceSchema.safeParse({ workspaceId: UUID, title: 'Permit' });
       expect(parsed.success && parsed.data.applications).toEqual([]);
       expect(

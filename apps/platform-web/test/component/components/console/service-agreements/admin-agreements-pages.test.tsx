@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 describe('Admin Agreements Pages Component Test Suite', () => {
-  it('AdminAgreementsNew opens the New agreement modal and allows creating one', async () => {
+  it('Should open the New agreement modal and allow creating one in AdminAgreementsNew', async () => {
     const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'admin-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,
@@ -48,7 +48,7 @@ describe('Admin Agreements Pages Component Test Suite', () => {
     );
   });
 
-  it('AdminAgreementDetail renders details of a specific agreement version', async () => {
+  it('Should render details of a specific agreement version in AdminAgreementDetail', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'admin-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,
@@ -62,7 +62,7 @@ describe('Admin Agreements Pages Component Test Suite', () => {
     expect(await screen.findByText(/Version v1/, {}, { timeout: 32000 })).toBeInTheDocument();
   });
 
-  it('AdminAgreementsList renders list of admin service agreements', async () => {
+  it('Should render list of admin service agreements in AdminAgreementsList', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'admin-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,

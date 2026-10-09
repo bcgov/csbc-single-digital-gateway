@@ -59,12 +59,12 @@ describe('Service Agreements E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s agreement endpoints without a session', async () => {
+  it('Should return 401 for agreement endpoints without a session', async () => {
     expect((await http().get('/v1/service-agreements')).status).toBe(401);
     expect((await http().post('/v1/service-agreements').send({ data: {} })).status).toBe(401);
   });
 
-  it('400s an invalid create body for a signed-in user when fetching service agreements', async () => {
+  it('Should return 400 for an invalid create body for a signed-in user when fetching service agreements', async () => {
     const staff = seedUser(['staff']);
     // data is required.
     expect(
@@ -81,7 +81,7 @@ describe('Service Agreements E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('403s a non-admin creating a GLOBAL agreement (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin creating a GLOBAL agreement (no workspaceId)', async () => {
     // A valid body with no workspaceId means "global" — admin-only, enforced before any DB query.
     expect(
       (
@@ -93,7 +93,7 @@ describe('Service Agreements E2E Test Suite', () => {
     ).toBe(403);
   });
 
-  it('403s a non-admin listing GLOBAL agreements (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin listing GLOBAL agreements (no workspaceId)', async () => {
     expect(
       (
         await http()
@@ -103,11 +103,11 @@ describe('Service Agreements E2E Test Suite', () => {
     ).toBe(403);
   });
 
-  it('401s the paginated browse without a session', async () => {
+  it('Should return 401 for the paginated browse without a session', async () => {
     expect((await http().get('/v1/service-agreements/page')).status).toBe(401);
   });
 
-  it('403s a non-admin browsing GLOBAL agreements (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin browsing GLOBAL agreements (no workspaceId)', async () => {
     expect(
       (
         await http()
@@ -117,7 +117,7 @@ describe('Service Agreements E2E Test Suite', () => {
     ).toBe(403);
   });
 
-  it('400s the paginated browse with out-of-range paging or an unknown sort', async () => {
+  it('Should return 400 for the paginated browse with out-of-range paging or an unknown sort', async () => {
     expect(
       (
         await http()

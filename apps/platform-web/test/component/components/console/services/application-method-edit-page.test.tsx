@@ -158,7 +158,7 @@ const mockMultiStageFormPublished = {
 describe('Application Method Edit Page Component Test Suite', () => {
   let savedBody: any = null;
 
-  it('renders loading spinner when loading form data', async () => {
+  it('Should render loading spinner when loading form data', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -184,7 +184,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     );
   });
 
-  it('renders draft basic-form layout and edits title successfully', async () => {
+  it('Should render draft basic-form layout and edit title successfully', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -239,7 +239,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     );
   });
 
-  it('renders published basic-form layout as read-only preview', async () => {
+  it('Should render published basic-form layout as read-only preview', async () => {
     mockApplicationsBff(mockBasicFormPublished, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -260,7 +260,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Save form' })).not.toBeInTheDocument();
   });
 
-  it('renders draft multi-stage-form layout and edits definition successfully', async () => {
+  it('Should render draft multi-stage-form layout and edit definition successfully', async () => {
     mockApplicationsBff(mockMultiStageFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -309,7 +309,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     );
   });
 
-  it('renders published multi-stage-form layout as read-only stage outline', async () => {
+  it('Should render published multi-stage-form layout as read-only stage outline', async () => {
     mockApplicationsBff(mockMultiStageFormPublished, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -340,7 +340,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Save form' })).not.toBeInTheDocument();
   });
 
-  it('falls back to form title when schema title is missing in draft basic-form', async () => {
+  it('Should fall back to form title when schema title is missing in draft basic-form', async () => {
     const mockBasicFormNoTitleDraft = {
       form: {
         id: 'am-789',
@@ -381,7 +381,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(titleInput).toHaveValue('Parking Application Fallback Title');
   });
 
-  it('falls back to form title when schema title is missing in published basic-form', async () => {
+  it('Should fall back to form title when schema title is missing in published basic-form', async () => {
     const mockBasicFormNoTitlePublished = {
       form: {
         id: 'am-789',
@@ -426,7 +426,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('falls back to form title when schema name is empty in draft multi-stage-form', async () => {
+  it('Should fall back to form title when schema name is empty in draft multi-stage-form', async () => {
     const mockMultiStageFormNoTitleDraft = {
       form: {
         id: 'am-789',
@@ -474,7 +474,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(screen.getAllByText('Complex Form Fallback Title')[0]).toBeInTheDocument();
   });
 
-  it('falls back to form title when schema name is empty in published multi-stage-form', async () => {
+  it('Should fall back to form title when schema name is empty in published multi-stage-form', async () => {
     const mockMultiStageFormNoTitlePublished = {
       form: {
         id: 'am-789',
@@ -526,7 +526,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows error message when form save fails', async () => {
+  it('Should show error message when form save fails', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -559,7 +559,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(errorAlert.textContent).toContain('Failed to save form');
   });
 
-  it('shows spinner when saving form', async () => {
+  it('Should show spinner when saving form', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -608,7 +608,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     });
   });
 
-  it('renders published basic-form layout with description preview', async () => {
+  it('Should render published basic-form layout with description preview', async () => {
     const mockBasicFormPublishedWithDesc = {
       form: {
         id: 'am-789',
@@ -654,7 +654,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('falls back to form title when saving draft multi-stage-form with an empty/whitespace name', async () => {
+  it('Should fall back to form title when saving draft multi-stage-form with an empty/whitespace name', async () => {
     mockApplicationsBff(mockMultiStageFormDraft, {
       testFile: 'application-method-edit-page.test',
       workspace: adminWorkspace,
@@ -680,7 +680,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(savedBody.title).toBe('Complex Permit Application');
   });
 
-  it('falls back to form title when schema title is empty string in published basic-form', async () => {
+  it('Should fall back to form title when schema title is empty string in published basic-form', async () => {
     const mockBasicFormEmptyTitlePublished = {
       form: {
         id: 'am-789',

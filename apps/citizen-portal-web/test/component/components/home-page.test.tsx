@@ -87,7 +87,7 @@ describe('HomePage Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders loading/skeleton state when isPending is true', () => {
+  it('Should render loading/skeleton state when isPending is true', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: undefined,
       isPending: true,
@@ -106,7 +106,7 @@ describe('HomePage Component', () => {
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
   });
 
-  it('renders anonymous (signed-out) view when no user session exists', () => {
+  it('Should render anonymous (signed-out) view when no user session exists', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: null,
       isPending: false,
@@ -136,7 +136,7 @@ describe('HomePage Component', () => {
     expect(screen.queryByTestId('track-applications')).not.toBeInTheDocument();
   });
 
-  it('renders authenticated (signed-in) view when user session exists', () => {
+  it('Should render authenticated (signed-in) view when user session exists', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: authedUser,
       isPending: false,
@@ -180,7 +180,7 @@ describe('HomePage Component', () => {
     expect(screen.queryByTestId('login-cta')).not.toBeInTheDocument();
   });
 
-  it('calls logout and redirects to root when onLogout is triggered', async () => {
+  it('Should call logout and redirects to root when onLogout is triggered', async () => {
     vi.mocked(useAuth).mockReturnValue({
       data: authedUser,
       isPending: false,
@@ -205,7 +205,7 @@ describe('HomePage Component', () => {
     });
   });
 
-  it('handles nullish/empty data queries gracefully', () => {
+  it('Should handle nullish/empty data queries gracefully', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: authedUser,
       isPending: false,
@@ -222,7 +222,7 @@ describe('HomePage Component', () => {
     expect(screen.getByText('Applications Count: 0')).toBeInTheDocument();
   });
 
-  it('handles nullish services data query in anonymous view gracefully', () => {
+  it('Should handle nullish services data query in anonymous view gracefully', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: null,
       isPending: false,

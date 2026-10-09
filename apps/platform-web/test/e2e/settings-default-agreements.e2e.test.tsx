@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('workspace settings — default agreements section', () => {
-  it('renders the Default agreements panel between General and Danger zone', async () => {
+  it('Should render the Default agreements panel between General and Danger zone', async () => {
     mockBff();
 
     renderApp('/app/riverton/settings');

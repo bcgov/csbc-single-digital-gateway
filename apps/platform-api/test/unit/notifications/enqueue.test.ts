@@ -15,7 +15,7 @@ describe('enqueueNotification', () => {
     };
   });
 
-  it('inserts a notification into the outbox within the transaction', async () => {
+  it('Should insert a notification into the outbox within the transaction', async () => {
     const mockNotification = {
       idempotencyKey: 'key-123',
       userId: 'user-123',

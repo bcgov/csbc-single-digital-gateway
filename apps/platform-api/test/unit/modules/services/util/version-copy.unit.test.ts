@@ -26,7 +26,7 @@ describe('version-copy utility tests', () => {
   });
 
   describe('reactivateServiceTx', () => {
-    it('reactivates a service and its references successfully', async () => {
+    it('Should reactivate a service and its references successfully', async () => {
       txMock.select
         // 1. latest version query
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1', status: 'archived', version: 2 }]))
@@ -39,13 +39,13 @@ describe('version-copy utility tests', () => {
       expect(txMock.set).toHaveBeenCalledWith({ archivedAt: null });
     });
 
-    it('throws NotFoundException if service version does not exist', async () => {
+    it('Should throw NotFoundException if service version does not exist', async () => {
       txMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(reactivateServiceTx(txMock, 'service-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws ConflictException if service is not archived', async () => {
+    it('Should throw ConflictException if service is not archived', async () => {
       txMock.select.mockReturnValueOnce(
         createMockQuery([{ id: 'version-1', status: 'published', version: 1 }]),
       );
@@ -55,7 +55,7 @@ describe('version-copy utility tests', () => {
   });
 
   describe('discardVersionTx', () => {
-    it('successfully discards draft version and deletes orphaned forms', async () => {
+    it('Should successfully discard draft version and delete orphaned forms', async () => {
       txMock.select
         // 1. counts query (needs count > 1)
         .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
@@ -70,7 +70,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).toHaveBeenNthCalledWith(2, documents); // orphaned form deleted
     });
 
-    it('throws ConflictException if discarding the only version of a service', async () => {
+    it('Should throw ConflictException if discarding the only version of a service', async () => {
       txMock.select.mockReturnValueOnce(createMockQuery([{ n: 1 }]));
 
       await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
@@ -78,7 +78,7 @@ describe('version-copy utility tests', () => {
       );
     });
 
-    it('throws ConflictException if counts query returns empty', async () => {
+    it('Should throw ConflictException if counts query returns empty', async () => {
       txMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
@@ -86,7 +86,7 @@ describe('version-copy utility tests', () => {
       );
     });
 
-    it('does not delete form document if it is still referenced elsewhere (remaining count > 0)', async () => {
+    it('Should not delete form document if it is still referenced elsewhere (remaining count > 0)', async () => {
       txMock.select
         // 1. counts query (needs count > 1)
         .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
@@ -101,7 +101,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).not.toHaveBeenCalledWith(documents);
     });
 
-    it('deletes form document if remaining count query returns empty when discarding version', async () => {
+    it('Should delete form document if remaining count query returns empty when discarding version', async () => {
       txMock.select
         // 1. counts query (needs count > 1)
         .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
@@ -125,7 +125,7 @@ describe('version-copy utility tests', () => {
       workspaceId: 'ws-1',
     };
 
-    it('copies references and deep-copies application forms', async () => {
+    it('Should copy references and deep-copies application forms', async () => {
       txMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -169,7 +169,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.insert).toHaveBeenNthCalledWith(4, documentReferences);
     });
 
-    it('throws error if one helper returns no rows during copy', async () => {
+    it('Should throw error if one helper returns no rows during copy', async () => {
       txMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -195,7 +195,7 @@ describe('version-copy utility tests', () => {
       );
     });
 
-    it('throws error if form version copy returns no rows during copy', async () => {
+    it('Should throw error if form version copy returns no rows during copy', async () => {
       txMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -223,7 +223,7 @@ describe('version-copy utility tests', () => {
       );
     });
 
-    it('throws error if formTypeId is missing during copy', async () => {
+    it('Should throw error if formTypeId is missing during copy', async () => {
       txMock.select.mockReturnValueOnce(
         createMockQuery([
           {
@@ -249,7 +249,7 @@ describe('version-copy utility tests', () => {
   });
 
   describe('dedupCopiedForms', () => {
-    it('exits early if no published version is found', async () => {
+    it('Should exit early if no published version is found', async () => {
       txMock.select.mockReturnValueOnce(createMockQuery([])); // pubRows is empty
 
       await dedupCopiedForms(txMock, 'service-1', 'version-2');
@@ -257,7 +257,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.update).not.toHaveBeenCalled();
     });
 
-    it('deduplicates deep-copied forms if schemas are identical', async () => {
+    it('Should deduplicate deep-copied forms if schemas are identical', async () => {
       txMock.select
         // 1. pubRows query -> returns previous published id
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
@@ -296,7 +296,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).toHaveBeenCalledWith(documents);
     });
 
-    it('does not deduplicate if schemas are different', async () => {
+    it('Should not deduplicate if schemas are different', async () => {
       txMock.select
         // 1. pubRows query -> returns previous published id
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
@@ -329,7 +329,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).not.toHaveBeenCalled();
     });
 
-    it('exits early if the published version is the same as the version being published', async () => {
+    it('Should exit early if the published version is the same as the version being published', async () => {
       txMock.select.mockReturnValueOnce(createMockQuery([{ id: 'version-1' }])); // publishedId === versionId
 
       await dedupCopiedForms(txMock, 'service-1', 'version-1');
@@ -337,7 +337,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.update).not.toHaveBeenCalled();
     });
 
-    it('does not deduplicate if no previous form matches current form by label', async () => {
+    it('Should not deduplicate if no previous form matches current form by label', async () => {
       txMock.select
         // 1. pubRows query -> returns previous published id
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
@@ -370,7 +370,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).not.toHaveBeenCalled();
     });
 
-    it('deduplicates deep-copied forms with null labels if schemas are identical', async () => {
+    it('Should deduplicate deep-copied forms with null labels if schemas are identical', async () => {
       txMock.select
         // 1. pubRows query -> returns previous published id
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
@@ -407,7 +407,7 @@ describe('version-copy utility tests', () => {
       expect(txMock.delete).toHaveBeenCalledWith(documents);
     });
 
-    it('deduplicates deep-copied external applications if data is identical', async () => {
+    it('Should deduplicate deep-copied external applications if data is identical', async () => {
       txMock.select
         // 1. pubRows query -> returns previous published id
         .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))

@@ -21,7 +21,6 @@ interface MockServicesBffOptions extends MockAuthOptions {
 
 /**
  * Mock service BFF for testing.
- * @param service The service JSON to return.
  * @param options The options to return.
  * @param options.user The user to return.
  * @param options.testFile The test file name to match for routing.
@@ -30,7 +29,7 @@ interface MockServicesBffOptions extends MockAuthOptions {
  * @param options.draftVersion The draft version JSON to return.
  * @returns The mock service BFF.
  */
-export function mockServicesBff(service: object, options?: MockServicesBffOptions) {
+export function mockServicesBff(options?: MockServicesBffOptions) {
   const mergedOptions = { user: adminUser, workspaces: [adminWorkspace], ...options };
   const base = mockAuthUser(mergedOptions.user, mergedOptions);
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

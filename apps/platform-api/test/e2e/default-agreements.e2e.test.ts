@@ -60,13 +60,13 @@ describe('Workspace Default Agreements E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s the default-agreement endpoints without a session', async () => {
+  it('Should return 401 for the default-agreement endpoints without a session', async () => {
     expect((await http().get(BASE)).status).toBe(401);
     expect((await http().post(BASE).send({ agreementDocumentId: UUID })).status).toBe(401);
     expect((await http().delete(`${BASE}/${UUID}`)).status).toBe(401);
   });
 
-  it('400s an add with a missing/invalid agreementDocumentId', async () => {
+  it('Should return 400 for an add with a missing/invalid agreementDocumentId', async () => {
     const staff = seedUser(['staff']);
     expect((await http().post(BASE).set('x-test-user', staff).send({})).status).toBe(400);
     expect(

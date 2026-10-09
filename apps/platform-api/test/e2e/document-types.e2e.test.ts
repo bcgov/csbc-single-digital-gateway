@@ -59,7 +59,7 @@ describe('Document Types E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s document-types catalog endpoints without a session', async () => {
+  it('Should return 401 for document-types catalog endpoints without a session', async () => {
     // GET /v1/document-types (list)
     expect((await http().get('/v1/document-types')).status).toBe(401);
     // GET /v1/document-types/:id (get)
@@ -68,7 +68,7 @@ describe('Document Types E2E Test Suite', () => {
     expect((await http().get(`/v1/document-types/${UUID}/versions/${UUID}`)).status).toBe(401);
   });
 
-  it('404s unmapped mutation routes on document-types for authenticated staff (read-only catalog)', async () => {
+  it('Should return 404 for unmapped mutation routes on document-types for authenticated staff (read-only catalog)', async () => {
     const staff = seedUser(['staff']);
 
     // Document types catalog is read-only for staff — mutations should not have registered route handlers

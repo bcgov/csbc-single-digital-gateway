@@ -50,7 +50,7 @@ const mockMultistageReference = {
 };
 
 describe('Application Method Modal Component Test Suite', () => {
-  it('renders the modal with basic, multi-stage options and coming-soon external link', async () => {
+  it('Should render the modal with basic, multi-stage options and coming-soon external link', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -84,7 +84,7 @@ describe('Application Method Modal Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('creates basic form and navigates to the edit page successfully', async () => {
+  it('Should create basic form and navigate to the edit page successfully', async () => {
     let createdBody: any = null;
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
@@ -133,7 +133,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
   });
 
-  it('creates multi-stage form and navigates to the edit page successfully', async () => {
+  it('Should create multi-stage form and navigate to the edit page successfully', async () => {
     let createdBody: any = null;
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
@@ -182,7 +182,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
   });
 
-  it('closes the modal and navigates back to service details when dismissed', async () => {
+  it('Should close the modal and navigate back to service details when dismissed', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -219,7 +219,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
   });
 
-  it('shows error message when form creation fails', async () => {
+  it('Should show error message when form creation fails', async () => {
     const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -254,7 +254,7 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(errorAlert.textContent).toContain('Failed to create form');
   });
 
-  it('shows error message when form type is unavailable', async () => {
+  it('Should show error message when form type is unavailable', async () => {
     const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -284,7 +284,7 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(errorAlert.textContent).toContain('Basic form type unavailable');
   });
 
-  it('does not close the modal if form creation is pending', async () => {
+  it('Should not close the modal if form creation is pending', async () => {
     let resolveCreate!: (value: Response) => void;
     const createPromise = new Promise<Response>((resolve) => {
       resolveCreate = resolve;
@@ -337,7 +337,7 @@ describe('Application Method Modal Component Test Suite', () => {
     resolveCreate(jsonResponse(mockBasicReference));
   });
 
-  it('creates external link and navigates back to service details page successfully', async () => {
+  it('Should create external link and navigate back to service details page successfully', async () => {
     let createdBody: any = null;
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
@@ -396,7 +396,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
   });
 
-  it('allows cancelling from external link step and returning to choose step', async () => {
+  it('Should allow cancelling from external link step and returning to choose step', async () => {
     mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -420,7 +420,7 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /Basic form/i })).toBeInTheDocument();
   });
 
-  it('shows error message when external link creation fails', async () => {
+  it('Should show error message when external link creation fails', async () => {
     const fetchMock = mockApplicationsBff(mockBasicFormDraft, {
       testFile: 'application-method-modal.test',
       mockFormTypes,
@@ -466,7 +466,7 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(errorAlert.textContent).toContain('Failed to create external link');
   });
 
-  it('does not allow cancelling from external link step if creation is pending', async () => {
+  it('Should not allow cancelling from external link step if creation is pending', async () => {
     let resolveCreate!: (value: Response) => void;
     const createPromise = new Promise<Response>((resolve) => {
       resolveCreate = resolve;

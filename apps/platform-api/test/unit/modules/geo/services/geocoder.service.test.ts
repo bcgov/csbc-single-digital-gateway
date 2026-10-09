@@ -29,7 +29,7 @@ const bcResponse = (body: unknown, ok = true, status = 200) =>
 
 describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
   describe('Dependency Injection and Metadata', () => {
-    it('should resolve GeocoderService from NestJS Test module', async () => {
+    it('Should resolve GeocoderService from NestJS Test module', async () => {
       const moduleRef = await Test.createTestingModule({
         providers: [
           GeocoderService,
@@ -46,7 +46,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       await moduleRef.close();
     });
 
-    it('should evaluate class decorator metadata when ConfigService is undefined', async () => {
+    it('Should evaluate class decorator metadata when ConfigService is undefined', async () => {
       vi.resetModules();
       vi.doMock('@nestjs/config', () => ({
         ConfigService: undefined,
@@ -58,7 +58,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
   });
 
   describe('normalizeBcFeature', () => {
-    it('returns null for null, non-objects, or objects without properties', () => {
+    it('Should return null for null, non-objects, or objects without properties', () => {
       expect(normalizeBcFeature(null)).toBeNull();
       expect(normalizeBcFeature(undefined)).toBeNull();
       expect(normalizeBcFeature('string')).toBeNull();
@@ -66,7 +66,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(normalizeBcFeature({})).toBeNull();
     });
 
-    it('builds a suggestion from structured street parts, locality, and provinceCode', () => {
+    it('Should build a suggestion from structured street parts, locality, and provinceCode', () => {
       const feature = {
         properties: {
           fullAddress: '1012 Douglas St, Victoria, BC',
@@ -85,7 +85,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       });
     });
 
-    it('falls back to fullAddress head and secondPart when structured fields and locality are missing', () => {
+    it('Should fall back to fullAddress head and secondPart when structured fields and locality are missing', () => {
       const feature = {
         properties: {
           fullAddress: '500 Government St, Victoria, BC',
@@ -99,7 +99,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       });
     });
 
-    it('synthesizes label from structured street and city when fullAddress is absent', () => {
+    it('Should synthesize label from structured street and city when fullAddress is absent', () => {
       const feature = {
         properties: {
           civicNumber: '100',
@@ -116,7 +116,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       });
     });
 
-    it('returns null when properties carry no usable address information', () => {
+    it('Should return null when properties carry no usable address information', () => {
       expect(normalizeBcFeature({ properties: {} })).toBeNull();
       expect(
         normalizeBcFeature({
@@ -132,17 +132,17 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
   });
 
   describe('GeocoderService.regions', () => {
-    it('returns empty array when BC_GEOCODER_API_KEY is not configured', () => {
+    it('Should return empty array when BC_GEOCODER_API_KEY is not configured', () => {
       const service = new GeocoderService(createConfig(undefined));
       expect(service.regions()).toEqual([]);
     });
 
-    it('registers CA:BC when BC_GEOCODER_API_KEY is set', () => {
+    it('Should register CA:BC when BC_GEOCODER_API_KEY is set', () => {
       const service = new GeocoderService(createConfig('test-api-key'));
       expect(service.regions()).toEqual([{ country: 'CA', province: 'BC' }]);
     });
 
-    it('handles region keys without province segment or with empty string safely', () => {
+    it('Should handle region keys without province segment or with empty string safely', () => {
       const service = new GeocoderService(createConfig('test-api-key'));
       (service as any).providers.set('US', {} as any);
       (service as any).providers.set('', {} as any);
@@ -158,7 +158,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns empty array for an unconfigured or unknown region without calling upstream fetch', async () => {
+    it('Should return empty array for an unconfigured or unknown region without calling upstream fetch', async () => {
       const fetchSpy = vi.fn();
       vi.stubGlobal('fetch', fetchSpy);
 
@@ -168,7 +168,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('returns empty array for a blank or whitespace-only query without calling upstream fetch', async () => {
+    it('Should return empty array for a blank or whitespace-only query without calling upstream fetch', async () => {
       const fetchSpy = vi.fn();
       vi.stubGlobal('fetch', fetchSpy);
 
@@ -178,7 +178,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('successfully fetches and normalizes address suggestions from BC geocoder (case-insensitive region)', async () => {
+    it('Should successfully fetch and normalize address suggestions from BC geocoder (case-insensitive region)', async () => {
       const fetchMock = vi.fn(async () =>
         bcResponse({
           features: [
@@ -214,7 +214,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       ]);
     });
 
-    it('handles non-array or missing features body gracefully', async () => {
+    it('Should handle non-array or missing features body gracefully', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => bcResponse({ features: 'not-an-array' })),
@@ -226,7 +226,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(results).toEqual([]);
     });
 
-    it('handles non-object response body gracefully', async () => {
+    it('Should handle non-object response body gracefully', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => bcResponse('plain-text-response')),
@@ -238,7 +238,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(results).toEqual([]);
     });
 
-    it('returns empty array and logs warning on upstream non-2xx response', async () => {
+    it('Should return empty array and log warning on upstream non-2xx response', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => bcResponse(null, false, 502)),
@@ -250,7 +250,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(results).toEqual([]);
     });
 
-    it('swallows upstream fetch Error exceptions and returns empty array', async () => {
+    it('Should swallow upstream fetch Error exceptions and return empty array', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => {
@@ -264,7 +264,7 @@ describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
       expect(results).toEqual([]);
     });
 
-    it('swallows non-Error throwables and returns empty array', async () => {
+    it('Should swallow non-Error throwables and return empty array', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => {

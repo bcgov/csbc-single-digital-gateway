@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe('AccountPage Component Test Suite', () => {
-  it('renders a loading skeleton when user data is loading', () => {
+  it('Should render a loading skeleton when user data is loading', () => {
     vi.mocked(useAuth).mockReturnValue({ data: undefined } as any);
 
     const { container } = render(<AccountPage />);
@@ -35,7 +35,7 @@ describe('AccountPage Component Test Suite', () => {
     expect(screen.queryByText('Profile')).not.toBeInTheDocument();
   });
 
-  it('renders user details when user data is loaded', () => {
+  it('Should render user details when user data is loaded', () => {
     vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
 
     render(<AccountPage />);
@@ -58,7 +58,7 @@ describe('AccountPage Component Test Suite', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
   });
 
-  it('renders user details correctly when user has no email', () => {
+  it('Should render user details correctly when user has no email', () => {
     vi.mocked(useAuth).mockReturnValue({ data: mockUserNoEmail } as any);
 
     render(<AccountPage />);

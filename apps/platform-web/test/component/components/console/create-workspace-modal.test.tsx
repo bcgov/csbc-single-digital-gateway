@@ -52,12 +52,12 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     });
   });
 
-  it('renders nothing when open is false for the create workspace modal component', () => {
+  it('Should render nothing when open is false for the create workspace modal component', () => {
     renderModal(queryClient, { open: false });
     expect(screen.queryByRole('heading', { name: 'Create workspace' })).not.toBeInTheDocument();
   });
 
-  it('renders forced onboarding style when dismissable is false', () => {
+  it('Should render forced onboarding style when dismissable is false', () => {
     renderModal(queryClient, { dismissable: false, open: true });
 
     expect(screen.getByRole('heading', { name: 'Create workspace' })).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     expect(screen.getByRole('button', { name: 'Create workspace' })).toBeDisabled();
   });
 
-  it('renders dismissable new workspace style when dismissable is true', async () => {
+  it('Should render dismissable new workspace style when dismissable is true', async () => {
     const user = userEvent.setup();
     renderModal(queryClient, { dismissable: true, open: true, onOpenChange: handleOpenChange });
 
@@ -86,7 +86,7 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('submits workspace creation successfully and navigates to the new workspace', async () => {
+  it('Should submit workspace creation successfully and navigate to the new workspace', async () => {
     const user = userEvent.setup();
 
     vi.mocked(createWorkspace).mockResolvedValue({
@@ -124,7 +124,7 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     });
   });
 
-  it('displays error message when workspace creation fails', async () => {
+  it('Should display error message when workspace creation fails', async () => {
     const user = userEvent.setup();
     vi.mocked(createWorkspace).mockRejectedValue(new Error('Network error'));
 
@@ -141,14 +141,14 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders with default props (open: true, dismissable: false)', () => {
+  it('Should render with default props (open: true, dismissable: false)', () => {
     renderModal(queryClient); // No props passed
     expect(screen.getByRole('heading', { name: 'Create workspace' })).toBeInTheDocument();
     expect(screen.getByText('Create your first workspace to get started.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
 
-  it('does not submit if the workspace name is empty or only whitespace (L41)', () => {
+  it('Should not submit if the workspace name is empty or only whitespace (L41)', () => {
     renderModal(queryClient, { dismissable: true, open: true });
     const input = screen.getByLabelText(/workspace name/i);
     const form = input.closest('form')!;
@@ -163,7 +163,7 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     expect(createWorkspace).not.toHaveBeenCalled();
   });
 
-  it('handles successful submit when onOpenChange is not provided', async () => {
+  it('Should handle successful submit when onOpenChange is not provided', async () => {
     const user = userEvent.setup();
     vi.mocked(createWorkspace).mockResolvedValue({
       id: 'w-1',
@@ -191,14 +191,14 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     });
   });
 
-  it('handles cancel click when onOpenChange is not provided', async () => {
+  it('Should handle cancel click when onOpenChange is not provided', async () => {
     const user = userEvent.setup();
     renderModal(queryClient, { dismissable: true, open: true }); // No onOpenChange provided
     const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
     await expect(user.click(cancelBtn)).resolves.not.toThrow();
   });
 
-  it('disables the submit button while workspace creation is in progress', async () => {
+  it('Should disable the submit button while workspace creation is in progress', async () => {
     const user = userEvent.setup();
     let resolvePromise!: (val: any) => void;
     const promise: Promise<Workspace> = new Promise((resolve) => {

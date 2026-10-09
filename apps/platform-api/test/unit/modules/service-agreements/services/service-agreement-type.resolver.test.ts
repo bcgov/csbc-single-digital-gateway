@@ -18,13 +18,13 @@ describe('ServiceAgreementTypeResolver', () => {
   });
 
   describe('resolve', () => {
-    it('throws InternalServerErrorException if the document type is not seeded', async () => {
+    it('Should throw InternalServerErrorException if the document type is not seeded', async () => {
       dbMock.select.mockImplementation(() => createMockQuery([]));
 
       await expect(resolver.resolve()).rejects.toThrow(InternalServerErrorException);
     });
 
-    it('resolves the seeded agreement type and returns default empty schema/uischema if missing', async () => {
+    it('Should resolve the seeded agreement type and return default empty schema/uischema if missing', async () => {
       dbMock.select.mockImplementation(() =>
         createMockQuery([
           {
@@ -45,7 +45,7 @@ describe('ServiceAgreementTypeResolver', () => {
       });
     });
 
-    it('resolves type details and custom definition schema/uischema successfully', async () => {
+    it('Should resolve type details and custom definition schema/uischema successfully', async () => {
       dbMock.select.mockImplementation(() =>
         createMockQuery([
           {
@@ -71,14 +71,14 @@ describe('ServiceAgreementTypeResolver', () => {
   });
 
   describe('schemaForVersion', () => {
-    it('returns empty schema if version is not found', async () => {
+    it('Should return empty schema if version is not found', async () => {
       dbMock.select.mockImplementation(() => createMockQuery([]));
 
       const result = await resolver.schemaForVersion('ver-123');
       expect(result).toEqual({});
     });
 
-    it('returns schema from version definition successfully', async () => {
+    it('Should return schema from version definition successfully', async () => {
       const mockSchema = { type: 'object' };
       dbMock.select.mockImplementation(() =>
         createMockQuery([

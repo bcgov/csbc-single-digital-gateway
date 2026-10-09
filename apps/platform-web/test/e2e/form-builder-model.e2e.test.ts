@@ -15,14 +15,14 @@ import { EMPTY } from '../support/fixtures';
 
 describe('Form Builder Model Integration Test Suite', () => {
   describe('parseModel', () => {
-    it('parses an empty template into an empty model', () => {
+    it('Should parse an empty template into an empty model', () => {
       const model = parseModel(EMPTY);
       expect(model.title).toBe('');
       expect(model.description).toBe('');
       expect(model.fields).toEqual([]);
     });
 
-    it('reads form title/description from schema.title and schema.description', () => {
+    it('Should read form title/description from schema.title and schema.description', () => {
       const model = parseModel({
         schema: {
           type: 'object',
@@ -37,7 +37,7 @@ describe('Form Builder Model Integration Test Suite', () => {
       expect(model.description).toBe('Fill this in');
     });
 
-    it('parses a control into a control field node with its key, label and required flag', () => {
+    it('Should parse a control into a control field node with its key, label and required flag', () => {
       const model = parseModel({
         schema: {
           type: 'object',
@@ -61,13 +61,13 @@ describe('Form Builder Model Integration Test Suite', () => {
   });
 
   describe('serializeModel', () => {
-    it('writes form title/description to schema.title/schema.description', () => {
+    it('Should write form title/description to schema.title/schema.description', () => {
       const model: FormModel = { title: 'Apply', description: 'Desc', fields: [] };
       const { schema } = serializeModel(model);
       expect(schema).toMatchObject({ type: 'object', title: 'Apply', description: 'Desc' });
     });
 
-    it('emits a string property + a Control for a text field', () => {
+    it('Should emit a string property + a Control for a text field', () => {
       const text = createField('text');
       text.key = 'email';
       text.label = 'Email';
@@ -80,14 +80,14 @@ describe('Form Builder Model Integration Test Suite', () => {
       ]);
     });
 
-    it('lists required fields in schema.required', () => {
+    it('Should list required fields in schema.required', () => {
       const a = { ...createField('text'), key: 'a', label: 'A', required: true };
       const b = { ...createField('text'), key: 'b', label: 'B', required: false };
       const { schema } = serializeModel({ title: '', description: '', fields: [a, b] });
       expect(schema.required).toEqual(['a']);
     });
 
-    it('emits oneOf/const/title options for a select field', () => {
+    it('Should emit oneOf/const/title options for a select field', () => {
       const select = createField('select');
       select.key = 'colour';
       select.enumOptions = [
@@ -106,7 +106,7 @@ describe('Form Builder Model Integration Test Suite', () => {
   });
 
   describe('round-trip', () => {
-    it('parse(serialize(model)) preserves a model with mixed field types', () => {
+    it('Should preserve a model with mixed field types in parse(serialize(model))', () => {
       const model: FormModel = {
         title: 'Survey',
         description: 'Tell us',
@@ -121,19 +121,19 @@ describe('Form Builder Model Integration Test Suite', () => {
   });
 
   describe('key helpers', () => {
-    it('derives a valid snake-ish key from a label', () => {
+    it('Should derive a valid snake-ish key from a label', () => {
       expect(fieldKeyFromLabel('Full Name!')).toMatch(/^[a-zA-Z_][a-zA-Z0-9_]*$/);
       expect(fieldKeyFromLabel('Full Name')).toBe('full_name');
     });
 
-    it('makes a key unique against existing keys', () => {
+    it('Should make a key unique against existing keys', () => {
       expect(uniqueKey('email', ['email'])).not.toBe('email');
       expect(uniqueKey('email', [])).toBe('email');
     });
   });
 
   describe('FIELD_TYPES', () => {
-    it('includes core, advanced, rich-text and layout entries', () => {
+    it('Should include core, advanced, rich-text and layout entries', () => {
       const ids = FIELD_TYPES.map((t) => t.id);
       for (const id of ['text', 'number', 'boolean', 'select', 'date']) {
         expect(ids).toContain(id);
@@ -156,13 +156,13 @@ describe('Form Builder Model Integration Test Suite', () => {
   });
 
   describe('insertField', () => {
-    it('inserts a control at a root index', () => {
+    it('Should insert a control at a root index', () => {
       const model: FormModel = { title: '', description: '', fields: [ctrl('a'), ctrl('b')] };
       const next = insertField(model, ctrl('c'), { container: null, index: 1 });
       expect(rootKeys(next)).toEqual(['a', 'c', 'b']);
     });
 
-    it('inserts a control into a container at an index', () => {
+    it('Should insert a control into a container at an index', () => {
       const model: FormModel = { title: '', description: '', fields: [container([ctrl('x')])] };
       const next = insertField(model, ctrl('y'), { container: 0, index: 0 });
       expect(childKeys(next, 0)).toEqual(['y', 'x']);
@@ -170,7 +170,7 @@ describe('Form Builder Model Integration Test Suite', () => {
   });
 
   describe('moveField', () => {
-    it('reorders within root, adjusting the index for the removal', () => {
+    it('Should reorder within root, adjusting the index for the removal', () => {
       const model: FormModel = {
         title: '',
         description: '',
@@ -180,14 +180,14 @@ describe('Form Builder Model Integration Test Suite', () => {
       expect(rootKeys(next)).toEqual(['b', 'a', 'c']);
     });
 
-    it('moves a root control into a container (target index re-based after removal)', () => {
+    it('Should move a root control into a container (target index re-based after removal)', () => {
       const model: FormModel = { title: '', description: '', fields: [ctrl('a'), container([])] };
       const next = moveField(model, [0], { container: 1, index: 0 });
       expect(rootKeys(next)).toEqual(['GROUP']);
       expect(childKeys(next, 0)).toEqual(['a']);
     });
 
-    it('moves a child out of a container back to root', () => {
+    it('Should move a child out of a container back to root', () => {
       const model: FormModel = {
         title: '',
         description: '',
@@ -198,7 +198,7 @@ describe('Form Builder Model Integration Test Suite', () => {
       expect(childKeys(next, 0)).toEqual([]);
     });
 
-    it('never nests a container inside another container (clamps to root)', () => {
+    it('Should never nests a container inside another container (clamps to root)', () => {
       const model: FormModel = {
         title: '',
         description: '',

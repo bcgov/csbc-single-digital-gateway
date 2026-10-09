@@ -56,7 +56,7 @@ describe('ProfileMenu Component Test Suite', () => {
     });
   });
 
-  it('renders loading state when user is loading/fetching', () => {
+  it('Should render loading state when user is loading/fetching', () => {
     renderProfileMenu(queryClient);
 
     // Should display skeleton loaders and placeholder avatar
@@ -66,7 +66,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByText('Test User')).not.toBeInTheDocument();
   });
 
-  it('shows the user initials on the avatar trigger, with name/role inside the menu', async () => {
+  it('Should show the user initials on the avatar trigger, with name/role inside the menu', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], adminUser);
 
@@ -82,7 +82,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.getAllByText('Admin').length).toBeGreaterThan(0);
   });
 
-  it('opens the account menu with the correct items when clicked', async () => {
+  it('Should open the account menu with the correct items when clicked', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], adminUser);
 
@@ -100,7 +100,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.getByRole('menuitem', { name: /Log out/i })).toBeInTheDocument();
   });
 
-  it('hides the Admin link for non-admin users', async () => {
+  it('Should hide the Admin link for non-admin users', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], {
       id: 'u-9',
@@ -115,7 +115,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByRole('menuitem', { name: /^Admin$/i })).not.toBeInTheDocument();
   });
 
-  it('triggers logout endpoint and redirects to landing page on Log out click', async () => {
+  it('Should trigger logout endpoint and redirect to landing page on Log out click', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], adminUser);
     vi.mocked(logout).mockResolvedValueOnce();
@@ -134,7 +134,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(mockAssign).toHaveBeenCalledWith('/');
   });
 
-  it('does not render email in dropdown if email claim is missing', async () => {
+  it('Should not render email in dropdown if email claim is missing', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], mockUserNoEmail);
 
@@ -147,7 +147,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByText(/@/)).not.toBeInTheDocument();
   });
 
-  it('does not render user header block in dropdown when user is not loaded', async () => {
+  it('Should not render user header block in dropdown when user is not loaded', async () => {
     const user = userEvent.setup();
     renderProfileMenu(queryClient);
 

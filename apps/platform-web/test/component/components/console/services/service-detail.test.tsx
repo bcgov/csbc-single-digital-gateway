@@ -353,7 +353,7 @@ function renderServiceDetail(props: {
 }
 
 describe('ServiceDetail Component Test Suite', () => {
-  it('renders details in edit mode for a draft version', async () => {
+  it('Should render details in edit mode for a draft version', async () => {
     renderServiceDetail({ versionId: 'v2', tab: 'details' });
 
     // Tabs should be present
@@ -371,7 +371,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /new version/i })).not.toBeInTheDocument();
   });
 
-  it('keeps the title seeded when the editor re-emits its mount data on a warm cache (regression)', async () => {
+  it('Should keep the title seeded when the editor re-emits its mount data on a warm cache (regression)', async () => {
     // Reproduces the navigate-back bug: with a warm query cache the editor mounts on the first render,
     // and JsonForms' debounced mount-time onChange re-emits the data it mounted with. If formData is
     // seeded only in a post-commit effect, that stale emit clobbers the title to empty and falsely marks
@@ -391,7 +391,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /save draft/i })).toBeDisabled();
   });
 
-  it('renders read-only details for a published version', async () => {
+  it('Should render read-only details for a published version', async () => {
     renderServiceDetail({ versionId: 'v1', tab: 'details' });
 
     const titleInput = await screen.findByLabelText(/title/i);
@@ -420,7 +420,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles editing and saving the draft details', async () => {
+  it('Should handle editing and saving the draft details', async () => {
     const user = userEvent.setup();
     vi.mocked(updateDraft).mockResolvedValueOnce({} as any);
 
@@ -450,7 +450,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles publishing the draft version', async () => {
+  it('Should handle publishing the draft version', async () => {
     const user = userEvent.setup();
     vi.mocked(publishVersion).mockResolvedValueOnce({} as any);
 
@@ -469,7 +469,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(publishVersion).toHaveBeenCalledWith('srv-123', 'v2');
   });
 
-  it('handles creating a new draft from latest published version', async () => {
+  it('Should handle creating a new draft from latest published version', async () => {
     const user = userEvent.setup();
     vi.mocked(addServiceVersion).mockResolvedValueOnce({} as any);
 
@@ -509,7 +509,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('navigates to methods URL when switching to methods tab', async () => {
+  it('Should navigate to methods URL when switching to methods tab', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v2', tab: 'details' });
 
@@ -522,7 +522,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('defaults to latest version when versionId is undefined', async () => {
+  it('Should default to latest version when versionId is undefined', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, staleTime: Infinity },
@@ -547,7 +547,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(titleInput).toHaveValue('Municipal Permits V2');
   });
 
-  it('renders nothing when service query is loading or data is missing', () => {
+  it('Should render nothing when service query is loading or data is missing', () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, staleTime: Infinity },
@@ -564,13 +564,13 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders non-existent version error message', () => {
+  it('Should render non-existent version error message', () => {
     renderServiceDetail({ versionId: 'v999', tab: 'details' });
 
     expect(screen.getByText('This version no longer exists.')).toBeInTheDocument();
   });
 
-  it('displays validation error when saving draft with empty title', async () => {
+  it('Should display validation error when saving draft with empty title', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v2', tab: 'details' });
 
@@ -589,7 +589,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(updateDraft).not.toHaveBeenCalled();
   });
 
-  it('handles selecting a version and switching tabs on older versions', async () => {
+  it('Should handle selecting a version and switching tabs on older versions', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v2', tab: 'details' });
 
@@ -618,7 +618,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles clicking Go to current button on an older version', async () => {
+  it('Should handle clicking Go to current button on an older version', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v1', tab: 'details' });
 
@@ -631,7 +631,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles tab switching from methods to details on latest version', async () => {
+  it('Should handle tab switching from methods to details on latest version', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v2', tab: 'methods' });
 
@@ -644,7 +644,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('invalidates cache and navigates on successful version creation', async () => {
+  it('Should invalidate cache and navigate on successful version creation', async () => {
     const user = userEvent.setup();
     vi.mocked(addServiceVersion).mockResolvedValueOnce({
       id: 'v3',
@@ -688,7 +688,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles discarding the draft version', async () => {
+  it('Should handle discarding the draft version', async () => {
     const user = userEvent.setup();
     vi.mocked(discardServiceVersion).mockResolvedValueOnce({} as any);
 
@@ -708,7 +708,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(discardServiceVersion).toHaveBeenCalledWith('srv-123', 'v2');
   });
 
-  it('handles archiving the service', async () => {
+  it('Should handle archiving the service', async () => {
     const user = userEvent.setup();
     vi.mocked(archiveService).mockResolvedValueOnce({} as any);
 
@@ -723,7 +723,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(archiveService).toHaveBeenCalledWith('srv-123');
   });
 
-  it('handles deleting the service', async () => {
+  it('Should handle deleting the service', async () => {
     const user = userEvent.setup();
     vi.mocked(deleteService).mockResolvedValueOnce({} as any);
 
@@ -743,7 +743,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(deleteService).toHaveBeenCalledWith('srv-123');
   });
 
-  it('throws an error if no version is selected during save or publish mutations', () => {
+  it('Should throw an error if no version is selected during save or publish mutations', () => {
     capturedAddFn = null;
     capturedSaveFn = null;
     capturedPublishFn = null;
@@ -758,7 +758,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(() => capturedPublishFn()).toThrow('No version selected');
   });
 
-  it('does not render ServiceEditor or ApplicationMethods when references query is not successful', async () => {
+  it('Should not render ServiceEditor or ApplicationMethods when references query is not successful', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -777,7 +777,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(screen.queryByLabelText(/title/i)).not.toBeInTheDocument();
   });
 
-  it('handles save mutation when title is missing or not a string', async () => {
+  it('Should handle save mutation when title is missing or not a string', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -818,7 +818,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(() => capturedSaveFn()).toThrow('A service title is required');
   });
 
-  it('navigates to agreements URL when switching to agreements tab on latest version', async () => {
+  it('Should navigate to agreements URL when switching to agreements tab on latest version', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v2', tab: 'details' });
 
@@ -831,7 +831,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('navigates to agreements URL when switching to agreements tab on older version', async () => {
+  it('Should navigate to agreements URL when switching to agreements tab on older version', async () => {
     const user = userEvent.setup();
     renderServiceDetail({ versionId: 'v1', tab: 'details' });
 
@@ -844,7 +844,7 @@ describe('ServiceDetail Component Test Suite', () => {
     });
   });
 
-  it('handles sorting when some references are not in methodOrder', async () => {
+  it('Should handle sorting when some references are not in methodOrder', async () => {
     const mockRef1: any = {
       id: 'ref-1',
       relation: 'application_form',
@@ -917,7 +917,7 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(capturedApplicationMethodsProps.references[1].id).toBe('ref-2');
   });
 
-  it('seeds formData and formBaseline with empty object when selected version has nullish data', async () => {
+  it('Should seed formData and formBaseline with empty object when selected version has nullish data', async () => {
     mockServiceDetailOverride = {
       service: mockService,
       versions: [

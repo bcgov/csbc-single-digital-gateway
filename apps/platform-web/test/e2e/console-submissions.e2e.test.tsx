@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe('Console Submissions Integration Test Suite', () => {
-  it('lists the workspace submissions for review', async () => {
+  it('Should list the workspace submissions for review', async () => {
     mockSubmissionsBff({ items: [summary] }, { testFile: 'console-submissions.e2e.test', detail });
     renderApp('/app/riverton/submissions');
     expect(
@@ -50,7 +50,7 @@ describe('Console Submissions Integration Test Suite', () => {
     expect(screen.getByText('20260601-AB12')).toBeInTheDocument();
   });
 
-  it('drives the queue API from the status tab, search, and sort controls', async () => {
+  it('Should drive the queue API from the status tab, search, and sort controls', async () => {
     const fetchMock = mockSubmissionsBff(
       { items: [summary] },
       { testFile: 'console-submissions.e2e.test', detail },
@@ -78,7 +78,7 @@ describe('Console Submissions Integration Test Suite', () => {
     await waitFor(() => expect(listCall((url) => url.includes('sort=status'))).toBe(true));
   });
 
-  it('opens a submission and records a review decision', async () => {
+  it('Should open a submission and records a review decision', async () => {
     const fetchMock = mockSubmissionsBff(
       { items: [summary] },
       { testFile: 'console-submissions.e2e.test', detail },

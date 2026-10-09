@@ -62,7 +62,7 @@ describe('Workspaces E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s every endpoint without a session', async () => {
+  it('Should return 401 for every endpoint without a session', async () => {
     expect((await http().get('/v1/workspaces')).status).toBe(401);
     expect((await http().post('/v1/workspaces').send({ name: 'X' })).status).toBe(401);
     expect((await http().get('/v1/workspaces/by-slug/abc')).status).toBe(401);
@@ -79,7 +79,7 @@ describe('Workspaces E2E Test Suite', () => {
     ).toBe(401);
   });
 
-  it('400s an invalid create body for an authenticated caller', async () => {
+  it('Should return 400 for an invalid create body for an authenticated caller', async () => {
     expect(
       (await http().post('/v1/workspaces').set('x-test-user', seedUser()).send({})).status,
     ).toBe(400);
@@ -89,7 +89,7 @@ describe('Workspaces E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s an invalid add-member body for an authenticated caller', async () => {
+  it('Should return 400 for an invalid add-member body for an authenticated caller', async () => {
     const post = (body: object) =>
       http().post('/v1/workspaces/abc/members').set('x-test-user', seedUser()).send(body);
     expect((await post({})).status).toBe(400); // missing userId + role
@@ -99,7 +99,7 @@ describe('Workspaces E2E Test Suite', () => {
     ).toBe(400); // bad role
   });
 
-  it('400s an invalid transfer-ownership body for an authenticated caller', async () => {
+  it('Should return 400 for an invalid transfer-ownership body for an authenticated caller', async () => {
     expect(
       (
         await http()
@@ -118,7 +118,7 @@ describe('Workspaces E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s an invalid list query for an authenticated caller', async () => {
+  it('Should return 400 for an invalid list query for an authenticated caller', async () => {
     expect(
       (await http().get('/v1/workspaces?sort=bogus').set('x-test-user', seedUser())).status,
     ).toBe(400);
@@ -127,11 +127,11 @@ describe('Workspaces E2E Test Suite', () => {
     );
   });
 
-  it('401s the paginated members browse without a session', async () => {
+  it('Should return 401 for the paginated members browse without a session', async () => {
     expect((await http().get('/v1/workspaces/abc/members/page')).status).toBe(401);
   });
 
-  it('400s an invalid members browse query for an authenticated caller', async () => {
+  it('Should return 400 for an invalid members browse query for an authenticated caller', async () => {
     expect(
       (await http().get('/v1/workspaces/abc/members/page?limit=0').set('x-test-user', seedUser()))
         .status,

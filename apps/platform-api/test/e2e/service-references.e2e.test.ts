@@ -59,12 +59,12 @@ describe('Service References E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s reference endpoints without a session', async () => {
+  it('Should return 401 for reference endpoints without a session', async () => {
     expect((await http().get(`${base}/references`)).status).toBe(401);
     expect((await http().post(`${base}/references`).send({})).status).toBe(401);
   });
 
-  it('401s external-application endpoints without a session', async () => {
+  it('Should return 401 for external-application endpoints without a session', async () => {
     expect(
       (
         await http()
@@ -81,7 +81,7 @@ describe('Service References E2E Test Suite', () => {
     ).toBe(401);
   });
 
-  it('400s invalid external-application bodies (missing + non-https url)', async () => {
+  it('Should return 400 for invalid external-application bodies (missing + non-https url)', async () => {
     const staff = seedUser(['staff']);
     // Missing fields.
     expect(
@@ -108,7 +108,7 @@ describe('Service References E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s invalid reference + form bodies for a signed-in user', async () => {
+  it('Should return 400 for invalid reference + form bodies for a signed-in user', async () => {
     const staff = seedUser(['staff']);
     expect(
       (await http().post(`${base}/references`).set('x-test-user', staff).send({})).status,

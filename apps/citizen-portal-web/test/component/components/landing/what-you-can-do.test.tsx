@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { WhatYouCanDo } from '@/components/landing/what-you-can-do';
 
 describe('WhatYouCanDo Component', () => {
-  it('renders section title and three feature cards with descriptions', () => {
+  it('Should render section title and three feature cards with descriptions', () => {
     render(<WhatYouCanDo />);
 
     // Assert SectionHeading is present

@@ -52,7 +52,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the brand, workspace switcher, and account menu', () => {
+  it('Should render the brand, workspace switcher, and account menu', () => {
     render(<ConsoleHeader slug="riverton" />);
 
     expect(screen.getByText('Operations Portal')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.getByTestId('mock-profile-menu')).toBeInTheDocument();
   });
 
-  it('renders the five primary nav links with slug-resolved hrefs', () => {
+  it('Should render the five primary nav links with slug-resolved hrefs', () => {
     render(<ConsoleHeader slug="riverton" />);
 
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/app/riverton');
@@ -91,7 +91,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /^new$/i })).not.toBeInTheDocument();
   });
 
-  it('enables search + notifications and opens the command palette when a workspace is active', async () => {
+  it('Should enable search + notifications and open the command palette when a workspace is active', async () => {
     const user = userEvent.setup();
     render(<ConsoleHeader slug="riverton" />);
 
@@ -108,7 +108,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(palette).toHaveAttribute('data-open', 'false');
   });
 
-  it('disables actions and shows non-navigable nav when there is no active workspace', () => {
+  it('Should disable actions and show non-navigable nav when there is no active workspace', () => {
     render(<ConsoleHeader slug={undefined} />);
 
     expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
@@ -131,7 +131,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     }
   });
 
-  it('renders the minimal variant (brand + notifications + avatar only) with no workspace context (L93)', () => {
+  it('Should render the minimal variant (brand + notifications + avatar only) with no workspace context (L93)', () => {
     render(<ConsoleHeader slug={undefined} minimal />);
 
     // Brand + right-side actions remain.
@@ -148,7 +148,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 
-  it('renders minimal variant with active workspace and enabled notifications (L93)', () => {
+  it('Should render minimal variant with active workspace and enabled notifications (L93)', () => {
     render(<ConsoleHeader slug="riverton" minimal={true} />);
 
     expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'false');
@@ -156,7 +156,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 
-  it('renders full header when minimal is explicitly false', () => {
+  it('Should render full header when minimal is explicitly false', () => {
     render(<ConsoleHeader slug="riverton" minimal={false} />);
 
     expect(screen.getByTestId('mock-workspace-switcher')).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
   });
 
   describe('active link highlighting', () => {
-    it('highlights Overview when on /app/:slug or /app/:slug/ and inactive otherwise (L33)', () => {
+    it('Should highlight Overview when on /app/:slug or /app/:slug/ and inactive otherwise (L33)', () => {
       mockPathname = '/app/riverton';
       const { rerender } = render(<ConsoleHeader slug="riverton" />);
       expect(screen.getByRole('link', { name: 'Overview' })).toHaveClass('border-bcgov-blue');
@@ -179,7 +179,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
       expect(screen.getByRole('link', { name: 'Overview' })).not.toHaveClass('border-bcgov-blue');
     });
 
-    it('highlights Settings when on /app/:slug/settings or /app/:slug/team and inactive otherwise (L36)', () => {
+    it('Should highlight Settings when on /app/:slug/settings or /app/:slug/team and inactive otherwise (L36)', () => {
       mockPathname = '/app/riverton/settings';
       const { rerender } = render(<ConsoleHeader slug="riverton" />);
       expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('border-bcgov-blue');
@@ -201,7 +201,7 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
       expect(screen.getByRole('link', { name: 'Settings' })).not.toHaveClass('border-bcgov-blue');
     });
 
-    it('highlights other nav items (e.g. Services, Service Requests) based on path prefix', () => {
+    it('Should highlight other nav items (e.g. Services, Service Requests) based on path prefix', () => {
       mockPathname = '/app/riverton/services/srv-1';
       const { rerender } = render(<ConsoleHeader slug="riverton" />);
       expect(screen.getByRole('link', { name: 'Services' })).toHaveClass('border-bcgov-blue');

@@ -32,7 +32,7 @@ describe('geo lib', () => {
   const mockRegions = [{ country: 'CA', province: 'BC' }];
 
   describe('countriesQueryOptions', () => {
-    it('constructs correct query options and fetches countries successfully', async () => {
+    it('Should construct correct query options and fetches countries successfully', async () => {
       const mockCountriesUSA = [
         ...mockCountries,
         { id: 2, name: 'United States', iso2: 'US', hasStates: true, hasPostal: true },
@@ -53,7 +53,7 @@ describe('geo lib', () => {
       expect(result).toEqual(mockCountriesUSA);
     });
 
-    it('throws an error when countries fetch response is not ok', async () => {
+    it('Should throw an error when countries fetch response is not ok', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 500,
@@ -72,7 +72,7 @@ describe('geo lib', () => {
   });
 
   describe('statesQueryOptions', () => {
-    it('constructs query options with enabled=true when countryId is provided', async () => {
+    it('Should construct query options with enabled=true when countryId is provided', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockStates }),
@@ -90,13 +90,13 @@ describe('geo lib', () => {
       expect(result).toEqual(mockStates);
     });
 
-    it('constructs query options with enabled=false and null key when countryId is undefined', () => {
+    it('Should construct query options with enabled=false and null key when countryId is undefined', () => {
       const options = statesQueryOptions(undefined);
       expect(options.queryKey).toEqual(['geo', 'states', null]);
       expect(options.enabled).toBe(false);
     });
 
-    it('throws an error when states fetch response is not ok', async () => {
+    it('Should throw an error when states fetch response is not ok', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 404,
@@ -115,7 +115,7 @@ describe('geo lib', () => {
   });
 
   describe('addressSearchRegionsQueryOptions', () => {
-    it('constructs correct query options and fetches regions successfully', async () => {
+    it('Should construct correct query options and fetches regions successfully', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockRegions }),
@@ -132,7 +132,7 @@ describe('geo lib', () => {
       expect(result).toEqual(mockRegions);
     });
 
-    it('throws an error when address search regions fetch response is not ok', async () => {
+    it('Should throw an error when address search regions fetch response is not ok', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 502,
@@ -151,7 +151,7 @@ describe('geo lib', () => {
   });
 
   describe('appGeoData.searchAddresses', () => {
-    it('constructs query parameters and returns suggestions on success', async () => {
+    it('Should construct query parameters and return suggestions on success', async () => {
       const mockSuggestions = [
         {
           label: '1012 Douglas St, Victoria, BC',
@@ -179,7 +179,7 @@ describe('geo lib', () => {
       expect(result).toEqual(mockSuggestions);
     });
 
-    it('catches fetch error and returns empty array on failure', async () => {
+    it('Should catch fetch error and return empty array on failure', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 500,
@@ -194,7 +194,7 @@ describe('geo lib', () => {
       expect(result).toEqual([]);
     });
 
-    it('catches network rejection and returns empty array', async () => {
+    it('Should catch network rejection and return empty array', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
 
       const result = await appGeoData.searchAddresses!({
@@ -208,7 +208,7 @@ describe('geo lib', () => {
   });
 
   describe('appGeoData hooks', () => {
-    it('useCountries returns query data and loading state', async () => {
+    it('Should return query data and loading state in useCountries', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockCountries }),
@@ -227,7 +227,7 @@ describe('geo lib', () => {
       expect(result.current.data).toEqual(mockCountries);
     });
 
-    it('useStates returns query data and loading state for a valid countryId', async () => {
+    it('Should return query data and loading state for a valid countryId in useStates', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockStates }),
@@ -244,7 +244,7 @@ describe('geo lib', () => {
       expect(result.current.data).toEqual(mockStates);
     });
 
-    it('useStates handles disabled query state when countryId is undefined', () => {
+    it('Should handle disabled query state when countryId is undefined in useStates', () => {
       const { result } = renderHook(() => appGeoData.useStates!(undefined), {
         wrapper: createWrapper(),
       });
@@ -253,7 +253,7 @@ describe('geo lib', () => {
       expect(result.current.data).toBeUndefined();
     });
 
-    it('useAddressSearchRegions returns query data and loading state', async () => {
+    it('Should return query data and loading state in useAddressSearchRegions', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockRegions }),

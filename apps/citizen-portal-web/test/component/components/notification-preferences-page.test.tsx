@@ -12,7 +12,7 @@ afterEach(() => {
 
 describe('Notification Preferences Page Test Suite', () => {
   describe('notification preferences page', () => {
-    it('renders the seeded toggles and email', async () => {
+    it('Should render the seeded toggles and email', async () => {
       createMockBff({
         notificationPreferencesOptions: {
           preferences: {
@@ -37,7 +37,7 @@ describe('Notification Preferences Page Test Suite', () => {
       expect(screen.getByLabelText('Contact email')).toHaveValue('amina@example.com');
     });
 
-    it('saves toggled channels and the email through the BFF', async () => {
+    it('Should saves toggled channels and the email through the BFF', async () => {
       const user = userEvent.setup();
       const puts: string[] = [];
       createMockBff({ puts });
@@ -58,7 +58,7 @@ describe('Notification Preferences Page Test Suite', () => {
       expect(body.channels.some((c) => c.channel === 'in_app')).toBe(false);
     });
 
-    it('handles auth pending state', async () => {
+    it('Should handle auth pending state', async () => {
       createMockBff({ authOptions: { authPending: true } });
       await renderPage();
       // Wait a brief moment and verify that skeletons or page shells are rendered but not the content
@@ -68,7 +68,7 @@ describe('Notification Preferences Page Test Suite', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('handles unauthenticated user', async () => {
+    it('Should handle unauthenticated user', async () => {
       createMockBff({ authOptions: { me: jsonResponse(null) } });
       await renderPage();
       expect(
@@ -81,7 +81,7 @@ describe('Notification Preferences Page Test Suite', () => {
       expect(screen.getAllByRole('link', { name: 'Log in' })[0]).toBeInTheDocument();
     });
 
-    it('handles preferences loading state', async () => {
+    it('Should handle preferences loading state', async () => {
       createMockBff({ notificationPreferencesOptions: { delayPreferencesMs: 500 } });
       await renderPage();
       await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 10000 });
@@ -89,7 +89,7 @@ describe('Notification Preferences Page Test Suite', () => {
       expect(screen.queryByLabelText('Contact email')).not.toBeInTheDocument();
     });
 
-    it('handles preferences query failure', async () => {
+    it('Should handle preferences query failure', async () => {
       createMockBff({ notificationPreferencesOptions: { errorOnPreferences: true } });
       await renderPage();
       expect(
@@ -101,7 +101,7 @@ describe('Notification Preferences Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('handles saving preferences failure', async () => {
+    it('Should handle saving preferences failure', async () => {
       const user = userEvent.setup();
       createMockBff({ notificationPreferencesOptions: { errorOnSave: true } });
       await renderPage();
@@ -116,7 +116,7 @@ describe('Notification Preferences Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows saving status while saving is in progress', async () => {
+    it('Should show saving status while saving is in progress', async () => {
       const user = userEvent.setup();
       createMockBff({ notificationPreferencesOptions: { delaySaveMs: 200 } });
       await renderPage();
@@ -133,7 +133,7 @@ describe('Notification Preferences Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('saves trimmed email and handles empty state validation', async () => {
+    it('Should saves trimmed email and handles empty state validation', async () => {
       const user = userEvent.setup();
       const puts: string[] = [];
       createMockBff({
@@ -178,7 +178,7 @@ describe('Notification Preferences Page Test Suite', () => {
   });
 
   describe('preferencesDirty helper', () => {
-    it('detects changes correctly', () => {
+    it('Should detects changes correctly', () => {
       // 1. Email difference (line 35)
       expect(
         preferencesDirty(
@@ -222,7 +222,7 @@ describe('Notification Preferences Page Test Suite', () => {
   });
 
   describe('notification preferences page - blocker and prompt', () => {
-    it('blocks navigation when form is dirty and confirms or cancels', async () => {
+    it('Should blocks navigation when form is dirty and confirms or cancels', async () => {
       const user = userEvent.setup();
       createMockBff();
       const { router } = await renderPage();
@@ -263,7 +263,7 @@ describe('Notification Preferences Page Test Suite', () => {
       expect(router.state.location.pathname).toBe('/');
     });
 
-    it('saves preferences with disabled email channel and null email', async () => {
+    it('Should saves preferences with disabled email channel and null email', async () => {
       const user = userEvent.setup();
       const puts: string[] = [];
       createMockBff({

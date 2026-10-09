@@ -7,7 +7,7 @@ import {
 import { UUID } from '../../../../utils/fixtures';
 
 describe('reference DTO schemas', () => {
-  it('addReferenceSchema requires a uuid target and a known relation', () => {
+  it('Should require a uuid target and a known relation in addReferenceSchema', () => {
     expect(
       addReferenceSchema.safeParse({ targetVersionId: UUID, relation: 'application_form' }).success,
     ).toBe(true);
@@ -23,7 +23,7 @@ describe('reference DTO schemas', () => {
     ).toBe(false);
   });
 
-  it('createReferencedFormSchema requires a uuid typeId and a non-empty title', () => {
+  it('Should require a uuid typeId and a non-empty title in createReferencedFormSchema', () => {
     expect(createReferencedFormSchema.safeParse({ typeId: UUID, title: 'Apply' }).success).toBe(
       true,
     );
@@ -33,7 +33,7 @@ describe('reference DTO schemas', () => {
     );
   });
 
-  it('externalApplicationSchema requires a label and an https url (feature 131)', () => {
+  it('Should require a label and an https url in externalApplicationSchema (feature 131)', () => {
     expect(
       externalApplicationSchema.safeParse({
         label: 'Apply on GOV',

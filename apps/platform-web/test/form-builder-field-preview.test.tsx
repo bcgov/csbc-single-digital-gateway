@@ -21,7 +21,7 @@ const geo: GeoData = {
 };
 
 describe('form builder — address field card preview', () => {
-  it('reflects the Canada / British Columbia defaults', async () => {
+  it('Should reflect the Canada / British Columbia defaults', async () => {
     render(
       <GeoDataProvider value={geo}>
         <FieldPreview node={previewNodeForType('address')} />

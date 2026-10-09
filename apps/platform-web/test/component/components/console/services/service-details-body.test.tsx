@@ -74,7 +74,7 @@ function renderBody({ isDraft = true }: { isDraft?: boolean } = {}) {
 }
 
 describe('ServiceDetailsBody windowed editing', () => {
-  it('stamps a resolved edit id onto the marked group before dispatching it', () => {
+  it('Should stamp a resolved edit id onto the marked group before dispatching it', () => {
     renderBody();
     const stamped = screen
       .getAllByTestId('element')
@@ -82,12 +82,12 @@ describe('ServiceDetailsBody windowed editing', () => {
     expect(stamped.some((o) => o.includes('"id":"service-description"'))).toBe(true);
   });
 
-  it('mounts the edit port around the read-only surface', () => {
+  it('Should mount the edit port around the read-only surface', () => {
     renderBody();
     expect(actionsRef.current).not.toBeNull();
   });
 
-  it('renders an affordance pointing at the section edit route on a draft', () => {
+  it('Should render an affordance pointing at the section edit route on a draft', () => {
     renderBody({ isDraft: true });
     render(
       <>
@@ -112,7 +112,7 @@ describe('ServiceDetailsBody windowed editing', () => {
     });
   });
 
-  it('uses the definition-authored wording when the marker supplies one', () => {
+  it('Should use the definition-authored wording when the marker supplies one', () => {
     renderBody({ isDraft: true });
     render(
       <>
@@ -127,7 +127,7 @@ describe('ServiceDetailsBody windowed editing', () => {
     expect(screen.getByRole('link')).toHaveTextContent('Manage methods');
   });
 
-  it('renders NO affordance when the viewed version is not a draft', () => {
+  it('Should render NO affordance when the viewed version is not a draft', () => {
     renderBody({ isDraft: false });
     expect(
       actionsRef.current?.renderAction({
@@ -139,13 +139,13 @@ describe('ServiceDetailsBody windowed editing', () => {
     ).toBeNull();
   });
 
-  it('still renders the always-on console sections', () => {
+  it('Should still render the always-on console sections', () => {
     renderBody();
     expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
   });
 
   describe('loose elements and omitted scopes', () => {
-    it('omits top-level title and description controls from loose runs', () => {
+    it('Should omit top-level title and description controls from loose runs', () => {
       const uischema = {
         type: 'VerticalLayout',
         elements: [
@@ -171,7 +171,7 @@ describe('ServiceDetailsBody windowed editing', () => {
       expect(container.querySelectorAll('div[class*="loose"]')).toHaveLength(0);
     });
 
-    it('renders non-omitted loose controls and elements without scope', () => {
+    it('Should render non-omitted loose controls and elements without scope', () => {
       const uischema = {
         type: 'VerticalLayout',
         elements: [
@@ -195,7 +195,7 @@ describe('ServiceDetailsBody windowed editing', () => {
       expect(screen.getByTestId('jsonforms')).toBeInTheDocument();
     });
 
-    it('handles scope when split array is empty to exercise pop fallback', () => {
+    it('Should handle scope when split array is empty to exercise pop fallback', () => {
       const origSplit = String.prototype.split;
       const splitSpy = vi.spyOn(String.prototype, 'split').mockImplementation(function (
         this: string,
@@ -229,7 +229,7 @@ describe('ServiceDetailsBody windowed editing', () => {
       splitSpy.mockRestore();
     });
 
-    it('handles a Group with an empty label setting aria-label to undefined', () => {
+    it('Should handle a Group with an empty label setting aria-label to undefined', () => {
       const uischema = {
         type: 'VerticalLayout',
         elements: [{ type: 'Group', label: '', elements: [] }],

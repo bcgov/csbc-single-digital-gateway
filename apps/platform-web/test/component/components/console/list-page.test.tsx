@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ListPage, FilterChip } from '@/components/console/list-page';
 
 describe('FilterChip', () => {
-  it('renders disabled button with label and chevron icon', () => {
+  it('Should render disabled button with label and chevron icon', () => {
     render(<FilterChip label="Status" />);
 
     const chip = screen.getByRole('button', { name: 'Status' });
@@ -13,7 +13,7 @@ describe('FilterChip', () => {
 });
 
 describe('ListPage Component Test Suite', () => {
-  it('renders toolbar and actions when provided', () => {
+  it('Should render toolbar and actions when provided', () => {
     render(
       <ListPage
         toolbar={<div data-testid="toolbar">Toolbar Content</div>}
@@ -26,7 +26,7 @@ describe('ListPage Component Test Suite', () => {
     expect(screen.getByTestId('actions')).toBeInTheDocument();
   });
 
-  it('does not render toolbar/actions container if neither are provided', () => {
+  it('Should not render toolbar/actions container if neither are provided', () => {
     const { container } = render(<ListPage emptyTitle="No Items" />);
 
     // The top row container with flex items-center should not be rendered
@@ -34,7 +34,7 @@ describe('ListPage Component Test Suite', () => {
     expect(flexRow).not.toBeInTheDocument();
   });
 
-  it('renders empty state when children are not provided', () => {
+  it('Should render empty state when children are not provided', () => {
     render(
       <ListPage
         emptyTitle="No Services found"
@@ -46,7 +46,7 @@ describe('ListPage Component Test Suite', () => {
     expect(screen.getByText('Get started by creating a new service.')).toBeInTheDocument();
   });
 
-  it('renders empty state without description if emptyDescription is omitted', () => {
+  it('Should render empty state without description if emptyDescription is omitted', () => {
     const { container } = render(<ListPage emptyTitle="No Services found" />);
 
     expect(screen.getByText('No Services found')).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('ListPage Component Test Suite', () => {
     expect(desc).not.toBeInTheDocument();
   });
 
-  it('renders children instead of empty state when children are provided', () => {
+  it('Should render children instead of empty state when children are provided', () => {
     render(
       <ListPage emptyTitle="No Services found">
         <div data-testid="custom-content">Active Services Table</div>

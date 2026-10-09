@@ -24,7 +24,7 @@ describe('Notifications Unit Test Suite', () => {
     mockFetch.mockReset();
   });
 
-  it('queries notification feed with query options', async () => {
+  it('Should query notification feed with query options', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ deliveryId: 'd-1', title: 'Welcome' }] }),
     );
@@ -40,7 +40,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(feed.items[0]?.title).toBe('Welcome');
   });
 
-  it('queries unread count with query options', async () => {
+  it('Should query unread count with query options', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { count: 5 }));
 
     const options = unreadCountQueryOptions();
@@ -53,7 +53,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(res.count).toBe(5);
   });
 
-  it('queries preferences with query options', async () => {
+  it('Should query preferences with query options', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { userId: 'u-1', email: 'test@example.com', channels: [] }),
     );
@@ -68,7 +68,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(prefs.email).toBe('test@example.com');
   });
 
-  it('marks a notification as read', async () => {
+  it('Should mark a notification as read', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { deliveryId: 'd-1', readAt: '2026-07-07T00:00:00.000Z' }),
     );
@@ -81,7 +81,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(result.readAt).toBe('2026-07-07T00:00:00.000Z');
   });
 
-  it('marks all notifications as read', async () => {
+  it('Should mark all notifications as read', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { updated: 3 }));
 
     const result = await markAllNotificationsRead();
@@ -92,7 +92,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(result.updated).toBe(3);
   });
 
-  it('updates notification preferences', async () => {
+  it('Should update notification preferences', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { userId: 'u-1', email: 'new@example.com', channels: [] }),
     );
@@ -109,7 +109,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(result.email).toBe('new@example.com');
   });
 
-  it('throws RequestError on non-ok responses', async () => {
+  it('Should throw RequestError on non-ok responses', async () => {
     mockFetch.mockResolvedValue(mockResponse(400, 'Bad Request', false));
 
     let thrown: RequestError | undefined;
@@ -124,7 +124,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(thrown?.message).toContain('POST /v1/me/notifications/read-all failed: 400');
   });
 
-  it('throws RequestError with GET method when feed query fails', async () => {
+  it('Should throw RequestError with GET method when feed query fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, 'Internal Server Error', false));
 
     const options = notificationFeedQueryOptions();
@@ -140,7 +140,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(thrown?.message).toContain('GET /v1/me/notifications failed: 500');
   });
 
-  it('subscribes to live notifications using EventSource', () => {
+  it('Should subscribe to live notifications using EventSource', () => {
     const mockAddEventListener = vi.fn();
     const mockClose = vi.fn();
 
@@ -162,7 +162,7 @@ describe('Notifications Unit Test Suite', () => {
     expect(mockClose).toHaveBeenCalled();
   });
 
-  it('covers subscribeToNotifications with global EventSource defined', () => {
+  it('Should cover subscribeToNotifications with global EventSource defined', () => {
     const originalEventSource = globalThis.EventSource;
     const mockClose = vi.fn();
     const mockAddEventListener = vi.fn();
@@ -196,7 +196,7 @@ describe('Notifications Unit Test Suite', () => {
     }
   });
 
-  it('gracefully handles undefined EventSource constructor', () => {
+  it('Should gracefully handle undefined EventSource constructor', () => {
     const onEvent = vi.fn();
     const subscription = subscribeToNotifications(onEvent, undefined);
     expect(() => subscription.close()).not.toThrow();

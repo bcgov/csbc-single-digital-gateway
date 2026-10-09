@@ -31,12 +31,12 @@ function renderPublishModal(props: {
 }
 
 describe('ServicePublishModal Component Test Suite', () => {
-  it('renders nothing when open is false for the service publish modal component', () => {
+  it('Should render nothing when open is false for the service publish modal component', () => {
     renderPublishModal({ open: false, applications: [] });
     expect(screen.queryByRole('heading', { name: 'Publish service?' })).not.toBeInTheDocument();
   });
 
-  it('renders modal with warning and disabled Publish when there are no applications', async () => {
+  it('Should render modal with warning and disabled Publish when there are no applications', async () => {
     renderPublishModal({ open: true, applications: [] });
 
     expect(await screen.findByRole('heading', { name: 'Publish service?' })).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(publishBtn).toBeDisabled();
   });
 
-  it('renders application details and enables Publish button when all methods have structure', async () => {
+  it('Should render application details and enable Publish button when all methods have structure', async () => {
     const apps: PublishApplication[] = [
       { title: 'Zoning Form', hasStructure: true },
       { title: 'Permit Payment Form', hasStructure: true },
@@ -73,7 +73,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(publishBtn).not.toBeDisabled();
   });
 
-  it('shows no fields labels and disables Publish button when some methods are structureless', async () => {
+  it('Should show no fields labels and disable Publish button when some methods are structureless', async () => {
     const apps: PublishApplication[] = [
       { title: 'Zoning Form', hasStructure: true },
       { title: 'Permit Payment Form', hasStructure: false },
@@ -91,7 +91,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(publishBtn).toBeDisabled();
   });
 
-  it('triggers onOpenChange(false) when cancel button is clicked', async () => {
+  it('Should trigger onOpenChange(false) when cancel button is clicked', async () => {
     const user = userEvent.setup();
     const onOpenChangeSpy = vi.fn();
     renderPublishModal({ open: true, applications: [], onOpenChange: onOpenChangeSpy });
@@ -104,7 +104,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(onOpenChangeSpy).toHaveBeenCalledWith(false);
   });
 
-  it('triggers onConfirm when publish button is clicked', async () => {
+  it('Should trigger onConfirm when publish button is clicked', async () => {
     const user = userEvent.setup();
     const onConfirmSpy = vi.fn();
     const apps: PublishApplication[] = [{ title: 'Zoning Form', hasStructure: true }];
@@ -119,7 +119,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(onConfirmSpy).toHaveBeenCalled();
   });
 
-  it('disables buttons and renders spinner when publishing is active', async () => {
+  it('Should disable buttons and render spinner when publishing is active', async () => {
     const apps: PublishApplication[] = [{ title: 'Zoning Form', hasStructure: true }];
     renderPublishModal({ open: true, applications: apps, publishing: true });
 
@@ -136,7 +136,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(spinner).toBeInTheDocument();
   });
 
-  it('renders alert message when error is provided', async () => {
+  it('Should render alert message when error is provided', async () => {
     renderPublishModal({
       open: true,
       applications: [],
@@ -150,7 +150,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Network error publishing service');
   });
 
-  it('does not trigger onOpenChange(false) on Escape when publishing is active', async () => {
+  it('Should not trigger onOpenChange(false) on Escape when publishing is active', async () => {
     const user = userEvent.setup();
     const onOpenChangeSpy = vi.fn();
     renderPublishModal({
@@ -165,7 +165,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(onOpenChangeSpy).not.toHaveBeenCalled();
   });
 
-  it('triggers onOpenChange(false) on Escape when publishing is not active', async () => {
+  it('Should trigger onOpenChange(false) on Escape when publishing is not active', async () => {
     const user = userEvent.setup();
     const onOpenChangeSpy = vi.fn();
     renderPublishModal({
@@ -180,7 +180,7 @@ describe('ServicePublishModal Component Test Suite', () => {
     expect(onOpenChangeSpy).toHaveBeenCalledWith(false);
   });
 
-  it('renders singular text when there is exactly one application method', async () => {
+  it('Should render singular text when there is exactly one application method', async () => {
     const apps: PublishApplication[] = [{ title: 'Single Form', hasStructure: true }];
     renderPublishModal({ open: true, applications: apps });
 

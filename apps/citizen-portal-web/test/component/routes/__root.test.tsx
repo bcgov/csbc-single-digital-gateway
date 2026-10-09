@@ -12,7 +12,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 describe('RootRoute', () => {
-  it('renders the Outlet component correctly', () => {
+  it('Should render the Outlet component correctly', () => {
     // Route.options.component contains RootLayout
     const RootLayoutComponent = Route.options.component;
     expect(RootLayoutComponent).toBeDefined();
@@ -27,7 +27,7 @@ describe('RootRoute', () => {
     expect(outletElement).toHaveTextContent('Mock Outlet Content');
   });
 
-  it('has the correct route configuration options', () => {
+  it('Should have the correct route configuration options', () => {
     expect(Route.options).toBeDefined();
     expect(Route.options).toHaveProperty('component');
     expect(Object.keys(Route.options)).toContain('component');

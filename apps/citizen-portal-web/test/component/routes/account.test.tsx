@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 describe('AccountRoute', () => {
-  it('registers AccountPage as its component correctly', async () => {
+  it('Should register AccountPage as its component correctly', async () => {
     const Component = Route.options.component;
     expect(Component).toBeDefined();
 

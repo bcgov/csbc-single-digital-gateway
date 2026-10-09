@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('Header Notification Bell Test Suite', () => {
-  it('shows the unread badge for a signed-in citizen', async () => {
+  it('Should show the unread badge for a signed-in citizen', async () => {
     createMockBff({ services: [], draft: [] });
     renderPage({ path: '/' });
     expect(
@@ -34,7 +34,7 @@ describe('Header Notification Bell Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('invalidates the application detail family on a realtime notification event', async () => {
+  it('Should invalidate the application detail family on a realtime notification event', async () => {
     createMockBff({ services: [], draft: [] });
     const { client } = await renderPage({ path: '/' });
     await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 10000 });
@@ -46,7 +46,7 @@ describe('Header Notification Bell Test Suite', () => {
     });
   });
 
-  it('opens the feed and marks an item read via the BFF', async () => {
+  it('Should open the feed and marks an item read via the BFF', async () => {
     createMockBff({ services: [], draft: [] });
     const user = userEvent.setup();
     renderPage({ path: '/' });
@@ -67,7 +67,7 @@ describe('Header Notification Bell Test Suite', () => {
     });
   });
 
-  it('navigates to the application page when the notification carries a submissionId', async () => {
+  it('Should navigate to the application page when the notification carries a submissionId', async () => {
     createMockBff({ services: [], draft: [] });
     const user = userEvent.setup();
     const { router } = await renderPage({ path: '/' });
@@ -85,7 +85,7 @@ describe('Header Notification Bell Test Suite', () => {
     });
   });
 
-  it('does not navigate for a notification without a destination payload', async () => {
+  it('Should not navigate for a notification without a destination payload', async () => {
     createMockBff({ services: [], draft: [], calls });
     const user = userEvent.setup();
     const { router } = await renderPage({ path: '/' });
@@ -99,7 +99,7 @@ describe('Header Notification Bell Test Suite', () => {
     expect(router.state.location.pathname).toBe('/');
   });
 
-  it('marks all notifications read via the BFF', async () => {
+  it('Should mark all notifications read via the BFF', async () => {
     createMockBff({ services: [], draft: [], calls });
     const user = userEvent.setup();
     renderPage({ path: '/' });
@@ -118,7 +118,7 @@ describe('Header Notification Bell Test Suite', () => {
     });
   });
 
-  it('navigates to notifications preferences page on settings click', async () => {
+  it('Should navigate to notifications preferences page on settings click', async () => {
     createMockBff({ services: [], draft: [], calls });
     const user = userEvent.setup();
     const { router } = await renderPage({ path: '/' });

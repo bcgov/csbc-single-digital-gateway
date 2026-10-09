@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('AddAgreementModal Component Test Suite', () => {
-  it('renders selectable published agreements and handles successful attachment', async () => {
+  it('Should render selectable published agreements and handle successful attachment', async () => {
     vi.mocked(attachServiceAgreement).mockResolvedValueOnce({} as any);
     const onOpenChange = vi.fn();
 
@@ -94,7 +94,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     });
   });
 
-  it('excludes document IDs specified in excludeDocumentIds', async () => {
+  it('Should exclude document IDs specified in excludeDocumentIds', async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <AddAgreementModal
@@ -119,7 +119,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     expect(within(modal).queryByText('Global Privacy Policy')).not.toBeInTheDocument();
   });
 
-  it('renders fallback description when no published agreements are selectable', async () => {
+  it('Should render fallback description when no published agreements are selectable', async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <AddAgreementModal
@@ -142,7 +142,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders API error banner on mutation failure', async () => {
+  it('Should render API error banner on mutation failure', async () => {
     vi.mocked(attachServiceAgreement).mockRejectedValueOnce(new Error('Failed to attach document'));
     const onOpenChange = vi.fn();
 
@@ -172,7 +172,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it('triggers onOpenChange(false) when dialog requests close and not pending', async () => {
+  it('Should trigger onOpenChange(false) when dialog requests close and not pending', async () => {
     const onOpenChange = vi.fn();
     render(
       <QueryClientProvider client={queryClient}>
@@ -200,7 +200,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('does not trigger onOpenChange when dialog requests close but attach is pending', async () => {
+  it('Should not trigger onOpenChange when dialog requests close but attach is pending', async () => {
     const onOpenChange = vi.fn();
     // Keep mutation pending forever
     vi.mocked(attachServiceAgreement).mockReturnValueOnce(new Promise(() => {}));
@@ -237,7 +237,7 @@ describe('AddAgreementModal Component Test Suite', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it('does not trigger onOpenChange when next is true', async () => {
+  it('Should not trigger onOpenChange when next is true', async () => {
     const onOpenChange = vi.fn();
     render(
       <QueryClientProvider client={queryClient}>

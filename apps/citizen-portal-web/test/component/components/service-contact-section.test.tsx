@@ -14,7 +14,7 @@ const methods = [
 ];
 
 describe('citizen service Contact section', () => {
-  it('renders a link card per method with a per-type call-to-action', () => {
+  it('Should render a link card per method with a per-type call-to-action', () => {
     render(<ContactSection value={methods} />);
     expect(screen.getByText('Support line')).toBeInTheDocument();
     expect(screen.getByText('Online')).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe('citizen service Contact section', () => {
     );
   });
 
-  it('shows a muted empty-state message when there are no contact methods', () => {
+  it('Should show a muted empty-state message when there are no contact methods', () => {
     render(<ContactSection value={undefined} />);
     expect(screen.getByText(/no contact information/i)).toBeInTheDocument();
     render(<ContactSection value={[]} />);

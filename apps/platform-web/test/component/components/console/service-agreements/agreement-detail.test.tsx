@@ -90,7 +90,7 @@ const serviceResponse = {
 };
 
 describe('AgreementDetail Component Test Suite', () => {
-  it('renders details of a service agreement, switches versions, and lists associated services', async () => {
+  it('Should render details of a service agreement, switches versions, and list associated services', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
       serviceResponse,
@@ -125,7 +125,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(titleInput.value).toBe('Global Privacy Policy V1');
   });
 
-  it('allows editing and saving a draft version', async () => {
+  it('Should allow editing and saving a draft version', async () => {
     const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
       serviceResponse,
@@ -167,7 +167,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('allows publishing a draft version', async () => {
+  it('Should allow publishing a draft version', async () => {
     const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
       serviceResponse,
@@ -190,7 +190,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('allows creating a new version draft from a published version', async () => {
+  it('Should allow creating a new version draft from a published version', async () => {
     // Mock where version 2 is already published so we can create a new version (v3)
     const publishedResponse = {
       ...serviceResponse,
@@ -225,7 +225,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('covers save and publish error branches when no version is selected', async () => {
+  it('Should cover save and publish error branches when no version is selected', async () => {
     // Render with empty versions list
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
@@ -251,7 +251,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(() => publishOpt.mutationFn()).toThrow('No version selected');
   });
 
-  it('renders workspace scoped agreement details without global badge', async () => {
+  it('Should render workspace scoped agreement details without global badge', async () => {
     const workspaceResponse = {
       ...serviceResponse,
       agreement: {
@@ -282,7 +282,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(backLinks[0]).toHaveAttribute('href', '/app/riverton/service-agreements');
   });
 
-  it('shows error banner when saving fails, and renders spinner during pending mutations', async () => {
+  it('Should show error banner when saving fails, and render spinner during pending mutations', async () => {
     let resolvePut!: (v: any) => void;
     const putPromise = new Promise((resolve) => {
       resolvePut = resolve;
@@ -316,7 +316,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Request failed');
   });
 
-  it('shows read-only view for non-admin member, empty services fallback, and title undefined branch', async () => {
+  it('Should show read-only view for non-admin member, empty services fallback, and title undefined branch', async () => {
     const staffResponse = {
       ...serviceResponse,
       agreement: {
@@ -363,7 +363,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('disables publish button and renders spinner when publish is pending', async () => {
+  it('Should disable publish button and render spinner when publish is pending', async () => {
     let resolvePublish!: (v: any) => void;
     const publishPromise = new Promise((resolve) => {
       resolvePublish = resolve;
@@ -403,7 +403,7 @@ describe('AgreementDetail Component Test Suite', () => {
     });
   });
 
-  it('covers user undefined branch', async () => {
+  it('Should cover user undefined branch', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'agreement-detail.test',
       serviceResponse,

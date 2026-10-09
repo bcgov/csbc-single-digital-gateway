@@ -257,7 +257,7 @@ describe('FormBuilder Component Test Suite', () => {
     vi.clearAllMocks();
   });
 
-  it('renders Build view with Palette, Canvas, and Inspector by default', () => {
+  it('Should render Build view with Palette, Canvas, and Inspector by default', () => {
     render(<FormBuilder value={initialFormDefinition} onChange={vi.fn()} />);
 
     expect(screen.getByTestId('mock-palette')).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(screen.queryByTestId('mock-preview')).not.toBeInTheDocument();
   });
 
-  it('switches to Preview tab and renders the preview component', async () => {
+  it('Should switch to Preview tab and render the preview component', async () => {
     const user = userEvent.setup();
     render(<FormBuilder value={initialFormDefinition} onChange={vi.fn()} />);
 
@@ -283,7 +283,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(screen.getByText(/"fullname"/)).toBeInTheDocument();
   });
 
-  it('triggers onChange when modifying form metadata (title & description)', async () => {
+  it('Should trigger onChange when modifying form metadata (title & description)', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
@@ -313,7 +313,7 @@ describe('FormBuilder Component Test Suite', () => {
     );
   });
 
-  it('handles field selection and edits field control configuration', async () => {
+  it('Should handle field selection and edit field control configuration', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
@@ -346,7 +346,7 @@ describe('FormBuilder Component Test Suite', () => {
     );
   });
 
-  it('handles deletion of field', async () => {
+  it('Should handle deletion of field', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
@@ -367,7 +367,7 @@ describe('FormBuilder Component Test Suite', () => {
     });
   });
 
-  it('handles adding new fields from the palette', async () => {
+  it('Should handle adding new fields from the palette', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
@@ -384,7 +384,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(Object.keys(props)).toHaveLength(2); // fullname + the new text field
   });
 
-  it('renders optional title and actions toolbars when provided', () => {
+  it('Should render optional title and actions toolbars when provided', () => {
     render(
       <FormBuilder
         value={initialFormDefinition}
@@ -398,7 +398,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(screen.getByTestId('custom-action')).toBeInTheDocument();
   });
 
-  it('handles drag and drop event triggers successfully', async () => {
+  it('Should handle drag and drop event triggers successfully', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(<FormBuilder value={initialFormDefinition} onChange={handleChange} />);
@@ -451,7 +451,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(handleChange).toHaveBeenCalled();
   });
 
-  it('handles invalid path operations gracefully', async () => {
+  it('Should handle invalid path operations gracefully', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
@@ -477,7 +477,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(handleChange).toHaveBeenCalled(); // deleteAt still emits model unmodified
   });
 
-  it('handles container and display node selection, updates, and nested deletion', async () => {
+  it('Should handle container and display node selection, updates, and nested deletion', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const valueWithContainerAndDisplay: FormDefinition = {
@@ -615,7 +615,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(handleChange).not.toHaveBeenCalled();
   });
 
-  it('covers node.kind check branches when adding or dragging display-only fields', async () => {
+  it('Should cover node.kind check branches when adding or dragging display-only fields', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
@@ -655,20 +655,20 @@ describe('FormBuilder Component Test Suite', () => {
     );
   });
 
-  it('renders the three columns: palette, canvas, inspector', () => {
+  it('Should render the three columns: palette, canvas, inspector', () => {
     render(<FormBuilderMirror />);
     expect(screen.getByRole('region', { name: /palette/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /canvas/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /inspector/i })).toBeInTheDocument();
   });
 
-  it('shows form settings in the inspector when nothing is selected', () => {
+  it('Should show form settings in the inspector when nothing is selected', () => {
     render(<FormBuilderMirror />);
     const inspector = screen.getByRole('region', { name: /inspector/i });
     expect(within(inspector).getByText(/form settings/i)).toBeInTheDocument();
   });
 
-  it('filters palette items via the search box', async () => {
+  it('Should filter palette items via the search box', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -677,7 +677,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(within(palette).queryByRole('button', { name: /^text$/i })).not.toBeInTheDocument();
   });
 
-  it('adds a field to the canvas (click-to-add) and emits a control + property', async () => {
+  it('Should add a field to the canvas (click-to-add) and emit a control + property', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -688,7 +688,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(Object.keys(after.schema.properties)).toHaveLength(1);
   });
 
-  it('edits the form title on the canvas, writing schema.title', async () => {
+  it('Should edit the form title on the canvas, writing schema.title', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -697,7 +697,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(dump().schema.title).toBe('Apply now');
   });
 
-  it('selecting a field shows its config in the inspector and edits its label', async () => {
+  it('Should select a field shows its config in the inspector and edit its label', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -713,7 +713,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(JSON.stringify(dump())).toContain('Email address');
   });
 
-  it('toggling required updates schema.required', async () => {
+  it('Should toggle required updates schema.required', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -729,7 +729,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(dump().schema.required.length).toBe(1);
   });
 
-  it('clears the selected field when focusing the form Title', async () => {
+  it('Should clear the selected field when focusing the form Title', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -743,7 +743,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(within(inspector).getByRole('heading', { name: /form settings/i })).toBeInTheDocument();
   });
 
-  it('selects a layout container and shows section settings in the inspector', async () => {
+  it('Should select a layout container and show section settings in the inspector', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -754,7 +754,7 @@ describe('FormBuilder Component Test Suite', () => {
     expect(within(inspector).getByRole('textbox', { name: /section title/i })).toBeInTheDocument();
   });
 
-  it('deletes a field from the canvas', async () => {
+  it('Should delete a field from the canvas', async () => {
     const user = userEvent.setup();
     render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
@@ -765,7 +765,7 @@ describe('FormBuilder Component Test Suite', () => {
   });
 
   describe('display fields (inline editing)', () => {
-    it('edits a heading inline on the canvas, writing a Label element (no property)', async () => {
+    it('Should edit a heading inline on the canvas, writing a Label element (no property)', async () => {
       const user = userEvent.setup();
       render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
@@ -784,7 +784,7 @@ describe('FormBuilder Component Test Suite', () => {
       expect(Object.keys(after.schema.properties)).toHaveLength(0);
     });
 
-    it('selecting a heading shows its settings in the inspector and switches level', async () => {
+    it('Should select a heading shows its settings in the inspector and switch level', async () => {
       const user = userEvent.setup();
       render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
@@ -798,7 +798,7 @@ describe('FormBuilder Component Test Suite', () => {
       expect(dump().uischema.elements[0].options.level).toBe(3);
     });
 
-    it('edits a paragraph inline on the canvas', async () => {
+    it('Should edit a paragraph inline on the canvas', async () => {
       const user = userEvent.setup();
       render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
@@ -814,7 +814,7 @@ describe('FormBuilder Component Test Suite', () => {
       });
     });
 
-    it('sets paragraph alignment via the inspector', async () => {
+    it('Should set paragraph alignment via the inspector', async () => {
       const user = userEvent.setup();
       render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
@@ -826,7 +826,7 @@ describe('FormBuilder Component Test Suite', () => {
       expect(dump().uischema.elements[0].options.align).toBe('center');
     });
 
-    it('renders a rich-text editor inline on the canvas for a rich-text display field', async () => {
+    it('Should render a rich-text editor inline on the canvas for a rich-text display field', async () => {
       const user = userEvent.setup();
       render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });

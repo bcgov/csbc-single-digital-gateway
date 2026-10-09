@@ -51,7 +51,7 @@ describe('ReferencesService', () => {
   });
 
   describe('list', () => {
-    it('returns ReferenceResponse items for a service version', async () => {
+    it('Should return ReferenceResponse items for a service version', async () => {
       // 1. servicesService.requireDocument
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
@@ -97,7 +97,7 @@ describe('ReferencesService', () => {
       });
     });
 
-    it('throws NotFoundException if the owner service version is not found', async () => {
+    it('Should throw NotFoundException if the owner service version is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       mockResponse(tableResponses, documentVersions, []); // no version found
 
@@ -106,7 +106,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('sets url to null in list if external application targetData is null or invalid', async () => {
+    it('Should set url to null in list if external application targetData is null or invalid', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
@@ -134,7 +134,7 @@ describe('ReferencesService', () => {
       expect(result[0]!.url).toBeNull();
     });
 
-    it('sets url to null in list if external application targetData url is not a string', async () => {
+    it('Should set url to null in list if external application targetData url is not a string', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
@@ -162,7 +162,7 @@ describe('ReferencesService', () => {
       expect(result[0]!.url).toBeNull();
     });
 
-    it('returns ReferenceResponse for external_application reference with its URL resolved', async () => {
+    it('Should return ReferenceResponse for external_application reference with its URL resolved', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
@@ -198,7 +198,7 @@ describe('ReferencesService', () => {
       label: 'My Reference',
     };
 
-    it('successfully adds a reference to a draft service version', async () => {
+    it('Should successfully add a reference to a draft service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -236,7 +236,7 @@ describe('ReferencesService', () => {
       expect(result.targetVersion).toBe(2);
     });
 
-    it('throws BadRequestException if target is in a different workspace when adding a reference', async () => {
+    it('Should throw BadRequestException if target is in a different workspace when adding a reference', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -258,7 +258,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws BadRequestException if the service references itself when adding a reference', async () => {
+    it('Should throw BadRequestException if the service references itself when adding a reference', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -280,7 +280,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws BadRequestException if target kind does not match reference relation', async () => {
+    it('Should throw BadRequestException if target kind does not match reference relation', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -302,7 +302,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws ConflictException if inserting duplicate reference causes primary key violation', async () => {
+    it('Should throw ConflictException if inserting duplicate reference causes primary key violation', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -329,7 +329,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws Error if reference insert returned no row', async () => {
+    it('Should throw Error if reference insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -354,7 +354,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws ConflictException if references are updated on non-draft service version', async () => {
+    it('Should throw ConflictException if references are updated on non-draft service version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -367,7 +367,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('throws NotFoundException if target document version is not found', async () => {
+    it('Should throw NotFoundException if target document version is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -381,7 +381,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('successfully adds related_service reference targeting a service', async () => {
+    it('Should successfully add related_service reference targeting a service', async () => {
       const relatedInput = {
         targetVersionId: 'target-version-1',
         relation: 'related_service' as const,
@@ -423,7 +423,7 @@ describe('ReferencesService', () => {
       expect(result.targetKind).toBe('service');
     });
 
-    it('throws BadRequestException if related_service reference targets a non-service document', async () => {
+    it('Should throw BadRequestException if related_service reference targets a non-service document', async () => {
       const relatedInput = {
         targetVersionId: 'target-version-1',
         relation: 'related_service' as const,
@@ -449,7 +449,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('throws ConflictException if inserting duplicate reference causes unique violation wrapped in cause', async () => {
+    it('Should throw ConflictException if inserting duplicate reference causes unique violation wrapped in cause', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -476,7 +476,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('rethrows string/non-object error if insert throws a non-object', async () => {
+    it('Should rethrow string/non-object error if insert throws a non-object', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -501,7 +501,7 @@ describe('ReferencesService', () => {
       );
     });
 
-    it('successfully adds reference with null label when label is omitted', async () => {
+    it('Should successfully add reference with null label when label is omitted', async () => {
       const inputNoLabel = {
         targetVersionId: 'target-version-1',
         relation: 'application_form' as const,
@@ -543,7 +543,7 @@ describe('ReferencesService', () => {
   });
 
   describe('remove', () => {
-    it('successfully unlinks related service reference', async () => {
+    it('Should successfully unlink related service reference', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         relation: 'related_service',
@@ -558,7 +558,7 @@ describe('ReferencesService', () => {
       expect(dbMock.delete).toHaveBeenCalledWith(documentReferences);
     });
 
-    it('successfully unlinks application form if there are other references to it', async () => {
+    it('Should successfully unlink application form if there are other references to it', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         targetDocumentId: 'target-form-1',
@@ -573,7 +573,7 @@ describe('ReferencesService', () => {
       expect(dbMock.delete).toHaveBeenCalledWith(documentReferences);
     });
 
-    it('deletes application form completely (along with reference) inside transaction if this is the last reference and form has no submissions', async () => {
+    it('Should delete application form completely (along with reference) inside transaction if this is the last reference and form has no submissions', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         targetDocumentId: 'target-form-1',
@@ -591,7 +591,7 @@ describe('ReferencesService', () => {
       expect(txMock.delete).toHaveBeenNthCalledWith(2, documents);
     });
 
-    it('throws ConflictException on last reference removal if the form has submissions', async () => {
+    it('Should throw ConflictException on last reference removal if the form has submissions', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         targetDocumentId: 'target-form-1',
@@ -607,7 +607,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('throws NotFoundException if reference is not found', async () => {
+    it('Should throw NotFoundException if reference is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
       mockResponse(tableResponses, documentVersions, [{ status: 'draft' }]); // requireOwnerVersion
@@ -618,7 +618,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('deletes application form completely when references and submissions count queries return empty', async () => {
+    it('Should delete application form completely when references and submissions count queries return empty', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         targetDocumentId: 'target-form-1',
@@ -636,7 +636,7 @@ describe('ReferencesService', () => {
       expect(txMock.delete).toHaveBeenNthCalledWith(2, documents);
     });
 
-    it('deletes external_application completely when removing its last reference', async () => {
+    it('Should delete external_application completely when removing its last reference', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         relation: 'external_application',
@@ -656,7 +656,7 @@ describe('ReferencesService', () => {
   });
 
   describe('archive', () => {
-    it('sets archived_at on application form version', async () => {
+    it('Should set archived_at on application form version', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({});
 
@@ -668,7 +668,7 @@ describe('ReferencesService', () => {
       expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
     });
 
-    it('throws BadRequestException if relation is not application_form', async () => {
+    it('Should throw BadRequestException if relation is not application_form', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         relation: 'related_service',
@@ -683,7 +683,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('throws Error if pinnedVersion targetVersionId is null during archive', async () => {
+    it('Should throw Error if pinnedVersion targetVersionId is null during archive', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
       const mockRef = createMockRef({
         targetVersionId: null,
@@ -705,7 +705,7 @@ describe('ReferencesService', () => {
       label: 'Start application',
     };
 
-    it('successfully creates form document, draft version, and reference in a transaction', async () => {
+    it('Should successfully create form document, draft version, and reference in a transaction', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -744,7 +744,7 @@ describe('ReferencesService', () => {
       expect(result.targetTitle).toBe('Referenced Form Title');
     });
 
-    it('throws UnprocessableEntityException if the typeId is not found', async () => {
+    it('Should throw UnprocessableEntityException if the typeId is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -758,7 +758,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('throws Error if form document insert returned no row when creating a form', async () => {
+    it('Should throw Error if form document insert returned no row when creating a form', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -781,7 +781,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(new Error('form document insert returned no row'));
     });
 
-    it('throws Error if form version insert returned no row when creating a form', async () => {
+    it('Should throw Error if form version insert returned no row when creating a form', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -804,7 +804,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(new Error('form version insert returned no row'));
     });
 
-    it('throws Error if reference insert returned no row', async () => {
+    it('Should throw Error if reference insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -830,7 +830,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(new Error('reference insert returned no row'));
     });
 
-    it('throws BadRequestException if the form type kind is not basic-form or multi-stage-form', async () => {
+    it('Should throw BadRequestException if the form type kind is not basic-form or multi-stage-form', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -850,7 +850,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('successfully creates form and reference with null label when label is omitted', async () => {
+    it('Should successfully create form and reference with null label when label is omitted', async () => {
       const inputNoLabel = {
         typeId: 'type-1',
         title: 'Referenced Form Title',
@@ -891,7 +891,7 @@ describe('ReferencesService', () => {
   });
 
   describe('createExternal', () => {
-    it('throws UnprocessableEntityException if external document type is not seeded', async () => {
+    it('Should throw UnprocessableEntityException if external document type is not seeded', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -907,7 +907,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('throws Error if external document insert returned no row', async () => {
+    it('Should throw Error if external document insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -928,7 +928,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow('external application document insert returned no row');
     });
 
-    it('throws Error if external application version insert returned no row', async () => {
+    it('Should throw Error if external application version insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -951,7 +951,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow('external application version insert returned no row');
     });
 
-    it('throws Error if reference insert returned no row', async () => {
+    it('Should throw Error if reference insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -975,7 +975,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow('reference insert returned no row');
     });
 
-    it('creates external document, version, and reference successfully', async () => {
+    it('Should create external document, version, and reference successfully', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -1027,7 +1027,7 @@ describe('ReferencesService', () => {
   });
 
   describe('updateExternal', () => {
-    it('throws BadRequestException if the target reference is not an external application method', async () => {
+    it('Should throw BadRequestException if the target reference is not an external application method', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -1050,7 +1050,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('throws Error if external application update returned no row', async () => {
+    it('Should throw Error if external application update returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -1077,7 +1077,7 @@ describe('ReferencesService', () => {
       ).rejects.toThrow('external application update returned no row');
     });
 
-    it('updates external target document title, version data, and reference label successfully', async () => {
+    it('Should update external target document title, version data, and reference label successfully', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({
         id: 'service-1',
         workspaceId: 'ws-1',

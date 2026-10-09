@@ -48,7 +48,7 @@ describe('CitizenShell Component', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders in anonymous variant when user is not logged in', () => {
+  it('Should render in anonymous variant when user is not logged in', () => {
     vi.mocked(useAuth).mockReturnValue({ data: null } as any);
 
     render(
@@ -65,7 +65,7 @@ describe('CitizenShell Component', () => {
     expect(screen.getByTestId('child-content')).toHaveTextContent('Hello World');
   });
 
-  it('renders in authenticated variant with mapped user details when user is logged in', () => {
+  it('Should render in authenticated variant with mapped user details when user is logged in', () => {
     vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
 
     render(
@@ -83,7 +83,7 @@ describe('CitizenShell Component', () => {
     expect(screen.getByTestId('child-content')).toHaveTextContent('Home Content');
   });
 
-  it('performs logout and redirects to root when onLogout triggers', async () => {
+  it('Should performs logout and redirects to root when onLogout triggers', async () => {
     vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
     vi.mocked(logout).mockResolvedValue({} as any);
 

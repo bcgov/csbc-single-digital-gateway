@@ -16,7 +16,7 @@ describe('DocumentTypesV1Controller', () => {
     controller = new DocumentTypesV1Controller(typesServiceMock);
   });
 
-  it('list returns items from types service when calling the document controller list method', async () => {
+  it('Should list returns items from types service when calling the document controller list method', async () => {
     const mockList = createMockList();
     typesServiceMock.staffList.mockResolvedValue(mockList);
 
@@ -25,7 +25,7 @@ describe('DocumentTypesV1Controller', () => {
     expect(result).toEqual({ items: mockList });
   });
 
-  it('get returns a single type from types service when calling the document controller get method', async () => {
+  it('Should get returns a single type from types service when calling the document controller get method', async () => {
     const mockType = { id: 'type-1', name: 'Type 1', versions: [] };
     typesServiceMock.staffGet.mockResolvedValue(mockType);
 
@@ -34,7 +34,7 @@ describe('DocumentTypesV1Controller', () => {
     expect(result).toEqual(mockType);
   });
 
-  it('getVersion returns a specific version from types service', async () => {
+  it('Should getVersion returns a specific version from types service', async () => {
     const mockTypeVersion = createMockTypeVersion({ status: 'published' });
     typesServiceMock.staffGetVersion.mockResolvedValue(mockTypeVersion);
 

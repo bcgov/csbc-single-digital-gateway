@@ -50,7 +50,7 @@ afterEach(() => {
 });
 
 describe('Console Agreements  Component Test Suite', () => {
-  it('renders ConsoleAgreementsList (agreements list + workspace defaults panel)', async () => {
+  it('Should render ConsoleAgreementsList (agreements list + workspace defaults panel)', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'console-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,
@@ -63,7 +63,7 @@ describe('Console Agreements  Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
+  it('Should render ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
     const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'console-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,
@@ -96,7 +96,7 @@ describe('Console Agreements  Component Test Suite', () => {
     );
   });
 
-  it('renders ConsoleAgreementDetail page', async () => {
+  it('Should render ConsoleAgreementDetail page', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'console-agreements-pages.test',
       serviceResponse: serviceAgreementsDetailResponse,
@@ -113,7 +113,7 @@ describe('Console Agreements  Component Test Suite', () => {
     expect(titleInput.value).toBe('Global Privacy Policy');
   });
 
-  it('covers useWorkspaceScope loading state (undefined workspace)', () => {
+  it('Should cover useWorkspaceScope loading state (undefined workspace)', () => {
     mockUseParams.mockReturnValue({ slug: 'riverton', id: 'a1' });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(

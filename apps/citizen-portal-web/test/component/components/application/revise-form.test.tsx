@@ -96,21 +96,21 @@ describe('ReviseForm Component', () => {
     };
   };
 
-  it('renders initial form data correctly', () => {
+  it('Should render initial form data correctly', () => {
     renderComponent();
     expect(screen.getByLabelText('Name')).toHaveValue('Initial Name');
     expect(screen.getByRole('button', { name: 'Resubmit application' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
-  it('calls onCancel when Cancel button is clicked', async () => {
+  it('Should call onCancel when Cancel button is clicked', async () => {
     const onCancel = vi.fn();
     renderComponent({ onCancel });
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('performs debounced autosave when name is modified', async () => {
+  it('Should performs debounced autosave when name is modified', async () => {
     const fetchMock = createMockBff({
       application: jsonResponse({ ...mockApplication, data: { name: 'updated' } }),
     });
@@ -135,7 +135,7 @@ describe('ReviseForm Component', () => {
     });
   }, 10000);
 
-  it('submits application successfully and calls onSubmitted', async () => {
+  it('Should submits application successfully and calls onSubmitted', async () => {
     const onSubmitted = vi.fn();
     const fetchMock = createMockBff({
       application: jsonResponse({ ...mockApplication, status: 'pending' }),
@@ -158,7 +158,7 @@ describe('ReviseForm Component', () => {
     expect(onSubmitted).toHaveBeenCalledTimes(1);
   });
 
-  it('shows error message if submit fails', async () => {
+  it('Should show error message if submit fails', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 400 }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -171,13 +171,13 @@ describe('ReviseForm Component', () => {
     });
   });
 
-  it('handles undefined initial data gracefully', () => {
+  it('Should handle undefined initial data gracefully', () => {
     const mockAppNoData = { ...mockApplication, data: undefined };
     renderComponent({ application: mockAppNoData as any });
     expect(screen.getByLabelText('Name')).toHaveValue('');
   });
 
-  it('performs debounced autosave with multiple changes, clearing previous timers', async () => {
+  it('Should performs debounced autosave with multiple changes, clearing previous timers', async () => {
     const fetchMock = createMockBff({
       application: jsonResponse({ ...mockApplication, data: { name: 'Updated name' } }),
     });
@@ -215,7 +215,7 @@ describe('ReviseForm Component', () => {
     );
   });
 
-  it('shows saving indicator when autosave is pending', async () => {
+  it('Should show saving indicator when autosave is pending', async () => {
     let resolvePatch: (value: Response) => void;
     const patchPromise = new Promise<Response>((resolve) => {
       resolvePatch = resolve;
@@ -238,7 +238,7 @@ describe('ReviseForm Component', () => {
     expect(await screen.findByText('Draft saved')).toBeInTheDocument();
   });
 
-  it('cancels pending autosave timer when submitting a revise form', async () => {
+  it('Should cancel pending autosave timer when submitting a revise form', async () => {
     const fetchMock = createMockBff({
       application: jsonResponse({ ...mockApplication, status: 'pending' }),
     });

@@ -34,7 +34,7 @@ describe('AvailableServices Component', () => {
     },
   ];
 
-  it('renders loading skeleton for available services when loading is true', () => {
+  it('Should render loading skeleton for available services when loading is true', () => {
     const { container } = render(<AvailableServices services={mockServices} loading={true} />);
 
     // Renders skeletons
@@ -45,7 +45,7 @@ describe('AvailableServices Component', () => {
     expect(screen.queryByText('Income Assistance')).not.toBeInTheDocument();
   });
 
-  it('renders services and descriptions when no applications exist', () => {
+  it('Should render services and descriptions when no applications exist', () => {
     render(<AvailableServices services={mockServices} loading={false} />);
 
     // Service titles and links

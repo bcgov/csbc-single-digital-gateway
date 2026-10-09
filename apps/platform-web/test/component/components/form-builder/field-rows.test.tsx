@@ -83,7 +83,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('pathEq helper', () => {
-    it('returns true if paths are identical, otherwise false', () => {
+    it('Should return true if paths are identical, otherwise false', () => {
       expect(pathEq(null, [1])).toBe(false);
       expect(pathEq([1, 2], [1, 2])).toBe(true);
       expect(pathEq([1, 2], [1, 3])).toBe(false);
@@ -92,7 +92,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('FieldRow', () => {
-    it('renders control node preview and triggers events', async () => {
+    it('Should render control node preview and trigger events', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
       const handleDelete = vi.fn();
@@ -136,7 +136,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(handleDelete).toHaveBeenCalledWith([0]);
     });
 
-    it('selects when clicking anywhere in the card, but not via the drag handle', async () => {
+    it('Should select when clicking anywhere in the card, but not via the drag handle', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
 
@@ -165,7 +165,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(handleSelect).toHaveBeenCalledWith([0]);
     });
 
-    it('renders display node using DisplayCard', () => {
+    it('Should render display node using DisplayCard', () => {
       const mockDisplayNode: DisplayNode = {
         kind: 'display',
         id: 'disp-1',
@@ -202,7 +202,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('EndZone', () => {
-    it('sets up droppable end zone area', () => {
+    it('Should set up droppable end zone area', () => {
       render(
         <EndZone id="ez-1" container={null} index={5} accept={['field']} paletteDragType={null} />,
       );
@@ -217,7 +217,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('EmptyDropZone', () => {
-    it('displays placeholder text and configures droppable container', () => {
+    it('Should display placeholder text and configure droppable container', () => {
       render(<EmptyDropZone id="edz-1" container={2} accept={['container']} />);
 
       expect(screen.getByText('Drop components here')).toBeInTheDocument();
@@ -233,7 +233,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('ContainerRow', () => {
-    it('renders layout header, children, and reorder controls', async () => {
+    it('Should render layout header, children, and reorder controls', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
       const handleDelete = vi.fn();
@@ -295,7 +295,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.getByText('Preview: Nested Field')).toBeInTheDocument();
     });
 
-    it('renders drop placeholders inside FieldRow when isDropTarget is true', () => {
+    it('Should render drop placeholders inside FieldRow when isDropTarget is true', () => {
       vi.mocked(useSortable).mockReturnValueOnce({
         ref: vi.fn(),
         handleRef: vi.fn(),
@@ -343,7 +343,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(containerNull.querySelector('.h-11')).not.toBeInTheDocument();
     });
 
-    it('uses correct fallback labelling in ContainerRow when label is missing', () => {
+    it('Should use correct fallback labelling in ContainerRow when label is missing', () => {
       const groupContainer: ContainerNode = {
         kind: 'container',
         layout: 'group',
@@ -405,7 +405,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Grid');
     });
 
-    it('previews a grid container with its authored column count (feature 169)', () => {
+    it('Should preview a grid container with its authored column count (feature 169)', () => {
       const gridContainer: ContainerNode = {
         kind: 'container',
         layout: 'grid',
@@ -429,7 +429,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(grid?.getAttribute('style')).toContain('repeat(4, minmax(0, 1fr))');
     });
 
-    it('handles FieldRow selection on display focus capture and control keydown', () => {
+    it('Should handle FieldRow selection on display focus capture and control keydown', () => {
       const handleSelect = vi.fn();
       const mockDisplayNode: DisplayNode = {
         kind: 'display',
@@ -492,7 +492,7 @@ describe('Field Rows Component Test Suite', () => {
       // Should not select or prevent default
     });
 
-    it('renders DropPlaceholder inside EndZone when isDropTarget is true', () => {
+    it('Should render DropPlaceholder inside EndZone when isDropTarget is true', () => {
       vi.mocked(useDroppable).mockReturnValueOnce({
         ref: vi.fn(),
         isDropTarget: true,
@@ -505,7 +505,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
     });
 
-    it('renders DropPlaceholder inside ContainerRow when isDropTarget is true', () => {
+    it('Should render DropPlaceholder inside ContainerRow when isDropTarget is true', () => {
       vi.mocked(useSortable).mockReturnValueOnce({
         ref: vi.fn(),
         handleRef: vi.fn(),
@@ -534,7 +534,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
     });
 
-    it('uses childIndex as key fallback when child key is missing in ContainerRow', () => {
+    it('Should use childIndex as key fallback when child key is missing in ContainerRow', () => {
       const mockContainerNodeNoKey: ContainerNode = {
         kind: 'container',
         layout: 'horizontal',
@@ -564,7 +564,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(container).toBeDefined();
     });
 
-    it('renders dashed drop placeholder inside EndZone when isDropTarget is true and paletteDragType is null', () => {
+    it('Should render dashed drop placeholder inside EndZone when isDropTarget is true and paletteDragType is null', () => {
       vi.mocked(useDroppable).mockReturnValueOnce({
         ref: vi.fn(),
         isDropTarget: true,
@@ -577,7 +577,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(container.querySelector('.border-dashed')).toBeInTheDocument();
     });
 
-    it('handles display-only child nodes in ContainerRow', () => {
+    it('Should handle display-only child nodes in ContainerRow', () => {
       const mockContainerNodeDisplayOnly: ContainerNode = {
         kind: 'container',
         layout: 'horizontal',
@@ -614,7 +614,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.queryByText('Row')).not.toBeInTheDocument();
     });
 
-    it('prefers the author title over the type fallback', () => {
+    it('Should prefer the author title over the type fallback', () => {
       renderContainer(sectionNode('Applicant details'));
       expect(screen.getByText('Applicant details')).toBeInTheDocument();
       expect(screen.queryByText('Section')).not.toBeInTheDocument();
@@ -622,14 +622,14 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('Grid layout container', () => {
-    it('applies grid styles with explicit columns count', () => {
+    it('Should apply grid styles with explicit columns count', () => {
       const { container } = renderContainer({ ...gridNode, columns: 4 });
       const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
       expect(gridDiv).toBeInTheDocument();
       expect(gridDiv.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))');
     });
 
-    it('defaults gridTemplateColumns to 2 columns when node.columns is undefined', () => {
+    it('Should default gridTemplateColumns to 2 columns when node.columns is undefined', () => {
       const { container } = renderContainer(gridNode);
       const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
       expect(gridDiv).toBeInTheDocument();

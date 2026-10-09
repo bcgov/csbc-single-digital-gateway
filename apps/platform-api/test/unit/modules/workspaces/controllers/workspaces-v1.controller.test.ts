@@ -36,7 +36,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('list', () => {
-    it('calls list on workspaces service', async () => {
+    it('Should call list on workspaces service', async () => {
       const query: ListWorkspacesQueryDto = { limit: 10, offset: 0, sort: 'name', order: 'asc' };
       workspacesServiceMock.list.mockResolvedValue({ items: [] });
 
@@ -48,7 +48,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('create', () => {
-    it('calls create on workspaces service', async () => {
+    it('Should call create on workspaces service', async () => {
       const body: CreateWorkspaceDto = { name: 'New Workspace' };
       const mockResult = { id: 'ws-1', name: 'New Workspace' };
       workspacesServiceMock.create.mockResolvedValue(mockResult);
@@ -61,7 +61,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('getBySlug', () => {
-    it('calls getBySlug on workspaces service', async () => {
+    it('Should call getBySlug on workspaces service', async () => {
       const mockResult = { id: 'ws-1', slug: 'my-workspace' };
       workspacesServiceMock.getBySlug.mockResolvedValue(mockResult);
 
@@ -73,7 +73,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('get', () => {
-    it('calls get on workspaces service', async () => {
+    it('Should call get on workspaces service', async () => {
       const mockResult = { id: 'ws-1', name: 'Workspace 1' };
       workspacesServiceMock.get.mockResolvedValue(mockResult);
 
@@ -85,7 +85,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('listMembers', () => {
-    it('calls listMembers on workspaces service', async () => {
+    it('Should call listMembers on workspaces service', async () => {
       const mockResult = { items: [] };
       workspacesServiceMock.listMembers.mockResolvedValue(mockResult);
 
@@ -97,7 +97,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('listMembersPage', () => {
-    it('calls listMembersPage on workspaces service', async () => {
+    it('Should call listMembersPage on workspaces service', async () => {
       const query: ListMembersQueryDto = {
         limit: 10,
         offset: 0,
@@ -120,7 +120,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('listAddableStaff', () => {
-    it('calls listAddableStaff on workspaces service', async () => {
+    it('Should call listAddableStaff on workspaces service', async () => {
       const query: AddableStaffQueryDto = { q: 'staff' };
       const mockResult = { items: [] };
       workspacesServiceMock.listAddableStaff.mockResolvedValue(mockResult);
@@ -137,7 +137,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('addMember', () => {
-    it('calls addMember on workspaces service', async () => {
+    it('Should call addMember on workspaces service', async () => {
       const body: AddMemberDto = { userId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991', role: 'member' };
       const mockResult = {
         id: 'member-1',
@@ -154,7 +154,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('updateMember', () => {
-    it('calls updateMember on workspaces service', async () => {
+    it('Should call updateMember on workspaces service', async () => {
       const body: UpdateMemberDto = { role: 'admin' };
       workspacesServiceMock.updateMember.mockResolvedValue(undefined);
 
@@ -170,7 +170,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('transferOwnership', () => {
-    it('calls transferOwnership on workspaces service', async () => {
+    it('Should call transferOwnership on workspaces service', async () => {
       const body: TransferOwnershipDto = { userId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991' };
       const mockResult = { id: 'ws-1', ownerId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991' };
       workspacesServiceMock.transferOwnership.mockResolvedValue(mockResult);
@@ -187,7 +187,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('update', () => {
-    it('calls update on workspaces service', async () => {
+    it('Should call update on workspaces service', async () => {
       const body: UpdateWorkspaceDto = { name: 'Updated Workspace' };
       const mockResult = { id: 'ws-1', name: 'Updated Workspace' };
       workspacesServiceMock.update.mockResolvedValue(mockResult);
@@ -200,7 +200,7 @@ describe('WorkspacesV1Controller', () => {
   });
 
   describe('remove', () => {
-    it('calls remove on workspaces service', async () => {
+    it('Should call remove on workspaces service', async () => {
       workspacesServiceMock.remove.mockResolvedValue(undefined);
 
       await controller.remove(mockUser, 'ws-1');

@@ -7,20 +7,20 @@ import { originalFetch } from '../../support/vi-fixtures';
 // where they started (feature 67). The path is URL-encoded into a `returnTo` query param.
 describe('BFF Unit Test Suite', () => {
   describe('loginUrlFor', () => {
-    it('appends the path as an encoded returnTo query param', () => {
+    it('Should append the path as an encoded returnTo query param', () => {
       expect(loginUrlFor('/app/services/42')).toBe(
         `${loginUrl}?returnTo=${encodeURIComponent('/app/services/42')}`,
       );
     });
 
-    it('encodes slashes and query characters in the path', () => {
+    it('Should encode slashes and query characters in the path', () => {
       const url = new URL(loginUrlFor('/app/services/42?tab=details'));
       expect(url.searchParams.get('returnTo')).toBe('/app/services/42?tab=details');
     });
   });
 
   describe('displayName', () => {
-    it('falls back correctly across user claims details', () => {
+    it('Should fall back correctly across user claims details', () => {
       const userWithName = {
         id: 'u1',
         roles: [],
@@ -56,7 +56,7 @@ describe('BFF Unit Test Suite', () => {
       globalThis.fetch = originalFetch;
     });
 
-    it('returns AuthUser object on successful response', async () => {
+    it('Should return AuthUser object on successful response', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         status: 200,
         ok: true,
@@ -67,7 +67,7 @@ describe('BFF Unit Test Suite', () => {
       expect(user).toEqual(adminUser);
     });
 
-    it('returns null on 401 unauthorized status', async () => {
+    it('Should return null on 401 unauthorized status', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         status: 401,
         ok: false,
@@ -77,7 +77,7 @@ describe('BFF Unit Test Suite', () => {
       expect(user).toBeNull();
     });
 
-    it('throws an error on failure response codes', async () => {
+    it('Should throw an error on failure response codes', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         status: 500,
         ok: false,
@@ -99,7 +99,7 @@ describe('BFF Unit Test Suite', () => {
       globalThis.fetch = originalFetch;
     });
 
-    it('posts a logout request to the server', async () => {
+    it('Should post a logout request to the server', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         status: 200,
         ok: true,
@@ -119,7 +119,7 @@ describe('BFF Unit Test Suite', () => {
   });
 
   describe('BFF_ORIGIN resolution', () => {
-    it('resolves BFF_ORIGIN from various config sources', async () => {
+    it('Should resolve BFF_ORIGIN from various config sources', async () => {
       const originalConfig = (window as any).__APP_CONFIG__;
 
       try {

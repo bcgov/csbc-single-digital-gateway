@@ -13,13 +13,13 @@ import {
 import type { FormModel } from '@/components/form-builder/model';
 
 describe('newFieldKey / defaultFieldLabel (feature 159)', () => {
-  it('newFieldKey returns an 8-char nanoid', () => {
+  it('Should return an 8-char nanoid in newFieldKey', () => {
     const key = newFieldKey();
     expect(key).toHaveLength(8);
     expect(newFieldKey()).not.toBe(key); // unique
   });
 
-  it('defaultFieldLabel numbers per field type', () => {
+  it('Should number per field type in defaultFieldLabel', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -42,7 +42,7 @@ describe('newFieldKey / defaultFieldLabel (feature 159)', () => {
 
 describe('Form Builder Model Component Test Suite', () => {
   describe('fieldKeyFromLabel', () => {
-    it('slugifies labels to safe property keys', () => {
+    it('Should slugify labels to safe property keys', () => {
       expect(fieldKeyFromLabel('First Name')).toBe('first_name');
       expect(fieldKeyFromLabel('  First Name!!!  ')).toBe('first_name');
       expect(fieldKeyFromLabel('123 Numbers')).toBe('field_123_numbers');
@@ -52,7 +52,7 @@ describe('Form Builder Model Component Test Suite', () => {
   });
 
   describe('uniqueKey', () => {
-    it('returns key if unique, otherwise appends numeric suffix', () => {
+    it('Should return key if unique, otherwise appends numeric suffix', () => {
       expect(uniqueKey('name', [])).toBe('name');
       expect(uniqueKey('name', ['other'])).toBe('name');
       expect(uniqueKey('name', ['name'])).toBe('name_2');
@@ -61,7 +61,7 @@ describe('Form Builder Model Component Test Suite', () => {
   });
 
   describe('createField', () => {
-    it('creates control node with defaults', () => {
+    it('Should create control node with defaults', () => {
       const node = createField('text');
       expect(node).toEqual({
         kind: 'control',
@@ -73,7 +73,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates number field defaulting to decimal with min 0, no max, and 2 decimal places', () => {
+    it('Should create number field defaulting to decimal with min 0, no max, and 2 decimal places', () => {
       const node = createField('number');
       expect(node).toEqual({
         kind: 'control',
@@ -88,7 +88,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates boolean field defaulting to checkbox renderAs', () => {
+    it('Should create boolean field defaulting to checkbox renderAs', () => {
       const node = createField('boolean');
       expect(node).toEqual({
         kind: 'control',
@@ -101,7 +101,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates select field with default option and single selection', () => {
+    it('Should create select field with default option and single selection', () => {
       const node = createField('select');
       expect(node).toEqual({
         kind: 'control',
@@ -115,7 +115,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates slider field with min 0, max 100, step 1', () => {
+    it('Should create slider field with min 0, max 100, step 1', () => {
       const node = createField('slider');
       expect(node).toEqual({
         kind: 'control',
@@ -130,7 +130,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates accordiongroup field with itemLabel and defaultOpen', () => {
+    it('Should create accordiongroup field with itemLabel and defaultOpen', () => {
       const node = createField('accordiongroup');
       expect(node).toEqual({
         kind: 'control',
@@ -144,7 +144,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates address field with BC-Gov defaults', () => {
+    it('Should create address field with BC-Gov defaults', () => {
       const node = createField('address');
       expect(node).toEqual({
         kind: 'control',
@@ -160,7 +160,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates container layout with default empty children', () => {
+    it('Should create container layout with default empty children', () => {
       const node = createField('group');
       expect(node).toEqual({
         kind: 'container',
@@ -169,7 +169,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates a grid container layout defaulting to 2 columns (feature 169)', () => {
+    it('Should create a grid container layout defaulting to 2 columns (feature 169)', () => {
       const node = createField('grid');
       expect(node).toEqual({
         kind: 'container',
@@ -179,7 +179,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates display node with format default value', () => {
+    it('Should create display node with format default value', () => {
       const node = createField('heading');
       expect(node.kind).toBe('display');
       if (node.kind === 'display') {
@@ -220,7 +220,7 @@ describe('Form Builder Model Component Test Suite', () => {
       ],
     };
 
-    it('gets top-level and nested nodes correctly', () => {
+    it('Should get top-level and nested nodes correctly', () => {
       expect(getNodeAt(model, null)).toBeNull();
       expect(getNodeAt(model, [])).toBeNull();
       expect(getNodeAt(model, [0])).toEqual(model.fields[0]);
@@ -247,7 +247,7 @@ describe('Form Builder Model Component Test Suite', () => {
       ],
     };
 
-    it('inserts at top level root', () => {
+    it('Should insert at top level root', () => {
       const newNode = createField('number');
       newNode.key = 'f2';
 
@@ -257,7 +257,7 @@ describe('Form Builder Model Component Test Suite', () => {
       expect((result.fields[1] as any)?.key).toBe('f2');
     });
 
-    it('inserts inside container', () => {
+    it('Should insert inside container', () => {
       const newNode = createField('number');
       newNode.key = 'f2';
 
@@ -299,21 +299,21 @@ describe('Form Builder Model Component Test Suite', () => {
       ],
     };
 
-    it('reorders top level fields', () => {
+    it('Should reorder top level fields', () => {
       const result = moveField(initialModel, [0], { container: null, index: 2 });
       expect(result.fields[0]?.kind).toBe('container');
       expect(result.fields[1]?.kind).toBe('control');
       expect((result.fields[1] as any)?.key).toBe('f1');
     });
 
-    it('moves nested field out to root', () => {
+    it('Should move nested field out to root', () => {
       const result = moveField(initialModel, [1, 0], { container: null, index: 0 });
       expect(result.fields).toHaveLength(3);
       expect((result.fields[0] as any).key).toBe('f2');
       expect((result.fields[2] as any).children).toHaveLength(0);
     });
 
-    it('moves root field into container', () => {
+    it('Should move root field into container', () => {
       const result = moveField(initialModel, [0], { container: 1, index: 0 });
       expect(result.fields).toHaveLength(1);
       const container = result.fields[0] as any;
@@ -324,7 +324,7 @@ describe('Form Builder Model Component Test Suite', () => {
   });
 
   describe('allKeys', () => {
-    it('returns flat array of all keys in control nodes, ignoring display nodes', () => {
+    it('Should return flat array of all keys in control nodes, ignoring display nodes', () => {
       const model: FormModel = {
         title: '',
         description: '',
@@ -361,7 +361,7 @@ describe('Form Builder Model Component Test Suite', () => {
   });
 
   describe('createField additional types', () => {
-    it('creates paragraph display field', () => {
+    it('Should create paragraph display field', () => {
       const node = createField('paragraph');
       expect(node).toEqual({
         kind: 'display',
@@ -371,7 +371,7 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates richtextdisplay display field', () => {
+    it('Should create richtextdisplay display field', () => {
       const node = createField('richtextdisplay');
       expect(node).toEqual({
         kind: 'display',
@@ -382,18 +382,18 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates a checkbox-group field with a user-friendly labelled option', () => {
+    it('Should create a checkbox-group field with a user-friendly labelled option', () => {
       const node = createField('checkboxes');
       expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'Option 1' }]);
     });
 
-    it('creates a select field with a labelled option, defaulting to single choice', () => {
+    it('Should create a select field with a labelled option, defaulting to single choice', () => {
       const node = createField('select');
       expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'Option 1' }]);
       expect((node as any).multiple).toBe(false);
     });
 
-    it('creates slider field with range settings', () => {
+    it('Should create slider field with range settings', () => {
       const node = createField('slider');
       expect(node).toEqual({
         kind: 'control',
@@ -425,7 +425,7 @@ describe('Form Builder Model Component Test Suite', () => {
       ],
     };
 
-    it('inserts at root if target container is not a container node', () => {
+    it('Should insert at root if target container is not a container node', () => {
       const newNode = createField('text');
       newNode.key = 'f2';
       const result = insertField(initialModel, newNode, { container: 0, index: 0 });
@@ -433,7 +433,7 @@ describe('Form Builder Model Component Test Suite', () => {
       expect((result.fields[0] as any).key).toBe('f2');
     });
 
-    it('inserts at root if inserting a container inside a container target', () => {
+    it('Should insert at root if inserting a container inside a container target', () => {
       const modelWithContainer: FormModel = {
         title: '',
         description: '',
@@ -464,12 +464,12 @@ describe('Form Builder Model Component Test Suite', () => {
       ],
     };
 
-    it('returns unmodified model if path is invalid', () => {
+    it('Should return unmodified model if path is invalid', () => {
       const result = moveField(initialModel, [999], { container: null, index: 0 });
       expect(result).toBe(initialModel);
     });
 
-    it('moves container into another container but falls back to root', () => {
+    it('Should move container into another container but falls back to root', () => {
       const modelWithTwoContainers: FormModel = {
         title: '',
         description: '',
@@ -485,7 +485,7 @@ describe('Form Builder Model Component Test Suite', () => {
       expect(result.fields[1]?.kind).toBe('container');
     });
 
-    it('moves field into a non-container host but falls back to root', () => {
+    it('Should move field into a non-container host but falls back to root', () => {
       const modelWithNonContainerTarget: FormModel = {
         title: '',
         description: '',
@@ -514,12 +514,12 @@ describe('Form Builder Model Component Test Suite', () => {
       expect((result.fields[0] as any).key).toBe('f1');
     });
 
-    it('does not modify model if moving nested field from a non-container parent', () => {
+    it('Should not modify model if moving nested field from a non-container parent', () => {
       const result = moveField(initialModel, [0, 1], { container: null, index: 0 });
       expect(result).toEqual(initialModel);
     });
 
-    it('decrements index when moving a nested field to a later index in the same container', () => {
+    it('Should decrement index when moving a nested field to a later index in the same container', () => {
       const containerModel: FormModel = {
         title: '',
         description: '',
@@ -556,7 +556,7 @@ describe('Form Builder Model Component Test Suite', () => {
   });
 
   describe('getNodeAt additional edge cases', () => {
-    it('returns null if child index does not exist in container', () => {
+    it('Should return null if child index does not exist in container', () => {
       const model: FormModel = {
         title: '',
         description: '',
@@ -571,7 +571,7 @@ describe('Form Builder Model Component Test Suite', () => {
       expect(getNodeAt(model, [0, 99])).toBeNull();
     });
 
-    it('covers host undefined branch in moveField when nested path parent is missing during clone', () => {
+    it('Should cover host undefined branch in moveField when nested path parent is missing during clone', () => {
       let callCount = 0;
       const fieldsArray = [
         {

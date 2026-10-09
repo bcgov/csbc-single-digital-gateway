@@ -34,7 +34,7 @@ describe('Notifications E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects every notifications route (401 without a session)', async () => {
+  it('Should protect every notifications route (401 without a session)', async () => {
     expect((await http().get('/v1/me/notifications')).status).toBe(401);
     expect((await http().get('/v1/me/notifications/unread-count')).status).toBe(401);
     expect(
@@ -50,7 +50,7 @@ describe('Notifications E2E Test Suite', () => {
     ).toBe(401);
   });
 
-  it('400s an invalid preferences body for a signed-in user (boundary validation, pre-proxy)', async () => {
+  it('Should return 400 for an invalid preferences body for a signed-in user (boundary validation, pre-proxy)', async () => {
     const res = await http()
       .put('/v1/me/notification-preferences')
       .set('Origin', ORIGIN)
@@ -59,7 +59,7 @@ describe('Notifications E2E Test Suite', () => {
     expect(res.status).toBe(400);
   });
 
-  it('400s an out-of-range feed limit for a signed-in user (pre-proxy)', async () => {
+  it('Should return 400 for an out-of-range feed limit for a signed-in user (pre-proxy)', async () => {
     const res = await http().get('/v1/me/notifications?limit=101').set('x-test-user', seedUser());
     expect(res.status).toBe(400);
   });

@@ -11,7 +11,7 @@ afterEach(() => {
 
 describe('Service Detail Page Test Suite', () => {
   describe('Service Detail Page', () => {
-    it('renders the published service with no version switcher', async () => {
+    it('Should render the published service with no version switcher', async () => {
       createMockBff();
       await renderPage({ path: '/services/svc-1' });
       expect(
@@ -25,7 +25,7 @@ describe('Service Detail Page Test Suite', () => {
       expect(versionLinks).toHaveLength(0);
     });
 
-    it('renders without description if service has no description', async () => {
+    it('Should render without description if service has no description', async () => {
       const detailNoDesc = { ...serviceDetail, description: '' };
       createMockBff({ svc: jsonResponse(detailNoDesc) });
       await renderPage({ path: '/services/svc-1' });
@@ -35,7 +35,7 @@ describe('Service Detail Page Test Suite', () => {
       expect(screen.queryByText('Financial support for residents.')).not.toBeInTheDocument();
     });
 
-    it('surfaces the application forms in How to apply', async () => {
+    it('Should surface the application forms in How to apply', async () => {
       createMockBff();
       renderPage({ path: '/services/svc-1' });
       await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
@@ -47,7 +47,7 @@ describe('Service Detail Page Test Suite', () => {
       );
     });
 
-    it('renders an external method as a "Visit site" link opening the url in a new tab', async () => {
+    it('Should render an external method as a "Visit site" link opening the url in a new tab', async () => {
       createMockBff();
       renderPage({ path: '/services/svc-1' });
       await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
@@ -59,7 +59,7 @@ describe('Service Detail Page Test Suite', () => {
       expect(visit).not.toHaveAttribute('href', expect.stringContaining('/apply/'));
     });
 
-    it('titles the "Your activity" card by application name, then a Ref/date line', async () => {
+    it('Should title the "Your activity" card by application name, then a Ref/date line', async () => {
       const myApp = {
         id: 'app-1',
         serviceId: 'svc-1',
@@ -83,7 +83,7 @@ describe('Service Detail Page Test Suite', () => {
       expect(screen.getByText(/^Ref #20250701-0009 •/)).toBeInTheDocument();
     });
 
-    it('shows a not-available state on 404', async () => {
+    it('Should show a not-available state on 404', async () => {
       createMockBff({ svc: new Response(null, { status: 404 }) });
       await renderPage({ path: '/services/missing' });
       expect(
@@ -93,7 +93,7 @@ describe('Service Detail Page Test Suite', () => {
   });
 
   describe('Service Version Page', () => {
-    it('renders a historical version with its status', async () => {
+    it('Should render a historical version with its status', async () => {
       createMockBff();
       await renderPage({ path: '/services/svc-1/versions/ver-1' });
       expect(
@@ -104,7 +104,7 @@ describe('Service Detail Page Test Suite', () => {
       expect(screen.getByText('The original copy.')).toBeInTheDocument();
     });
 
-    it('shows a not-available state on 404', async () => {
+    it('Should show a not-available state on 404', async () => {
       createMockBff({ ver: new Response(null, { status: 404 }) });
       await renderPage({ path: '/services/svc-1/versions/missing' });
       expect(
@@ -112,7 +112,7 @@ describe('Service Detail Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('redirects the current published version to the canonical service page', async () => {
+    it('Should redirect the current published version to the canonical service page', async () => {
       createMockBff(); // detail.publishedVersionId === 'ver-3'
       const { router } = await renderPage({ path: '/services/svc-1/versions/ver-3' });
       await waitFor(() =>

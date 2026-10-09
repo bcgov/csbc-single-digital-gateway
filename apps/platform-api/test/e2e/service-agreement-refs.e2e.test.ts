@@ -60,13 +60,13 @@ describe('Service Agreement Refs E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s agreement-reference endpoints without a session', async () => {
+  it('Should return 401 for agreement-reference endpoints without a session', async () => {
     expect((await http().get(AGR)).status).toBe(401);
     expect((await http().post(AGR).send({ agreementDocumentId: UUID })).status).toBe(401);
     expect((await http().delete(`${AGR}/${UUID}`)).status).toBe(401);
   });
 
-  it('400s an attach with a missing/invalid agreementDocumentId', async () => {
+  it('Should return 400 for an attach with a missing/invalid agreementDocumentId', async () => {
     const staff = seedUser(['staff']);
     expect((await http().post(AGR).set('x-test-user', staff).send({})).status).toBe(400);
     expect(

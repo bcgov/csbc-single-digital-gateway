@@ -24,7 +24,7 @@ describe('Stage Preview Component Test Suite', () => {
     edges: [],
   };
 
-  it('renders FormRunner with multi-stage kind and definition', () => {
+  it('Should render FormRunner with multi-stage kind and definition', () => {
     render(<StagePreview definition={multiStageDefinition} />);
 
     expect(screen.getByTestId('mock-form-runner')).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('Stage Preview Component Test Suite', () => {
     expect(screen.getByText('Data: {}')).toBeInTheDocument();
   });
 
-  it('updates form runner data on onChange triggers for the stage preview component', async () => {
+  it('Should update form runner data on onChange triggers for the stage preview component', async () => {
     const user = userEvent.setup();
     render(<StagePreview definition={multiStageDefinition} />);
 

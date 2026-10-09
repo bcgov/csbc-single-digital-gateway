@@ -62,7 +62,7 @@ describe('DocumentTypesService', () => {
   });
 
   describe('adminList', () => {
-    it('returns a list of document types with all of their versions', async () => {
+    it('Should return a list of document types with all of their versions', async () => {
       // 1. Types select call (db.select().from().orderBy())
       dbMock.orderBy.mockResolvedValueOnce([dummyType2, dummyType1]);
       // 2. Versions select call for type-2 (none)
@@ -81,7 +81,7 @@ describe('DocumentTypesService', () => {
   });
 
   describe('adminGet', () => {
-    it('returns a single type with its versions', async () => {
+    it('Should return a single type with its versions', async () => {
       // 1. requireType limit call
       dbMock.limit.mockResolvedValueOnce([dummyType1]);
       // 2. versionsOf orderBy call
@@ -93,7 +93,7 @@ describe('DocumentTypesService', () => {
       expect(result.versions).toHaveLength(2);
     });
 
-    it('throws NotFoundException if the type is not found', async () => {
+    it('Should throw NotFoundException if the type is not found', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // empty
 
       await expect(service.adminGet('invalid')).rejects.toThrow(NotFoundException);
@@ -101,7 +101,7 @@ describe('DocumentTypesService', () => {
   });
 
   describe('staffList', () => {
-    it('returns list of types with their published version', async () => {
+    it('Should return list of types with their published version', async () => {
       dbMock.orderBy.mockResolvedValueOnce([{ type: dummyType1, version: dummyVersion2 }]);
 
       const result = await service.staffList();
@@ -113,7 +113,7 @@ describe('DocumentTypesService', () => {
   });
 
   describe('staffGet', () => {
-    it('returns type, published version and only published/archived versions in history', async () => {
+    it('Should return type, published version and only published/archived versions in history', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType1]);
       // versionsOf returns draft, published, archived versions
       dbMock.orderBy.mockResolvedValueOnce([dummyVersion1, dummyVersion2, dummyVersion3]);
@@ -127,7 +127,7 @@ describe('DocumentTypesService', () => {
       expect(result.history.map((v) => v.id)).toEqual(['v-2', 'v-3']);
     });
 
-    it('returns published as null if no published version exists', async () => {
+    it('Should return published as null if no published version exists', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType1]);
       // versionsOf returns draft and archived versions (no published version)
       dbMock.orderBy.mockResolvedValueOnce([dummyVersion1, dummyVersion3]);
@@ -143,7 +143,7 @@ describe('DocumentTypesService', () => {
   });
 
   describe('staffGetVersion', () => {
-    it('returns the version if it is published or archived', async () => {
+    it('Should return the version if it is published or archived', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyVersion2]); // published version
 
       const result = await service.staffGetVersion('type-1', 'v-2');
@@ -152,13 +152,13 @@ describe('DocumentTypesService', () => {
       expect(result.status).toBe('published');
     });
 
-    it('throws NotFoundException if the version is a draft', async () => {
+    it('Should throw NotFoundException if the version is a draft', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyVersion1]); // draft version
 
       await expect(service.staffGetVersion('type-1', 'v-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if the version is not found when fetching document version', async () => {
+    it('Should throw NotFoundException if the version is not found when fetching document version', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // not found
 
       await expect(service.staffGetVersion('type-1', 'invalid')).rejects.toThrow(NotFoundException);

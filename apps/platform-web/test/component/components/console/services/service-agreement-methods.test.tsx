@@ -70,7 +70,7 @@ function renderServiceAgreementMethods(readonly = false) {
 }
 
 describe('Service Agreement Methods Component Test Suite', () => {
-  it('lists attached agreements: title links to the standalone console editor, with Required + Remove', async () => {
+  it('Should list attached agreements: title links to the standalone console editor, with Required + Remove', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -87,7 +87,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();
   });
 
-  it('the Add modal is attach-only and lists only published, not-attached agreements', async () => {
+  it('Should the Add modal is attach-only and list only published, not-attached agreements', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -107,7 +107,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(within(dialog).queryByText('Terms of service')).not.toBeInTheDocument();
   });
 
-  it('shows workspace defaults that also apply (read-only), deduped against attached', async () => {
+  it('Should show workspace defaults that also apply (read-only), deduped against attached', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [
@@ -139,7 +139,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.getAllByText('Terms of service')).toHaveLength(1);
   });
 
-  it('the Add picker excludes agreements already applied as workspace defaults', async () => {
+  it('Should the Add picker excludes agreements already applied as workspace defaults', async () => {
     // 'a-available' (Privacy policy) is both a picker candidate AND a workspace default.
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
@@ -163,7 +163,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(within(dialog).queryByText('Privacy policy')).not.toBeInTheDocument();
   });
 
-  it('hides the Add and detach affordances when readonly', async () => {
+  it('Should hide the Add and detach affordances when readonly', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -177,7 +177,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument();
   });
 
-  it('triggers delete mutation and invalidates query when confirmed in dialog', async () => {
+  it('Should trigger delete mutation and invalidate query when confirmed in dialog', async () => {
     const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -209,7 +209,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     });
   });
 
-  it('clears confirmation state when dialog is dismissed/cancelled', async () => {
+  it('Should clear confirmation state when dialog is dismissed/cancelled', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -233,7 +233,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     });
   });
 
-  it('shows error message if detach service agreement fails', async () => {
+  it('Should show error message if detach service agreement fails', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -256,7 +256,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(alert).toHaveTextContent('Request failed: 500');
   });
 
-  it('renders optional and global badges correctly', async () => {
+  it('Should render optional and global badges correctly', async () => {
     const optionalAttachedRef = {
       ...attachedRef,
       isOptional: true,
@@ -292,7 +292,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.getAllByText('Global').length).toBeGreaterThan(0);
   });
 
-  it('shows workspace defaults warning text when there are no explicitly attached agreements but defaults exist', async () => {
+  it('Should show workspace defaults warning text when there are no explicitly attached agreements but defaults exist', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [
@@ -313,7 +313,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(await screen.findByText(/workspace defaults still apply/i)).toBeInTheDocument();
   });
 
-  it('covers onOpenChange(true) branch in AlertDialog', async () => {
+  it('Should cover onOpenChange(true) branch in AlertDialog', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],
@@ -334,7 +334,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
     }
   });
 
-  it('covers AlertDialogAction onClick when confirmId is null', async () => {
+  it('Should cover AlertDialogAction onClick when confirmId is null', async () => {
     mockServiceAgreementsBff(serviceAgreement, {
       testFile: 'service-agreement-methods.test',
       defaults: [],

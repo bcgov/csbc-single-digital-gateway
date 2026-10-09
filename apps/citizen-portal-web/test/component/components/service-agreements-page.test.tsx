@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe('Service Agreements Page Test Suite', () => {
   describe('citizen-portal-web /account/service-agreements timeline', () => {
-    it('renders an empty state when the citizen has approved nothing', async () => {
+    it('Should render an empty state when the citizen has approved nothing', async () => {
       createMockBff();
       await renderPage({ list: [] });
       expect(
@@ -21,7 +21,7 @@ describe('Service Agreements Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('renders approvals grouped into month sections with link cards to the detail', async () => {
+    it('Should render approvals grouped into month sections with link cards to the detail', async () => {
       createMockBff({ serviceAgreements: AGREEMENTS });
       await renderPage({ list: AGREEMENTS });
       // Card titles for each approval.
@@ -39,7 +39,7 @@ describe('Service Agreements Page Test Suite', () => {
       );
     });
 
-    it('prompts an anonymous visitor to log in on service agreements page', async () => {
+    it('Should prompt an anonymous visitor to log in on service agreements page', async () => {
       createMockBff({ me: new Response(null, { status: 401 }) });
       await renderPage({ path: '/account/service-agreements' });
       expect(
@@ -53,7 +53,7 @@ describe('Service Agreements Page Test Suite', () => {
       expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
     });
 
-    it('shows an error message when the service agreements query fails', async () => {
+    it('Should show an error message when the service agreements query fails', async () => {
       createMockBff({ serviceAgreementsOptions: { errorOnAgreements: true } });
       await renderPage({ errorOnAgreements: true });
 
@@ -68,7 +68,7 @@ describe('Service Agreements Page Test Suite', () => {
   });
 
   describe('citizen-portal-web /account/service-agreements/:id detail', () => {
-    it('shows the agreement name as the heading, the decision status, and read-only radios', async () => {
+    it('Should show the agreement name as the heading, the decision status, and read-only radios', async () => {
       createMockBff({
         serviceAgreement: {
           id: 'a1',
@@ -106,7 +106,7 @@ describe('Service Agreements Page Test Suite', () => {
       );
     });
 
-    it('shows a not-found message when the agreement 404s', async () => {
+    it('Should show a not-found message when the agreement 404s', async () => {
       createMockBff({ serviceAgreementsOptions: { agreementDetailNotFound: true } });
       await renderPage({
         path: '/account/service-agreements/missing',
@@ -116,7 +116,7 @@ describe('Service Agreements Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('prompts an anonymous visitor to log in on detail page', async () => {
+    it('Should prompt an anonymous visitor to log in on detail page', async () => {
       createMockBff({ me: new Response(null, { status: 401 }) });
       await renderPage({
         path: '/account/service-agreements/a1',
@@ -130,7 +130,7 @@ describe('Service Agreements Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows an error message when the agreement query fails', async () => {
+    it('Should show an error message when the agreement query fails', async () => {
       createMockBff({ serviceAgreement: new Response(null, { status: 500 }) });
       await renderPage({
         path: '/account/service-agreements/a1',
@@ -144,7 +144,7 @@ describe('Service Agreements Page Test Suite', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows detail of a rejected agreement with content and no description', async () => {
+    it('Should show detail of a rejected agreement with content and no description', async () => {
       const mockLexicalContent = {
         root: {
           children: [
@@ -205,7 +205,7 @@ describe('Service Agreements Page Test Suite', () => {
   });
 
   describe('groupByMonth', () => {
-    it('groups a descending list into months then days', () => {
+    it('Should groups a descending list into months then days', () => {
       const months = groupByMonth(AGREEMENTS);
       expect(months).toHaveLength(2);
       // Jan 2027: two distinct days (a1, a2); Dec 2026: one day (a3).
@@ -214,7 +214,7 @@ describe('Service Agreements Page Test Suite', () => {
       expect(months[0]!.days[0]!.items[0]!.id).toBe('a1');
     });
 
-    it('groups multiple items on the same day correctly', () => {
+    it('Should groups multiple items on the same day correctly', () => {
       const items = [
         {
           id: 'a1',
@@ -237,7 +237,7 @@ describe('Service Agreements Page Test Suite', () => {
       expect(months[0]!.days[0]!.items[1]!.id).toBe('a2');
     });
 
-    it('returns an empty array for no items', () => {
+    it('Should return an empty array for no items', () => {
       expect(groupByMonth([])).toEqual([]);
     });
   });

@@ -65,7 +65,7 @@ describe('ServicesService', () => {
       applications: [],
     };
 
-    it('successfully creates service document and draft version in a transaction', async () => {
+    it('Should successfully create service document and draft version in a transaction', async () => {
       // 1. requireMembership select
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
 
@@ -114,13 +114,13 @@ describe('ServicesService', () => {
       });
     });
 
-    it('throws NotFoundException if user has no workspace membership', async () => {
+    it('Should throw NotFoundException if user has no workspace membership', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(service.create('user-1', input)).rejects.toThrow(NotFoundException);
     });
 
-    it('throws Error if documents insert returned no row', async () => {
+    it('Should throw Error if documents insert returned no row', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
@@ -134,7 +134,7 @@ describe('ServicesService', () => {
       );
     });
 
-    it('throws Error if documentVersions insert returned no row', async () => {
+    it('Should throw Error if documentVersions insert returned no row', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
@@ -148,7 +148,7 @@ describe('ServicesService', () => {
       );
     });
 
-    it('successfully resolves and inserts inline applications', async () => {
+    it('Should successfully resolve and insert inline applications', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
@@ -190,7 +190,7 @@ describe('ServicesService', () => {
   });
 
   describe('getServiceDefinition', () => {
-    it('returns the schema definition of the resolved service type', async () => {
+    it('Should return the schema definition of the resolved service type', async () => {
       serviceTypeResolverMock.resolve.mockResolvedValue({
         schema: { type: 'object' },
         uischema: { type: 'VerticalLayout' },
@@ -207,7 +207,7 @@ describe('ServicesService', () => {
   });
 
   describe('listForms', () => {
-    it('returns workspace form documents catalog', async () => {
+    it('Should return workspace form documents catalog', async () => {
       // 1. requireMembership select
       dbMock.select = vi
         .fn()
@@ -231,7 +231,7 @@ describe('ServicesService', () => {
       ]);
     });
 
-    it('returns latest draft version if no published version exists', async () => {
+    it('Should return latest draft version if no published version exists', async () => {
       dbMock.select = vi
         .fn()
         .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
@@ -247,7 +247,7 @@ describe('ServicesService', () => {
       expect(result[0]!.versionId).toBe('form-version-draft');
     });
 
-    it('ignores form document in catalog if it has no versions', async () => {
+    it('Should ignore form document in catalog if it has no versions', async () => {
       dbMock.select = vi
         .fn()
         .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
@@ -265,7 +265,7 @@ describe('ServicesService', () => {
   });
 
   describe('list', () => {
-    it('throws NotFoundException if user has no workspace membership', async () => {
+    it('Should throw NotFoundException if user has no workspace membership', async () => {
       dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(
@@ -279,7 +279,7 @@ describe('ServicesService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('returns empty list and skips subqueries when no documents exist in workspace', async () => {
+    it('Should return empty list and skip subqueries when no documents exist in workspace', async () => {
       // 1. requireMembership select
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
@@ -306,7 +306,7 @@ describe('ServicesService', () => {
       expect(result.offset).toBe(0);
     });
 
-    it('returns paginated services with derived versions, multiple versions per doc, status, and submission flags', async () => {
+    it('Should return paginated services with derived versions, multiple versions per doc, status, and submission flags', async () => {
       // 1. requireMembership select
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
@@ -391,7 +391,7 @@ describe('ServicesService', () => {
       );
     });
 
-    it('handles status sort, order desc, whitespace q, and empty totals query', async () => {
+    it('Should handle status sort, order desc, whitespace q, and empty totals query', async () => {
       // 1. requireMembership select
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
@@ -417,7 +417,7 @@ describe('ServicesService', () => {
       expect(result.total).toBe(0);
     });
 
-    it('handles falsy search expression when search expression is undefined', async () => {
+    it('Should handle falsy search expression when search expression is undefined', async () => {
       // 1. requireMembership select
       dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
@@ -446,7 +446,7 @@ describe('ServicesService', () => {
       }
     });
 
-    it('returns status draft when service only has draft versions', async () => {
+    it('Should return status draft when service only has draft versions', async () => {
       dbMock.select = vi
         .fn()
         .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
@@ -481,7 +481,7 @@ describe('ServicesService', () => {
       expect(result.items[0]!.status).toBe('draft');
     });
 
-    it('returns status archived when service only has archived versions', async () => {
+    it('Should return status archived when service only has archived versions', async () => {
       dbMock.select = vi
         .fn()
         .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
@@ -516,7 +516,7 @@ describe('ServicesService', () => {
       expect(result.items[0]!.status).toBe('archived');
     });
 
-    it('returns status none when service has no versions', async () => {
+    it('Should return status none when service has no versions', async () => {
       dbMock.select = vi
         .fn()
         .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
@@ -541,7 +541,7 @@ describe('ServicesService', () => {
       expect(result.items[0]!.status).toBe('none');
     });
 
-    it('falls back to false for hasSubmissions if count query returns empty', async () => {
+    it('Should fall back to false for hasSubmissions if count query returns empty', async () => {
       dbMock.select = vi
         .fn()
         // 1. requireMembership select
@@ -584,7 +584,7 @@ describe('ServicesService', () => {
   });
 
   describe('get', () => {
-    it('successfully retrieves detailed service information', async () => {
+    it('Should successfully retrieve detailed service information', async () => {
       const mockDoc = createMockDoc({
         id: 'service-1',
         workspaceId: 'ws-1',
@@ -629,7 +629,7 @@ describe('ServicesService', () => {
       expect(result.hasSubmissions).toBe(false);
     });
 
-    it('throws NotFoundException if the service document is not found', async () => {
+    it('Should throw NotFoundException if the service document is not found', async () => {
       dbMock.select = vi.fn().mockReturnValueOnce(createMockQuery([])); // empty requireDocument
 
       await expect(service.get('user-1', 'service-1')).rejects.toThrow(NotFoundException);
@@ -637,7 +637,7 @@ describe('ServicesService', () => {
   });
 
   describe('remove', () => {
-    it('successfully removes a service and its orphaned forms when no submissions exist', async () => {
+    it('Should successfully remove a service and its orphaned forms when no submissions exist', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -657,7 +657,7 @@ describe('ServicesService', () => {
       expect(txMock.delete).toHaveBeenNthCalledWith(2, documents); // orphaned form deleted
     });
 
-    it('throws ConflictException if the service forms have submissions', async () => {
+    it('Should throw ConflictException if the service forms have submissions', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -667,7 +667,7 @@ describe('ServicesService', () => {
       await expect(service.remove('user-1', 'service-1')).rejects.toThrow(ConflictException);
     });
 
-    it('does not delete form document if another service still references it', async () => {
+    it('Should not delete form document if another service still references it', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -687,7 +687,7 @@ describe('ServicesService', () => {
       expect(txMock.delete).toHaveBeenCalledWith(documents); // only deleted service doc
     });
 
-    it('deletes form document if remaining count query returns empty when removing a service', async () => {
+    it('Should delete form document if remaining count query returns empty when removing a service', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -709,7 +709,7 @@ describe('ServicesService', () => {
   });
 
   describe('archive', () => {
-    it('archives all service versions and referenced form versions', async () => {
+    it('Should archive all service versions and referenced form versions', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
@@ -725,7 +725,7 @@ describe('ServicesService', () => {
   });
 
   describe('reactivate', () => {
-    it('reactivates a service via reactivateServiceTx', async () => {
+    it('Should reactivate a service via reactivateServiceTx', async () => {
       const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select.mockReturnValueOnce(createMockQuery([{ doc: mockDoc }])); // requireDocument
 
@@ -791,7 +791,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     service = new ServicesService(dbMock, serviceTypeResolverMock);
   });
 
-  it('should resolve the definition from the selected version type_version_id', async () => {
+  it('Should resolve the definition from the selected version type_version_id', async () => {
     arrange([versionRow({ typeVersionId: 'tv-new', publishedAt: new Date() })]);
     serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
       'tv-new': { schema: { marker: 'new' }, uischema: {} },
@@ -804,7 +804,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definitions['tv-new']).toEqual({ schema: { marker: 'new' }, uischema: {} });
   });
 
-  it('should return the OLD template for a version pinned to an older type version', async () => {
+  it('Should return the OLD template for a version pinned to an older type version', async () => {
     // v1 (published) is pinned to the OLD type version; v2 (draft) to the new one. The service is
     // rendered from its published version, so it must get the OLD template — this is exactly the
     // case that rendered as all em-dashes before the fix.
@@ -829,7 +829,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definitions['tv-new']?.schema).toEqual({ marker: 'new' });
   });
 
-  it('should not call resolve() (currently-published) on the read path', async () => {
+  it('Should not call resolve() (currently-published) on the read path', async () => {
     arrange([versionRow({})]);
     serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
       'type-version-1': { schema: {}, uischema: {} },
@@ -840,7 +840,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(serviceTypeResolverMock.resolve).not.toHaveBeenCalled();
   });
 
-  it('should fall back to the newest version when none is published', async () => {
+  it('Should fall back to the newest version when none is published', async () => {
     arrange([
       versionRow({ id: 'v1', version: 1, typeVersionId: 'tv-old' }),
       versionRow({ id: 'v2', version: 2, typeVersionId: 'tv-new' }),
@@ -855,7 +855,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definition.schema).toEqual({ marker: 'new' });
   });
 
-  it('should return an empty definition for a service with no versions', async () => {
+  it('Should return an empty definition for a service with no versions', async () => {
     arrange([]);
 
     const result = await service.get('user-1', 'service-1');
@@ -864,7 +864,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definitions).toEqual({});
   });
 
-  it('should return an empty definition when the pinned type version is missing', async () => {
+  it('Should return an empty definition when the pinned type version is missing', async () => {
     arrange([versionRow({ typeVersionId: 'tv-gone', publishedAt: new Date() })]);
     serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({});
 
@@ -873,7 +873,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definition).toEqual({ schema: {}, uischema: {} });
   });
 
-  it('should still use resolve() on the create path (a new service binds to the published type)', async () => {
+  it('Should still use resolve() on the create path (a new service binds to the published type)', async () => {
     // Guard against an over-eager fix: CREATE must keep binding to the currently-published type
     // version, or new services would be authored against a stale template.
     const source = readFileSync(

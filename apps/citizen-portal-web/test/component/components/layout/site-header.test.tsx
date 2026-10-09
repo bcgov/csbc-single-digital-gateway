@@ -122,7 +122,7 @@ describe('SiteHeader Component', () => {
     email: 'john.doe@example.com',
   };
 
-  it('renders the brand lockup and navigation links', () => {
+  it('Should render the brand lockup and navigation links', () => {
     render(<SiteHeader variant="anonymous" />);
 
     // Brand elements
@@ -140,7 +140,7 @@ describe('SiteHeader Component', () => {
     expect(servicesLink).toHaveAttribute('href', '/services');
   });
 
-  it('sets aria-current="page" on the active navigation link', () => {
+  it('Should sets aria-current="page" on the active navigation link', () => {
     render(<SiteHeader variant="anonymous" activeNav="services" />);
 
     const homeLink = screen.getByRole('link', { name: 'Home' });
@@ -150,7 +150,7 @@ describe('SiteHeader Component', () => {
     expect(servicesLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders Log in button in anonymous variant', () => {
+  it('Should render Log in button in anonymous variant', () => {
     render(<SiteHeader variant="anonymous" />);
 
     const loginLink = screen.getByRole('link', { name: /Log in/i });
@@ -161,7 +161,7 @@ describe('SiteHeader Component', () => {
     expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument();
   });
 
-  it('renders ProfileMenu in authenticated variant', () => {
+  it('Should render ProfileMenu in authenticated variant', () => {
     render(<SiteHeader variant="authenticated" user={mockUser} />);
 
     // Log in button should not be rendered
@@ -180,7 +180,7 @@ describe('SiteHeader Component', () => {
     expect(settingsLink).toHaveAttribute('href', '/account');
   });
 
-  it('triggers onLogout callback when logout dropdown item is clicked', async () => {
+  it('Should triggers onLogout callback when logout dropdown item is clicked', async () => {
     const onLogout = vi.fn();
 
     render(<SiteHeader variant="authenticated" user={mockUser} onLogout={onLogout} />);
@@ -191,7 +191,7 @@ describe('SiteHeader Component', () => {
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
-  it('renders loading placeholder in authenticated variant when user is undefined', () => {
+  it('Should render loading placeholder in authenticated variant when user is undefined', () => {
     render(<SiteHeader variant="authenticated" user={undefined} />);
 
     expect(screen.getByTestId('dropdown-trigger')).toBeInTheDocument();
@@ -199,7 +199,7 @@ describe('SiteHeader Component', () => {
     expect(screen.getByTestId('dropdown-content')).toBeInTheDocument();
   });
 
-  it('closes the mobile menu when a navigation link is clicked', async () => {
+  it('Should close the mobile menu when a navigation link is clicked', async () => {
     const user = userEvent.setup();
     render(<SiteHeader variant="anonymous" />);
 

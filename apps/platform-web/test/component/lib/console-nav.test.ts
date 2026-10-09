@@ -13,7 +13,7 @@ import {
 } from '@/lib/console-nav';
 
 describe('Console Nav Unit Test Suite', () => {
-  it('TOP_NAV is the five primary destinations in order', () => {
+  it('Should define the five primary destinations in order for TOP_NAV', () => {
     expect(TOP_NAV.map((item) => item.key)).toEqual([
       'overview',
       'services',
@@ -30,30 +30,30 @@ describe('Console Nav Unit Test Suite', () => {
     ]);
   });
 
-  it('Service Requests is a label-only rename of Submissions (route unchanged)', () => {
+  it('Should treat Service Requests as a label-only rename of Submissions (route unchanged)', () => {
     expect(SERVICE_REQUESTS_NAV.label).toBe('Service Requests');
     expect(SERVICE_REQUESTS_NAV.to).toBe('/app/$slug/submissions');
     expect(SERVICE_REQUESTS_NAV.key).toBe('submissions');
   });
 
-  it('Shared Resources is a new scoped hub route', () => {
+  it('Should provide Shared Resources as a new scoped hub route', () => {
     expect(SHARED_RESOURCES_NAV.to).toBe('/app/$slug/shared-resources');
     expect(SHARED_RESOURCES_NAV.scoped).toBe(true);
   });
 
-  it('Reports is gone from every destination list', () => {
+  it('Should omit Reports from every destination list', () => {
     expect(TOP_NAV.some((item) => item.key === 'reports')).toBe(false);
     expect(ALL_DESTINATIONS.some((item) => item.key === 'reports')).toBe(false);
   });
 
-  it('command-palette destinations still include the reachable-but-not-top-nav sections', () => {
+  it('Should still include the reachable-but-not-top-nav sections in command-palette destinations', () => {
     const keys = ALL_DESTINATIONS.map((item) => item.key);
     expect(keys).toContain('service-agreements');
     expect(keys).toContain('team');
     expect(keys).toContain('account');
   });
 
-  it('sectionFor resolves segments (including renamed/moved sections) or falls back to Overview', () => {
+  it('Should resolve segments (including renamed/moved sections) or fall back to Overview in sectionFor', () => {
     expect(sectionFor('/app/my-slug')).toBe(OVERVIEW_NAV);
     expect(sectionFor('/app/account')).toBe(ACCOUNT_NAV);
     expect(sectionFor('/app/my-slug/submissions')).toBe(SERVICE_REQUESTS_NAV);

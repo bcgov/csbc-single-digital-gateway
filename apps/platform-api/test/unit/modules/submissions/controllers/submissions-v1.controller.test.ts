@@ -21,7 +21,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('list', () => {
-    it('lists submissions via the submissions service', async () => {
+    it('Should list submissions via the submissions service', async () => {
       const query: ListSubmissionsQueryDto = {
         workspaceId: 'workspace-1',
       } as any;
@@ -36,7 +36,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('get', () => {
-    it('gets submission detail via the submissions service', async () => {
+    it('Should get submission detail via the submissions service', async () => {
       const mockResult = { id: 'sub-1', status: 'pending', data: {} };
       submissionsServiceMock.get.mockResolvedValue(mockResult);
 
@@ -48,7 +48,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('review', () => {
-    it('reviews a submission via the submissions service', async () => {
+    it('Should review a submission via the submissions service', async () => {
       const body: ReviewSubmissionDto = {
         decision: 'approve',
         reason: 'Looks good!',

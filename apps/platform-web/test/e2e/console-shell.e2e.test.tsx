@@ -9,13 +9,13 @@ afterEach(() => {
 });
 
 describe('Console Shell Integration Test Suite', () => {
-  it('derives avatar initials from the first two words of a name', () => {
+  it('Should derive avatar initials from the first two words of a name', () => {
     expect(initials('Maya Reyes')).toBe('MR');
     expect(initials('madonna')).toBe('M');
     expect(initials('  ')).toBe('?');
   });
 
-  it('formats the first role as a Title-cased label, falling back to Member', () => {
+  it('Should format the first role as a Title-cased label, falling back to Member', () => {
     expect(roleLabel(['staff'])).toBe('Staff');
     expect(roleLabel(['admin', 'staff'])).toBe('Admin');
     expect(roleLabel([])).toBe('Member');
@@ -23,7 +23,7 @@ describe('Console Shell Integration Test Suite', () => {
 });
 
 describe('console shell — account menu on real /auth/me data', () => {
-  it('shows initials on the top-bar avatar, with name + role inside the menu', async () => {
+  it('Should show initials on the top-bar avatar, with name + role inside the menu', async () => {
     mockAuth(authedUser);
     renderApp('/app');
 
@@ -45,7 +45,7 @@ describe('console shell — account menu on real /auth/me data', () => {
     );
   });
 
-  it('logs out via the account menu and returns to home', async () => {
+  it('Should log out via the account menu and return to home', async () => {
     mockAuth(authedUser);
     const location = stubLocationAssign();
     renderApp('/app');
@@ -68,7 +68,7 @@ describe('console shell — account menu on real /auth/me data', () => {
 });
 
 describe('console shell — navigation uses real router links', () => {
-  it('renders the top-bar destinations as anchors scoped to the active workspace', async () => {
+  it('Should render the top-bar destinations as anchors scoped to the active workspace', async () => {
     mockAuth(authedUser, {
       workspaces: [
         {

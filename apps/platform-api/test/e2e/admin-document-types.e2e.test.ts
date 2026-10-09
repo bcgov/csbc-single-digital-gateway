@@ -57,7 +57,7 @@ describe('Admin Document Types E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s admin endpoints without a session', async () => {
+  it('Should return 401 for admin endpoints without a session', async () => {
     expect((await http().get('/v1/admin/document-types')).status).toBe(401);
     expect((await http().get(`/v1/admin/document-types/${UUID}`)).status).toBe(401);
     expect(
@@ -82,7 +82,7 @@ describe('Admin Document Types E2E Test Suite', () => {
     ).toBe(401);
   });
 
-  it('403s admin endpoints for a non-admin (staff) session when fetching document types', async () => {
+  it('Should return 403 for admin endpoints for a non-admin (staff) session when fetching document types', async () => {
     const staff = seedUser(['staff']);
     expect((await http().get('/v1/admin/document-types').set('x-test-user', staff)).status).toBe(
       403,
@@ -129,7 +129,7 @@ describe('Admin Document Types E2E Test Suite', () => {
     ).toBe(403);
   });
 
-  it('400s version creation/update with invalid body for an admin session', async () => {
+  it('Should return 400 for version creation/update with invalid body for an admin session', async () => {
     const admin = seedUser(['admin']);
 
     // Test POST /versions validation

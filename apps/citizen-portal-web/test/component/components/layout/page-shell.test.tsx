@@ -20,7 +20,7 @@ vi.mock('@/components/layout/site-footer', () => ({
 }));
 
 describe('PageShell Component', () => {
-  it('renders skip link, main content with children, and footer', () => {
+  it('Should render skip link, main content with children, and footer', () => {
     render(
       <PageShell variant="anonymous">
         <div data-testid="child-content">Main Children Content</div>
@@ -42,7 +42,7 @@ describe('PageShell Component', () => {
     expect(screen.getByTestId('site-footer')).toBeInTheDocument();
   });
 
-  it('correctly forwards props to SiteHeader', () => {
+  it('Should correctly forwards props to SiteHeader', () => {
     const mockUser = { name: 'Alice Smith', email: 'alice@example.com' };
     const onLogout = vi.fn();
 
@@ -59,7 +59,7 @@ describe('PageShell Component', () => {
     expect(screen.getByTestId('header-user')).toHaveTextContent('Alice Smith');
   });
 
-  it('correctly executes onLogout when triggered from header', async () => {
+  it('Should correctly executes onLogout when triggered from header', async () => {
     const onLogout = vi.fn();
 
     render(

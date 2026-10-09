@@ -46,7 +46,7 @@ afterEach(() => {
 });
 
 describe('workspace default agreements panel', () => {
-  it('lets a workspace ADMIN see, add, and remove defaults; the picker excludes already-default', async () => {
+  it('Should let a workspace ADMIN see, add, and remove defaults; the picker excludes already-default', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -63,7 +63,7 @@ describe('workspace default agreements panel', () => {
     expect(dialog).toBeInTheDocument();
   });
 
-  it('shows the list read-only for a non-admin member (no add/remove)', async () => {
+  it('Should show the list read-only for a non-admin member (no add/remove)', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'member',
       defaults: [defaultAgreement],
@@ -74,7 +74,7 @@ describe('workspace default agreements panel', () => {
     expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument();
   });
 
-  it('allows adding a default agreement successfully', async () => {
+  it('Should allow adding a default agreement successfully', async () => {
     const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -100,7 +100,7 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('renders API error warning when adding default fails', async () => {
+  it('Should render API error warning when adding default fails', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       mockErrors: true,
@@ -119,7 +119,7 @@ describe('workspace default agreements panel', () => {
     expect(alert).toHaveTextContent('Failed to add default agreement');
   });
 
-  it('allows removing a default agreement successfully', async () => {
+  it('Should allow removing a default agreement successfully', async () => {
     const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -137,7 +137,7 @@ describe('workspace default agreements panel', () => {
     );
   });
 
-  it('renders API error warning when removing default fails', async () => {
+  it('Should render API error warning when removing default fails', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       mockErrors: true,
@@ -153,7 +153,7 @@ describe('workspace default agreements panel', () => {
     expect(alert).toHaveTextContent('Remove default failed: 400');
   });
 
-  it('displays correct badges for Optional, Required and Global properties', async () => {
+  it('Should display correct badges for Optional, Required and Global properties', async () => {
     const customDefault = {
       id: 'd1',
       agreementDocumentId: 'a1',
@@ -174,7 +174,7 @@ describe('workspace default agreements panel', () => {
     expect(screen.getByText('Global')).toBeInTheDocument();
   });
 
-  it('shows no published agreements fallback in the picker when all are defaulted', async () => {
+  it('Should show no published agreements fallback in the picker when all are defaulted', async () => {
     // Only 'Terms of service' is published, and it's already a default document
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
@@ -192,7 +192,7 @@ describe('workspace default agreements panel', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes picker dialog when cancel close button is clicked', async () => {
+  it('Should close picker dialog when cancel close button is clicked', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -212,7 +212,7 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('disables the add button in the picker when the mutation is pending', async () => {
+  it('Should disable the add button in the picker when the mutation is pending', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -237,7 +237,7 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('disables the remove button when the delete mutation is pending', async () => {
+  it('Should disable the remove button when the delete mutation is pending', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],
@@ -257,7 +257,7 @@ describe('workspace default agreements panel', () => {
     await screen.findByText('Terms of service');
   });
 
-  it('prevents dialog dismiss when onOpenChange(false) is called while add is pending, and handles onOpenChange(true)', async () => {
+  it('Should prevent dialog dismiss when onOpenChange(false) is called while add is pending, and handle onOpenChange(true)', async () => {
     let resolvePost!: () => void;
     const postPromise = new Promise<void>((resolve) => {
       resolvePost = resolve;
@@ -316,7 +316,7 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('renders workspace-scoped selectable agreements without a Global badge in the picker', async () => {
+  it('Should render workspace-scoped selectable agreements without a Global badge in the picker', async () => {
     mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
       role: 'admin',
       defaults: [defaultAgreement],

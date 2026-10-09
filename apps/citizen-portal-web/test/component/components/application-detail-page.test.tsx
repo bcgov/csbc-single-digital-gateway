@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 describe('Citizen Application Detail Page', () => {
-  it('shows the application, its service, and the submitted answers', async () => {
+  it('Should show the application, its service, and the submitted answers', async () => {
     createMockBff();
     await renderApp();
     expect(
@@ -41,7 +41,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.getByRole('heading', { name: 'Your answers' })).toBeInTheDocument();
   });
 
-  it('renders a multi-stage form structure correctly', async () => {
+  it('Should render a multi-stage form structure correctly', async () => {
     const multiStageDetail = {
       ...applicationDetail,
       kind: 'multi-stage-form',
@@ -75,7 +75,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.getByDisplayValue('MultiStageName')).toBeInTheDocument();
   });
 
-  it('shows not found page if application fetch fails', async () => {
+  it('Should show not found page if application fetch fails', async () => {
     createMockBff({ application: new Response(null, { status: 404 }) });
     await renderApp();
     expect(
@@ -83,7 +83,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('prompts anonymous visitors to log in on application detail page', async () => {
+  it('Should prompt anonymous visitors to log in on application detail page', async () => {
     createMockBff({ me: new Response(null, { status: 401 }) });
     await renderApp();
     expect(
@@ -99,7 +99,7 @@ describe('Citizen Application Detail Page', () => {
     expect(link).toBeDefined();
   });
 
-  it('shows an "Action needed" banner with the reviewer reason and a Make changes action', async () => {
+  it('Should show an "Action needed" banner with the reviewer reason and a Make changes action', async () => {
     createMockBff({
       application: jsonResponse(
         detailWith({
@@ -120,7 +120,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.getByRole('button', { name: /make changes/i })).toBeInTheDocument();
   });
 
-  it('shows an approved banner with descriptive copy', async () => {
+  it('Should show an approved banner with descriptive copy', async () => {
     createMockBff({
       application: jsonResponse(detailWith({ status: 'approved', statusLabel: 'Approved' })),
     });
@@ -130,7 +130,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
   });
 
-  it('opens drafts straight into the editable form runner', async () => {
+  it('Should open drafts straight into the editable form runner', async () => {
     const draftDetail = detailWith({
       status: 'draft',
       statusLabel: 'Draft',
@@ -145,7 +145,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
 
-  it('revises an action-needed application: opens a draft and shows the editable form', async () => {
+  it('Should revise an action-needed application: opens a draft and shows the editable form', async () => {
     const fetchMock = createMockBff({
       application: jsonResponse(
         detailWith({
@@ -171,7 +171,7 @@ describe('Citizen Application Detail Page', () => {
     );
   }, 20000);
 
-  it('exits edit mode on revise form submit', async () => {
+  it('Should exit edit mode on revise form submit', async () => {
     createMockBff({
       application: jsonResponse(
         detailWith({
@@ -195,7 +195,7 @@ describe('Citizen Application Detail Page', () => {
     expect(screen.getByRole('button', { name: /make changes/i })).toBeInTheDocument();
   });
 
-  it('handles multi-stage forms with missing stages, pages, ids, names, schemas, or uischemas', async () => {
+  it('Should handle multi-stage forms with missing stages, pages, ids, names, schemas, or uischemas', async () => {
     const multiStageWithFallbacks = {
       ...applicationDetail,
       kind: 'multi-stage-form',
@@ -216,7 +216,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles multi-stage forms with missing stages property entirely', async () => {
+  it('Should handle multi-stage forms with missing stages property entirely', async () => {
     const multiStageNoStages = {
       ...applicationDetail,
       kind: 'multi-stage-form',
@@ -230,7 +230,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles basic forms with missing schemas or uischemas', async () => {
+  it('Should handle basic forms with missing schemas or uischemas', async () => {
     const basicNoSchemas = {
       ...applicationDetail,
       structure: {},
@@ -242,7 +242,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles auth pending state (renders skeleton loader)', async () => {
+  it('Should handle auth pending state (renders skeleton loader)', async () => {
     // Pass a promise that never resolves for both me and app to keep auth and app in pending state
     createMockBff({
       me: new Promise<Response>(() => {}),
@@ -259,7 +259,7 @@ describe('Citizen Application Detail Page', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('handles application loading state when logged in', async () => {
+  it('Should handle application loading state when logged in', async () => {
     // me resolves immediately, but app is pending
     createMockBff({
       application: new Promise<Response>(() => {}),
@@ -274,7 +274,7 @@ describe('Citizen Application Detail Page', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('handles application being null with status 200', async () => {
+  it('Should handle application being null with status 200', async () => {
     createMockBff({ application: jsonResponse(null) });
     await renderApp();
     expect(
@@ -282,7 +282,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles auth query failure', async () => {
+  it('Should handle auth query failure', async () => {
     createMockBff({ me: new Response(null, { status: 500 }) });
     await renderApp();
     expect(
@@ -294,7 +294,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('revises an action-needed application and exits edit mode on cancel', async () => {
+  it('Should revise an action-needed application and exits edit mode on cancel', async () => {
     createMockBff({
       application: jsonResponse(
         detailWith({

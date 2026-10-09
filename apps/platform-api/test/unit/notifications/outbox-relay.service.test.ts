@@ -41,7 +41,7 @@ describe('OutboxRelayService', () => {
   });
 
   describe('onApplicationBootstrap', () => {
-    it('does not start timer if relay is disabled', () => {
+    it('Should not start timer if relay is disabled', () => {
       configMock.get.mockImplementation((key: string) => {
         if (key === 'OUTBOX_RELAY_ENABLED') return false;
         return '';
@@ -53,7 +53,7 @@ describe('OutboxRelayService', () => {
       expect(setIntervalSpy).not.toHaveBeenCalled();
     });
 
-    it('does not start timer if NODE_ENV is test', () => {
+    it('Should not start timer if NODE_ENV is test', () => {
       configMock.get.mockImplementation((key: string) => {
         if (key === 'OUTBOX_RELAY_ENABLED') return true;
         if (key === 'NODE_ENV') return 'test';
@@ -66,7 +66,7 @@ describe('OutboxRelayService', () => {
       expect(setIntervalSpy).not.toHaveBeenCalled();
     });
 
-    it('starts timer interval if enabled', () => {
+    it('Should start timer interval if enabled', () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
 
       service.onApplicationBootstrap();
@@ -75,7 +75,7 @@ describe('OutboxRelayService', () => {
       service.onApplicationShutdown();
     });
 
-    it('triggers tick timer interval and processes tick when time advances', async () => {
+    it('Should trigger tick timer interval and process tick when time advances', async () => {
       const processSpy = vi.spyOn(service, 'processDueRows').mockResolvedValue(0);
       service.onApplicationBootstrap();
 
@@ -85,13 +85,13 @@ describe('OutboxRelayService', () => {
       service.onApplicationShutdown();
     });
 
-    it('cleans up shut down when timer is undefined', async () => {
+    it('Should clean up shut down when timer is undefined', async () => {
       await expect(service.onApplicationShutdown()).resolves.toBeUndefined();
     });
   });
 
   describe('tick', () => {
-    it('does not run processDueRows concurrently if inFlight is active', async () => {
+    it('Should not run processDueRows concurrently if inFlight is active', async () => {
       txMock.select.mockImplementation(() => new Promise(() => {})); // never resolves
       void service.tick(); // sets inFlight
 
@@ -101,7 +101,7 @@ describe('OutboxRelayService', () => {
       expect(processSpy).not.toHaveBeenCalled();
     });
 
-    it('logs relayed count when greater than 1 (plural form)', async () => {
+    it('Should log relayed count when greater than 1 (plural form)', async () => {
       vi.spyOn(service, 'processDueRows').mockResolvedValue(2);
       const loggerSpy = vi.spyOn((service as any).logger, 'log');
 
@@ -110,7 +110,7 @@ describe('OutboxRelayService', () => {
       expect(loggerSpy).toHaveBeenCalledWith('relayed 2 outbox rows');
     });
 
-    it('logs relayed count when exactly 1 (singular form)', async () => {
+    it('Should log relayed count when exactly 1 (singular form)', async () => {
       vi.spyOn(service, 'processDueRows').mockResolvedValue(1);
       const loggerSpy = vi.spyOn((service as any).logger, 'log');
 
@@ -119,7 +119,7 @@ describe('OutboxRelayService', () => {
       expect(loggerSpy).toHaveBeenCalledWith('relayed 1 outbox row');
     });
 
-    it('logs nothing when claimed count is 0', async () => {
+    it('Should log nothing when claimed count is 0', async () => {
       vi.spyOn(service, 'processDueRows').mockResolvedValue(0);
       const loggerSpy = vi.spyOn((service as any).logger, 'log');
 
@@ -128,7 +128,7 @@ describe('OutboxRelayService', () => {
       expect(loggerSpy).not.toHaveBeenCalledWith(expect.stringContaining('relayed'));
     });
 
-    it('logs tick failure with unknown error message when rejected with non-Error', async () => {
+    it('Should log tick failure with unknown error message when rejected with non-Error', async () => {
       vi.spyOn(service, 'processDueRows').mockRejectedValue('Raw string tick error');
       const loggerSpy = vi.spyOn((service as any).logger, 'error');
 
@@ -139,7 +139,7 @@ describe('OutboxRelayService', () => {
   });
 
   describe('processDueRows', () => {
-    it('returns 0 if no due rows found', async () => {
+    it('Should return 0 if no due rows found', async () => {
       txMock.select.mockImplementation(() => createMockQuery([]));
 
       const count = await service.processDueRows();
@@ -147,7 +147,7 @@ describe('OutboxRelayService', () => {
       expect(count).toBe(0);
     });
 
-    it('claims due rows and delivers them successfully', async () => {
+    it('Should claim due rows and deliver them successfully', async () => {
       const mockOutboxNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
@@ -189,7 +189,7 @@ describe('OutboxRelayService', () => {
       expect(txMock.update).toHaveBeenCalledWith(notificationOutbox);
     });
 
-    it('handles 401 response and invalidates token client cache', async () => {
+    it('Should handle 401 response and invalidate token client cache', async () => {
       const mockOutboxErrorNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
@@ -215,7 +215,7 @@ describe('OutboxRelayService', () => {
       expect(txMock.update).toHaveBeenCalledWith(notificationOutbox); // updates attempt and errors
     });
 
-    it('marks row as terminal failed when attempts exceed limit', async () => {
+    it('Should mark row as terminal failed when attempts exceed limit', async () => {
       const mockOutboxMaxAttemptsNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
@@ -244,7 +244,7 @@ describe('OutboxRelayService', () => {
       );
     });
 
-    it('claims due rows with payload and delivers them successfully', async () => {
+    it('Should claim due rows with payload and deliver them successfully', async () => {
       const mockOutboxPayloadNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
@@ -279,7 +279,7 @@ describe('OutboxRelayService', () => {
       );
     });
 
-    it('handles non-Error delivery failures in deliverOne', async () => {
+    it('Should handle non-Error delivery failures in deliverOne', async () => {
       const mockNonErrNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',

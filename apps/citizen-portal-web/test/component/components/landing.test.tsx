@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe('Landing Page Test Suite', () => {
   describe('citizen-portal-web home — signed out', () => {
-    it('leads with the hero headline and marketing sections', async () => {
+    it('Should leads with the hero headline and marketing sections', async () => {
       createMockBff({ me: userNotFound });
       await renderPage({ path: '/' });
       // First render in this file cold-compiles the route tree's heavy deps (JsonForms/Lexical);
@@ -32,7 +32,7 @@ describe('Landing Page Test Suite', () => {
       expect(screen.getByText('Log in to get started')).toBeInTheDocument();
     });
 
-    it('offers login links that point at the BFF /auth/login endpoint', async () => {
+    it('Should offers login links that point at the BFF /auth/login endpoint', async () => {
       createMockBff({ me: userNotFound });
       await renderPage({ path: '/' });
       await screen.findByRole('heading', { name: 'Access government services online' });
@@ -40,7 +40,7 @@ describe('Landing Page Test Suite', () => {
       expect(links.some((link) => link.getAttribute('href')?.includes('/auth/login'))).toBe(true);
     });
 
-    it('renders services from the catalog and links Services in the nav', async () => {
+    it('Should render services from the catalog and links Services in the nav', async () => {
       createMockBff({ me: userNotFound });
       await renderPage({ path: '/' });
       expect(
@@ -53,7 +53,7 @@ describe('Landing Page Test Suite', () => {
       );
     });
 
-    it('shows each service card with its description and a catalog link', async () => {
+    it('Should show each service card with its description and a catalog link', async () => {
       createMockBff({ me: userNotFound });
       renderPage({ path: '/' });
       const card = await screen.findByRole('link', { name: /Income and Disability Assistance/i });
@@ -65,14 +65,14 @@ describe('Landing Page Test Suite', () => {
       expect(card).not.toHaveTextContent('Financial support.');
     });
 
-    it('does not show "Browse all services" when fewer than 3 services are available', async () => {
+    it('Should not show "Browse all services" when fewer than 3 services are available', async () => {
       createMockBff({ me: userNotFound });
       renderPage({ path: '/' });
       await screen.findByRole('link', { name: /Income and Disability Assistance/i });
       expect(screen.queryByRole('link', { name: /browse all services/i })).toBeNull();
     });
 
-    it('shows a "Browse all services" link to the catalog when the panel is full (3 services)', async () => {
+    it('Should show a "Browse all services" link to the catalog when the panel is full (3 services)', async () => {
       const threeServices = [
         { id: 's1', title: 'Income and Disability Assistance', description: 'Financial support.' },
         { id: 's2', title: 'Birth Registration', description: 'Register the birth of a child.' },
@@ -86,7 +86,7 @@ describe('Landing Page Test Suite', () => {
   });
 
   describe('citizen-portal-web home — signed in', () => {
-    it('greets the citizen and tracks their applications', async () => {
+    it('Should greets the citizen and tracks their applications', async () => {
       createMockBff({ me: jsonResponse(authedUser) });
       await renderPage({ path: '/' });
       expect(await screen.findByRole('heading', { name: 'Hi, Amina' })).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe('Landing Page Test Suite', () => {
       ).toBeNull();
     });
 
-    it('shows Available services as plain service cards even for services already applied to', async () => {
+    it('Should show Available services as plain service cards even for services already applied to', async () => {
       // The citizen has an application for s2, yet the Available services card must stay identical to
       // the anonymous card — a service link to the detail page, not an application/status card.
       createMockBff({ me: jsonResponse(authedUser) });
@@ -116,14 +116,14 @@ describe('Landing Page Test Suite', () => {
       expect(serviceLinks).toContain('/services/s2');
     });
 
-    it('shows the empty applications state when there are none', async () => {
+    it('Should show the empty applications state when there are none', async () => {
       createMockBff({ me: jsonResponse(authedUser), applications: jsonResponse([]) });
       await renderPage({ path: '/' });
       await screen.findByRole('heading', { name: 'Hi, Amina' });
       expect(await screen.findByText(/no applications to track/i)).toBeInTheDocument();
     });
 
-    it('logs out from the account menu', async () => {
+    it('Should logs out from the account menu', async () => {
       const fetchMock = createMockBff({ me: jsonResponse(authedUser) });
       const assign = createMockAssign();
       const user = userEvent.setup();
@@ -143,7 +143,7 @@ describe('Landing Page Test Suite', () => {
   });
 
   describe('citizen-portal-web mobile menu', () => {
-    it('opens a menu whose top bar carries the brand lockup and an X close control', async () => {
+    it('Should open a menu whose top bar carries the brand lockup and an X close control', async () => {
       createMockBff({ me: userNotFound });
       const user = userEvent.setup();
       await renderPage({ path: '/' });
@@ -162,7 +162,7 @@ describe('Landing Page Test Suite', () => {
       expect(within(dialog).getByRole('link', { name: 'Services' })).toBeInTheDocument();
     });
 
-    it('closes the menu when the X control is clicked', async () => {
+    it('Should close the menu when the X control is clicked', async () => {
       createMockBff({ me: userNotFound });
       const user = userEvent.setup();
       await renderPage({ path: '/' });

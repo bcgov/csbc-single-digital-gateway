@@ -128,7 +128,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(screen.queryByRole('menuitem', { name: /publish service/i })).not.toBeInTheDocument();
   });
 
-  it('triggers archiveService when clicking Archive service', async () => {
+  it('Should trigger archiveService when clicking Archive service', async () => {
     const user = userEvent.setup();
     vi.mocked(archiveService).mockResolvedValueOnce({} as any);
 
@@ -143,7 +143,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(archiveService).toHaveBeenCalledWith('srv-123');
   });
 
-  it('triggers reactivateService when clicking Publish service/Restore', async () => {
+  it('Should trigger reactivateService when clicking Publish service/Restore', async () => {
     const user = userEvent.setup();
     vi.mocked(reactivateService).mockResolvedValueOnce({} as any);
 
@@ -158,7 +158,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(reactivateService).toHaveBeenCalledWith('srv-123');
   });
 
-  it('handles discard draft dialog cancel and confirm flows', async () => {
+  it('Should handle discard draft dialog cancel and confirm flows', async () => {
     const user = userEvent.setup();
     vi.mocked(discardServiceVersion).mockResolvedValueOnce({} as any);
     const onDiscardedSpy = vi.fn();
@@ -203,7 +203,7 @@ describe('ServiceMenu Component Test Suite', () => {
     });
   });
 
-  it('handles delete service confirm flow', async () => {
+  it('Should handle delete service confirm flow', async () => {
     const user = userEvent.setup();
     vi.mocked(deleteService).mockResolvedValueOnce({} as any);
     const onDeletedSpy = vi.fn();
@@ -239,7 +239,7 @@ describe('ServiceMenu Component Test Suite', () => {
     });
   });
 
-  it('shows error messages in dialog when deletion fails', async () => {
+  it('Should show error messages in dialog when deletion fails', async () => {
     const user = userEvent.setup();
     vi.mocked(deleteService).mockRejectedValueOnce(new Error('Internal Database Error'));
 
@@ -259,7 +259,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Internal Database Error');
   });
 
-  it('does not crash when optional callbacks onDeleted, onDiscarded, and onConfirmDestroy are omitted', async () => {
+  it('Should not crash when optional callbacks onDeleted, onDiscarded, and onConfirmDestroy are omitted', async () => {
     const user = userEvent.setup();
     vi.mocked(deleteService).mockResolvedValueOnce({} as any);
 
@@ -288,7 +288,7 @@ describe('ServiceMenu Component Test Suite', () => {
     });
   });
 
-  it('shows error messages in dialog when discard draft fails', async () => {
+  it('Should show error messages in dialog when discard draft fails', async () => {
     const user = userEvent.setup();
     vi.mocked(discardServiceVersion).mockRejectedValueOnce(
       new Error('Discard failed due to locks'),
@@ -310,7 +310,7 @@ describe('ServiceMenu Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Discard failed due to locks');
   });
 
-  it('does not close dialog when AlertDialog triggers onOpenChange(true)', async () => {
+  it('Should not close dialog when AlertDialog triggers onOpenChange(true)', async () => {
     const user = userEvent.setup();
     renderServiceMenu({ archived: false, canDiscard: false, hasSubmissions: false });
 

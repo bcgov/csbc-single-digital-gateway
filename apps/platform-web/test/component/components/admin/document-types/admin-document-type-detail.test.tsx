@@ -92,7 +92,7 @@ const draftLatestEntry: Entry = {
 };
 
 describe('AdminDocumentTypeDetail', () => {
-  it('renders the heading, version dropdown, and seeded definition editor', async () => {
+  it('Should render the heading, version dropdown, and seeded definition editor', async () => {
     mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
@@ -107,7 +107,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
   });
 
-  it('shows New version (only) on a non-draft latest version', async () => {
+  it('Should show New version (only) on a non-draft latest version', async () => {
     mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
@@ -118,7 +118,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
   });
 
-  it('shows Save draft + Publish (not New version) when the latest version is a draft', async () => {
+  it('Should show Save draft + Publish (not New version) when the latest version is a draft', async () => {
     mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
 
@@ -131,7 +131,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.queryByText('Read-only (not a draft)')).not.toBeInTheDocument();
   });
 
-  it('switches the selected version via the dropdown and returns via Go to current', async () => {
+  it('Should switch the selected version via the dropdown and return via Go to current', async () => {
     mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -155,7 +155,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
   });
 
-  it('saves the draft definition via PATCH', async () => {
+  it('Should save the draft definition via PATCH', async () => {
     const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -182,7 +182,7 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('shows an error when the draft definition is not valid JSON on save', async () => {
+  it('Should show an error when the draft definition is not valid JSON on save', async () => {
     mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -196,7 +196,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Definition is not valid JSON.');
   });
 
-  it('publishes the selected draft version', async () => {
+  it('Should publish the selected draft version', async () => {
     const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -221,7 +221,7 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('creates a new version from the latest published version', async () => {
+  it('Should create a new version from the latest published version', async () => {
     const fetchMock = mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -241,7 +241,7 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('renders the live preview and toggles between interactive and read-only, and ignores deselect', async () => {
+  it('Should render the live preview and toggle between interactive and read-only, and ignore deselect', async () => {
     mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -261,7 +261,7 @@ describe('AdminDocumentTypeDetail', () => {
     await waitFor(() => expect(screen.getByTestId('jsonforms')).toHaveTextContent('readonly'));
   });
 
-  it('handles a document type with no versions and allows creating a version', async () => {
+  it('Should handle a document type with no versions and allow creating a version', async () => {
     const emptyEntry: Entry = {
       type: {
         id: 'dt-empty',
@@ -293,7 +293,7 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('renders nothing when the document type is not found', async () => {
+  it('Should render nothing when the document type is not found', async () => {
     mockAuthUser(adminUser);
 
     const { container } = renderApp('/admin/document-types/dt-unknown');

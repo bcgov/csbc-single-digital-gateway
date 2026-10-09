@@ -3,14 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { ServiceConsolePage } from '@/components/console/services/service-console-page';
 
 describe('ServiceConsolePage Component Test Suite', () => {
-  it('renders default coming soon text and title when children and extra are omitted', () => {
+  it('Should render default coming soon text and title when children and extra are omitted', () => {
     render(<ServiceConsolePage title="Service Overview" />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Service Overview' })).toBeInTheDocument();
     expect(screen.getByText('This section is coming soon.')).toBeInTheDocument();
   });
 
-  it('renders custom children when provided', () => {
+  it('Should render custom children when provided', () => {
     render(
       <ServiceConsolePage title="Custom Section">
         <div data-testid="custom-content">Active Service Details</div>
@@ -22,7 +22,7 @@ describe('ServiceConsolePage Component Test Suite', () => {
     expect(screen.queryByText('This section is coming soon.')).not.toBeInTheDocument();
   });
 
-  it('renders extra items in the page header when extra prop is provided', () => {
+  it('Should render extra items in the page header when extra prop is provided', () => {
     render(
       <ServiceConsolePage
         title="Versioned Service"
@@ -41,7 +41,7 @@ describe('ServiceConsolePage Component Test Suite', () => {
     expect(screen.getByText('This section is coming soon.')).toBeInTheDocument();
   });
 
-  it('renders both custom children and extra items when both are provided', () => {
+  it('Should render both custom children and extra items when both are provided', () => {
     render(
       <ServiceConsolePage
         title="Full Service Page"

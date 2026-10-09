@@ -59,14 +59,14 @@ describe('Services E2E Test Suite', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s service endpoints without a session', async () => {
+  it('Should return 401 for service endpoints without a session', async () => {
     expect((await http().get(`/v1/services?workspaceId=${UUID}`)).status).toBe(401);
     expect((await http().post('/v1/services').send({ workspaceId: UUID, title: 'X' })).status).toBe(
       401,
     );
   });
 
-  it('400s an invalid create body for a signed-in user when posting services', async () => {
+  it('Should return 400 for an invalid create body for a signed-in user when posting services', async () => {
     const staff = seedUser(['staff']);
     expect((await http().post('/v1/services').set('x-test-user', staff).send({})).status).toBe(400);
     expect(
@@ -79,7 +79,7 @@ describe('Services E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s a list without a valid workspaceId query when fetching services', async () => {
+  it('Should return 400 for a list without a valid workspaceId query when fetching services', async () => {
     expect(
       (
         await http()
@@ -89,7 +89,7 @@ describe('Services E2E Test Suite', () => {
     ).toBe(400);
   });
 
-  it('400s a list with out-of-range paging or an unknown sort', async () => {
+  it('Should return 400 for a list with out-of-range paging or an unknown sort', async () => {
     expect(
       (
         await http()

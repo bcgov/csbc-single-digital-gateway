@@ -30,7 +30,7 @@ const multiStageDefinition = {
 };
 
 describe('document type DTO schemas', () => {
-  it('constrains kind to the known set', () => {
+  it('Should constrain kind to the known set', () => {
     expect(documentKindSchema.safeParse('basic-form').success).toBe(true);
     expect(documentKindSchema.safeParse('multi-stage-form').success).toBe(true);
     expect(documentKindSchema.safeParse('service').success).toBe(true);
@@ -38,7 +38,7 @@ describe('document type DTO schemas', () => {
     expect(documentKindSchema.safeParse('other').success).toBe(false);
   });
 
-  it('validates a definition against a kind via definitionForKind', () => {
+  it('Should validate a definition against a kind via definitionForKind', () => {
     expect(definitionForKind('basic-form').safeParse(basicDefinition).success).toBe(true);
     expect(definitionForKind('basic-form').safeParse({ name: 'x' }).success).toBe(false);
     expect(definitionForKind('multi-stage-form').safeParse(basicDefinition).success).toBe(false);
@@ -49,7 +49,7 @@ describe('document type DTO schemas', () => {
     expect(definitionForKind('service').safeParse({ schema: {} }).success).toBe(false);
   });
 
-  it('validates a service-agreement definition (raw {schema,uischema})', () => {
+  it('Should validate a service-agreement definition (raw {schema,uischema})', () => {
     expect(
       definitionForKind('service-agreement').safeParse(serviceAgreementDefinition).success,
     ).toBe(true);

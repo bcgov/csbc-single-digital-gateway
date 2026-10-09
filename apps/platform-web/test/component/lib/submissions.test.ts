@@ -22,7 +22,7 @@ describe('Submissions Unit Test Suite', () => {
     mockFetch.mockReset();
   });
 
-  it('lists submissions without status filter', async () => {
+  it('Should list submissions without status filter', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ id: 'sub-1', applicantName: 'John Doe' }], total: 1 }),
     );
@@ -45,7 +45,7 @@ describe('Submissions Unit Test Suite', () => {
     expect(res.items[0]?.applicantName).toBe('John Doe');
   });
 
-  it('lists submissions with status filter', async () => {
+  it('Should list submissions with status filter', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
     const params: SubmissionListParams = {
@@ -65,7 +65,7 @@ describe('Submissions Unit Test Suite', () => {
     );
   });
 
-  it('gets a single submission details by id', async () => {
+  it('Should get a single submission details by id', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1', data: {} }));
 
     const res = await getSubmission('sub-1');
@@ -75,7 +75,7 @@ describe('Submissions Unit Test Suite', () => {
     expect(res.id).toBe('sub-1');
   });
 
-  it('reviews submission with a POST request', async () => {
+  it('Should review submission with a POST request', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1', status: 'approved' }));
 
     const reviewInput = { decision: 'approve' as const, reason: 'Approved application' };
@@ -89,7 +89,7 @@ describe('Submissions Unit Test Suite', () => {
     expect(res.status).toBe('approved');
   });
 
-  it('throws custom status error message when request fails', async () => {
+  it('Should throw custom status error message when request fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
     await expect(getSubmission('sub-1').catch((e: any) => e.message)).resolves.toContain(
@@ -97,7 +97,7 @@ describe('Submissions Unit Test Suite', () => {
     );
   });
 
-  it('proposes correct submissionsQueryOptions configuration details', async () => {
+  it('Should propose correct submissionsQueryOptions configuration details', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
     // Without status
@@ -126,7 +126,7 @@ describe('Submissions Unit Test Suite', () => {
     expect(optsReview.queryKey).toEqual(['submissions', 'ws-1', paramsReview]);
   });
 
-  it('proposes correct submissionQueryOptions details', async () => {
+  it('Should propose correct submissionQueryOptions details', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'sub-1' }));
 
     const opts = submissionQueryOptions('sub-1');

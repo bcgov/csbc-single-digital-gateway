@@ -12,7 +12,7 @@ import { ReferencesService } from '../../../../src/modules/services/services/ref
 import { AgreementRefsService } from '../../../../src/modules/services/services/agreement-refs.service';
 
 describe('ServicesModule Unit Test Suite', () => {
-  it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile ServicesModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
@@ -45,7 +45,7 @@ describe('ServicesModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly for ServicesModule', () => {
+  it('Should verify metadata declaration directly for ServicesModule', () => {
     const controllers = Reflect.getMetadata('controllers', ServicesModule) as any[];
     const providers = Reflect.getMetadata('providers', ServicesModule) as any[];
 

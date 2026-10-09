@@ -14,7 +14,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
 }));
 
 describe('WorkspaceNotFound Component Test Suite', () => {
-  it('renders title, description, and link back to your workspaces', () => {
+  it('Should render title, description, and link back to your workspaces', () => {
     render(<WorkspaceNotFound />);
 
     // Verify empty state display title and description

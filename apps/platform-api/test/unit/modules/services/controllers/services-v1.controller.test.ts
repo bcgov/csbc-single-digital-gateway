@@ -24,7 +24,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('list', () => {
-    it('returns a list of services wrapped in an items object', async () => {
+    it('Should return a list of services wrapped in an items object', async () => {
       const query: ListServicesPageQueryDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
       } as any;
@@ -39,7 +39,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('create', () => {
-    it('creates a service via the service', async () => {
+    it('Should create a service via the service', async () => {
       const body: CreateServiceDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         title: 'New Service',
@@ -57,7 +57,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('getDefinition', () => {
-    it('returns the service type schema definition', () => {
+    it('Should return the service type schema definition', () => {
       const mockDef = { schema: { type: 'object' }, uischema: {} };
       servicesServiceMock.getServiceDefinition.mockReturnValue(mockDef);
 
@@ -69,7 +69,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('listForms', () => {
-    it('returns the forms catalog for a workspace', async () => {
+    it('Should return the forms catalog for a workspace', async () => {
       const query: ListServicesQueryDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
       };
@@ -84,7 +84,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('get', () => {
-    it('retrieves detailed service by id', async () => {
+    it('Should retrieve detailed service by id', async () => {
       const mockResult = { id: 'service-1', title: 'Service 1', versions: [] };
       servicesServiceMock.get.mockResolvedValue(mockResult);
 
@@ -96,7 +96,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('removeService', () => {
-    it('deletes a service via the service', async () => {
+    it('Should delete a service via the service', async () => {
       servicesServiceMock.remove.mockResolvedValue(undefined);
 
       await controller.removeService(mockUser, 'service-1');
@@ -106,7 +106,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('archiveService', () => {
-    it('archives a service via the service', async () => {
+    it('Should archive a service via the service', async () => {
       servicesServiceMock.archive.mockResolvedValue(undefined);
 
       await controller.archiveService(mockUser, 'service-1');
@@ -116,7 +116,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('reactivateService', () => {
-    it('reactivates a service via the service', async () => {
+    it('Should reactivate a service via the service', async () => {
       servicesServiceMock.reactivate.mockResolvedValue(undefined);
 
       await controller.reactivateService(mockUser, 'service-1');
@@ -126,7 +126,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('updateDraft', () => {
-    it('updates a draft version via the service versions service', async () => {
+    it('Should update a draft version via the service versions service', async () => {
       const body: UpdateVersionDataDto = {
         data: { updated: true },
       };
@@ -146,7 +146,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('publish', () => {
-    it('publishes a service version via the service versions service', async () => {
+    it('Should publish a service version via the service versions service', async () => {
       const mockResult = { id: 'version-1', status: 'published' };
       serviceVersionsServiceMock.publish.mockResolvedValue(mockResult);
 
@@ -162,7 +162,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('archive', () => {
-    it('archives a service version via the service versions service', async () => {
+    it('Should archive a service version via the service versions service', async () => {
       const mockResult = { id: 'version-1', status: 'archived' };
       serviceVersionsServiceMock.archive.mockResolvedValue(mockResult);
 
@@ -178,7 +178,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('addVersion', () => {
-    it('creates a new draft version via the service versions service', async () => {
+    it('Should create a new draft version via the service versions service', async () => {
       const mockResult = { id: 'version-2', status: 'draft' };
       serviceVersionsServiceMock.addVersion.mockResolvedValue(mockResult);
 
@@ -190,7 +190,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('discardVersion', () => {
-    it('discards a draft version via the service versions service', async () => {
+    it('Should discard a draft version via the service versions service', async () => {
       serviceVersionsServiceMock.discardVersion.mockResolvedValue(undefined);
 
       await controller.discardVersion(mockUser, 'service-1', 'version-1');

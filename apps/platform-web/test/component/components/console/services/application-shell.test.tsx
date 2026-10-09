@@ -33,7 +33,7 @@ afterEach(() => {
 });
 
 describe('ApplicationShell Component Test Suite', () => {
-  it('registers page chrome details on mount', () => {
+  it('Should register page chrome details on mount', () => {
     render(
       <ApplicationShell
         slug="riverton"
@@ -71,7 +71,7 @@ describe('ApplicationShell Component Test Suite', () => {
     expect(screen.getByText('Parking Form')).toBeInTheDocument();
   });
 
-  it('renders content directly without frame when readOnly is false', () => {
+  it('Should render content directly without frame when readOnly is false', () => {
     const { container } = render(
       <ApplicationShell
         slug="riverton"
@@ -93,7 +93,7 @@ describe('ApplicationShell Component Test Suite', () => {
     expect(wrapper).toHaveClass('h-[calc(100%+3rem)]');
   });
 
-  it('renders read-only layout with back button, badge, and hint when readOnly is true', () => {
+  it('Should render read-only layout with back button, badge, and hint when readOnly is true', () => {
     render(
       <ApplicationShell
         slug="riverton"
@@ -117,7 +117,7 @@ describe('ApplicationShell Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('navigates back to service details when Back button is clicked in read-only mode', async () => {
+  it('Should navigate back to service details when Back button is clicked in read-only mode', async () => {
     const user = userEvent.setup();
     render(
       <ApplicationShell
@@ -144,7 +144,7 @@ describe('ApplicationShell Component Test Suite', () => {
     });
   });
 
-  it('defaults readOnly to false when not provided', () => {
+  it('Should default readOnly to false when not provided', () => {
     const { container } = render(
       <ApplicationShell
         slug="riverton"
@@ -164,7 +164,7 @@ describe('ApplicationShell Component Test Suite', () => {
     expect(wrapper).toHaveClass('h-[calc(100%+3rem)]');
   });
 
-  it('renders correctly in read-only mode when status is undefined', () => {
+  it('Should render correctly in read-only mode when status is undefined', () => {
     render(
       <ApplicationShell
         slug="riverton"

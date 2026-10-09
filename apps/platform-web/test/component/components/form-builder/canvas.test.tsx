@@ -23,7 +23,7 @@ describe('Canvas Component Test Suite', () => {
     fields: [],
   };
 
-  it('renders title and description from form model', () => {
+  it('Should render title and description from form model', () => {
     render(
       <Canvas
         model={defaultModel}
@@ -43,7 +43,7 @@ describe('Canvas Component Test Suite', () => {
     expect(descTextarea).toHaveValue('Please answer these questions honestly.');
   });
 
-  it('flags an empty form title as required for the canvas component', () => {
+  it('Should flag an empty form title as required for the canvas component', () => {
     render(
       <Canvas
         model={{ title: '', description: '', fields: [] }}
@@ -59,7 +59,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('triggers onChangeForm when typing in title or description', async () => {
+  it('Should trigger onChangeForm when typing in title or description', async () => {
     const user = userEvent.setup();
     const handleChangeForm = vi.fn();
 
@@ -86,7 +86,7 @@ describe('Canvas Component Test Suite', () => {
     });
   });
 
-  it('renders EmptyDropZone when fields array is empty', () => {
+  it('Should render EmptyDropZone when fields array is empty', () => {
     render(
       <Canvas
         model={defaultModel}
@@ -103,7 +103,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.queryByTestId('mock-end-zone')).not.toBeInTheDocument();
   });
 
-  it('renders FieldRow and ContainerRow components and EndZone when fields exist', () => {
+  it('Should render FieldRow and ContainerRow components and EndZone when fields exist', () => {
     const modelWithFields: FormModel = {
       title: 'Survey',
       description: 'Desc',
@@ -135,7 +135,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.queryByTestId('mock-empty-dropzone')).not.toBeInTheDocument();
   });
 
-  it('triggers onClear to reset title to empty string', async () => {
+  it('Should trigger onClear to reset title to empty string', async () => {
     const user = userEvent.setup();
     const handleChangeForm = vi.fn();
 
@@ -156,7 +156,7 @@ describe('Canvas Component Test Suite', () => {
     expect(handleChangeForm).toHaveBeenCalledWith({ title: '' });
   });
 
-  it('renders FieldRow for display nodes and control nodes with and without keys', () => {
+  it('Should render FieldRow for display nodes and control nodes with and without keys', () => {
     const modelWithFields: FormModel = {
       title: 'Survey',
       description: 'Desc',
@@ -184,7 +184,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.getByTestId('mock-field-row-2')).toBeInTheDocument();
   });
 
-  it('calls onSelect(null) when clicking outer canvas container or focusing input/textarea and ignores clicks on children', async () => {
+  it('Should call onSelect(null) when clicking outer canvas container or focusing input/textarea and ignore clicks on children', async () => {
     const handleSelect = vi.fn();
 
     render(

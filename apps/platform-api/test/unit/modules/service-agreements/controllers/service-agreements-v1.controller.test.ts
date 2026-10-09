@@ -31,7 +31,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('create', () => {
-    it('creates a service agreement', async () => {
+    it('Should create a service agreement', async () => {
       const body: CreateServiceAgreementDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         data: { title: 'Agreement Title' },
@@ -47,7 +47,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('list', () => {
-    it('returns agreements wrapped in items object', async () => {
+    it('Should return agreements wrapped in items object', async () => {
       const query: ListServiceAgreementsDto = { workspaceId: 'ws-1' };
       const mockList = createMockList('agreement-123');
       serviceMock.list.mockResolvedValue(mockList);
@@ -60,7 +60,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('get', () => {
-    it('returns a single service agreement', async () => {
+    it('Should return a single service agreement', async () => {
       const mockResult = { id: 'agreement-123' };
       serviceMock.get.mockResolvedValue(mockResult);
 
@@ -72,7 +72,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('updateDraft', () => {
-    it('updates a draft version of a service agreement', async () => {
+    it('Should update a draft version of a service agreement', async () => {
       const body: UpdateServiceAgreementDto = {
         title: 'New Title',
         data: {
@@ -97,7 +97,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('addVersion', () => {
-    it('adds a new version to the agreement', async () => {
+    it('Should add a new version to the agreement', async () => {
       const mockResult = { id: 'version-124', version: 2 };
       serviceMock.addVersion.mockResolvedValue(mockResult);
 
@@ -109,7 +109,7 @@ describe('ServiceAgreementsV1Controller', () => {
   });
 
   describe('publish', () => {
-    it('publishes a version of the agreement', async () => {
+    it('Should publish a version of the agreement', async () => {
       const mockResult = { id: 'version-123', status: 'published' };
       serviceMock.publish.mockResolvedValue(mockResult);
 

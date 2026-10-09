@@ -9,7 +9,7 @@ import { SubmissionsService } from '../../../../src/modules/submissions/services
 import { ConfigService } from '@nestjs/config';
 
 describe('SubmissionsModule Unit Test Suite', () => {
-  it('should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
@@ -41,7 +41,7 @@ describe('SubmissionsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly for SubmissionsModule', () => {
+  it('Should verify metadata declaration directly for SubmissionsModule', () => {
     const controllers = Reflect.getMetadata('controllers', SubmissionsModule) as any[];
     const providers = Reflect.getMetadata('providers', SubmissionsModule) as any[];
 

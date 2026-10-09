@@ -45,7 +45,7 @@ describe('DefinitionPreview', () => {
     vi.useRealTimers();
   });
 
-  it('renders JsonForms in interactive mode with schema and uischema', () => {
+  it('Should render JsonForms in interactive mode with schema and uischema', () => {
     render(<DefinitionPreview text={VALID_DEFINITION} mode="interactive" />);
 
     const jsonforms = screen.getByTestId('mock-jsonforms');
@@ -55,7 +55,7 @@ describe('DefinitionPreview', () => {
     expect(jsonforms).toHaveAttribute('data-has-renderers', 'false');
   });
 
-  it('renders JsonForms in readonly mode with displayRenderers', () => {
+  it('Should render JsonForms in readonly mode with displayRenderers', () => {
     render(<DefinitionPreview text={VALID_DEFINITION} mode="readonly" />);
 
     const jsonforms = screen.getByTestId('mock-jsonforms');
@@ -63,7 +63,7 @@ describe('DefinitionPreview', () => {
     expect(jsonforms).toHaveAttribute('data-has-renderers', 'true');
   });
 
-  it('renders without uischema when definition does not include one', () => {
+  it('Should render without uischema when definition does not include one', () => {
     const withoutUi = JSON.stringify({
       schema: { type: 'object', properties: { count: { type: 'number' } } },
     });
@@ -73,7 +73,7 @@ describe('DefinitionPreview', () => {
     expect(jsonforms).toHaveAttribute('data-has-uischema', 'false');
   });
 
-  it('renders placeholder when schema is missing or invalid', () => {
+  it('Should render placeholder when schema is missing or invalid', () => {
     const invalidSchema = JSON.stringify({ uischema: {} });
     render(<DefinitionPreview text={invalidSchema} mode="interactive" />);
 
@@ -81,7 +81,7 @@ describe('DefinitionPreview', () => {
     expect(screen.queryByTestId('mock-jsonforms')).not.toBeInTheDocument();
   });
 
-  it('renders placeholder for non-object JSON values like primitive or null', () => {
+  it('Should render placeholder for non-object JSON values like primitive or null', () => {
     render(<DefinitionPreview text="123" mode="interactive" />);
     expect(screen.getByText('Preview unavailable for this definition shape.')).toBeInTheDocument();
 
@@ -91,7 +91,7 @@ describe('DefinitionPreview', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('handles updates via onChange and updates held data state', () => {
+  it('Should handle updates via onChange and update held data state', () => {
     render(<DefinitionPreview text={VALID_DEFINITION} mode="interactive" />);
 
     expect(screen.getByTestId('data-display')).toHaveTextContent('{}');
@@ -106,12 +106,12 @@ describe('DefinitionPreview', () => {
     );
   });
 
-  it('cleans up debounce timer on unmount', () => {
+  it('Should clean up debounce timer on unmount', () => {
     const { unmount } = render(<DefinitionPreview text={VALID_DEFINITION} mode="interactive" />);
     expect(() => unmount()).not.toThrow();
   });
 
-  it('debounces text updates and retains last valid definition during invalid edits', () => {
+  it('Should debounce text updates and retain last valid definition during invalid edits', () => {
     const { rerender } = render(<DefinitionPreview text={VALID_DEFINITION} mode="interactive" />);
 
     expect(screen.getByTestId('mock-jsonforms')).toBeInTheDocument();

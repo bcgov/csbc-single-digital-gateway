@@ -39,7 +39,7 @@ describe('SettingsPage Component Test Suite', () => {
     mockSlug = 'riverton';
   });
 
-  it('renders loading state initially', async () => {
+  it('Should render loading state initially', async () => {
     mockAuthUser(authedUser);
 
     const { queryClient, container } = renderApp('/app/riverton/settings');
@@ -58,7 +58,7 @@ describe('SettingsPage Component Test Suite', () => {
     );
   });
 
-  it('renders workspace settings for admin user (edit form enabled, delete button active)', async () => {
+  it('Should render workspace settings for admin user (edit form enabled, delete button active)', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const user = userEvent.setup();
     renderApp('/app/riverton/settings');
@@ -118,7 +118,7 @@ describe('SettingsPage Component Test Suite', () => {
     });
   });
 
-  it('renders workspace settings for member user (edit form disabled, delete button disabled)', async () => {
+  it('Should render workspace settings for member user (edit form disabled, delete button disabled)', async () => {
     mockAuth(authedUser, { workspaces: [memberWorkspace] });
     renderApp('/app/riverton/settings');
 
@@ -135,7 +135,7 @@ describe('SettingsPage Component Test Suite', () => {
     expect(deleteBtn).toBeDisabled();
   });
 
-  it('renders loading skeleton when slug is undefined', () => {
+  it('Should render loading skeleton when slug is undefined', () => {
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },

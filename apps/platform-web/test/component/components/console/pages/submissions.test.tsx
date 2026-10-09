@@ -102,7 +102,7 @@ describe('SubmissionsPage Component Test Suite', () => {
     expect(screen.getAllByText('Application Form')).toHaveLength(2);
   });
 
-  it('filters submissions when clicking status tabs', async () => {
+  it('Should filter submissions when clicking status tabs', async () => {
     mockSubmissionsBff(
       { items: submissionsList },
       { testFile: 'submissions.test', user: authedUser, filtered: true },
@@ -174,7 +174,7 @@ describe('SubmissionsPage Component Test Suite', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('filters submissions for In review and Needs changes tabs', async () => {
+  it('Should filter submissions for In review and Needs changes tabs', async () => {
     const extraSubmissions = [
       ...submissionsList,
       {
@@ -240,7 +240,7 @@ describe('SubmissionsPage Component Test Suite', () => {
     });
   });
 
-  it('does not render loading skeleton when workspace is loading', async () => {
+  it('Should not render loading skeleton when workspace is loading', async () => {
     mockAuthUser(authedUser);
 
     const { container } = renderApp('/app/riverton/submissions');
@@ -283,7 +283,7 @@ describe('SubmissionsPage Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders correctly when slug is undefined (workspace is undefined)', async () => {
+  it('Should render correctly when slug is undefined (workspace is undefined)', async () => {
     mockAuthUser(authedUser);
     mockSlug = undefined;
 

@@ -25,7 +25,7 @@ interface Entry {
 }
 
 describe('AdminDocumentTypesList', () => {
-  it('renders empty state when there are no document types', async () => {
+  it('Should render empty state when there are no document types', async () => {
     mockDocumentTypesBff({ items: [] });
     renderApp('/admin/document-types');
 
@@ -39,7 +39,7 @@ describe('AdminDocumentTypesList', () => {
     expect(await screen.findByText('No document types yet.')).toBeInTheDocument();
   });
 
-  it('renders a list of document types with correct metadata, status summary, and versions count', async () => {
+  it('Should render a list of document types with correct metadata, status summary, and versions count', async () => {
     const entries: Entry[] = [
       {
         type: {

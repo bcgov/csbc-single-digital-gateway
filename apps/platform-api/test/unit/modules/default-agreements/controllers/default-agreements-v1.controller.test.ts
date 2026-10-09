@@ -18,7 +18,7 @@ describe('DefaultAgreementsV1Controller', () => {
   });
 
   describe('list', () => {
-    it('returns default agreements list from the service wrapped in an items object', async () => {
+    it('Should return default agreements list from the service wrapped in an items object', async () => {
       const mockList = [
         {
           id: 'def-1',
@@ -39,7 +39,7 @@ describe('DefaultAgreementsV1Controller', () => {
   });
 
   describe('add', () => {
-    it('adds a default agreement via the service', async () => {
+    it('Should add a default agreement via the service', async () => {
       const body: AddDefaultAgreementDto = {
         agreementDocumentId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
       };
@@ -61,7 +61,7 @@ describe('DefaultAgreementsV1Controller', () => {
   });
 
   describe('remove', () => {
-    it('removes a default agreement via the service', async () => {
+    it('Should remove a default agreement via the service', async () => {
       serviceMock.remove.mockResolvedValue(undefined);
 
       await controller.remove(mockUser, 'ws-1', 'def-1');

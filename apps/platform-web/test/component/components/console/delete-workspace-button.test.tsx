@@ -36,7 +36,7 @@ describe('DeleteWorkspaceButton Component Test Suite', () => {
     });
   });
 
-  it('renders trigger button and does not show dialog by default', () => {
+  it('Should render trigger button and not show dialog by default', () => {
     renderDeleteButton(queryClient);
 
     const triggerBtn = screen.getByRole('button', { name: 'Delete workspace' });
@@ -44,7 +44,7 @@ describe('DeleteWorkspaceButton Component Test Suite', () => {
     expect(screen.queryByText('Delete Riverton Gov?')).not.toBeInTheDocument();
   });
 
-  it('opens alert dialog on trigger button click', async () => {
+  it('Should open alert dialog on trigger button click', async () => {
     const user = userEvent.setup();
     renderDeleteButton(queryClient);
 
@@ -64,7 +64,7 @@ describe('DeleteWorkspaceButton Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes alert dialog when Cancel is clicked', async () => {
+  it('Should close alert dialog when Cancel is clicked', async () => {
     const user = userEvent.setup();
     renderDeleteButton(queryClient);
 
@@ -79,7 +79,7 @@ describe('DeleteWorkspaceButton Component Test Suite', () => {
     });
   });
 
-  it('submits delete workspace request, removes queries from cache, and navigates to app gate on confirm', async () => {
+  it('Should submit delete workspace request, removes queries from cache, and navigate to app gate on confirm', async () => {
     const user = userEvent.setup();
     vi.mocked(deleteWorkspace).mockResolvedValue(null as any);
     const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
@@ -106,7 +106,7 @@ describe('DeleteWorkspaceButton Component Test Suite', () => {
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/app' });
   });
 
-  it('disables the action button while delete mutation is pending', async () => {
+  it('Should disable the action button while delete mutation is pending', async () => {
     const user = userEvent.setup();
     let resolveDelete: ((v: null) => void) | null = null;
     vi.mocked(deleteWorkspace).mockImplementation(

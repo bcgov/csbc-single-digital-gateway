@@ -41,7 +41,7 @@ describe('validateData utility tests', () => {
     required: ['name'],
   };
 
-  it('returns valid true when data matches the schema', () => {
+  it('Should return valid true when data matches the schema', () => {
     const data = { name: 'Lewis', age: 30 };
     const result = validateData(schema, data);
 
@@ -49,7 +49,7 @@ describe('validateData utility tests', () => {
     expect(result.errors).toEqual([]);
   });
 
-  it('returns valid false and lists error messages when data does not match the schema', () => {
+  it('Should return valid false and list error messages when data does not match the schema', () => {
     const data = { age: -5 }; // missing required 'name' and invalid 'age'
     const result = validateData(schema, data);
 
@@ -59,7 +59,7 @@ describe('validateData utility tests', () => {
     expect(result.errors).toContain('/age must be >= 0');
   });
 
-  it('returns valid false when wrong data type is provided for a property', () => {
+  it('Should return valid false when wrong data type is provided for a property', () => {
     const data = { name: 123 }; // 'name' should be string
     const result = validateData(schema, data);
 
@@ -68,7 +68,7 @@ describe('validateData utility tests', () => {
     expect(result.errors[0]).toBe('/name must be string');
   });
 
-  it('handles cases where validate.errors is falsy', () => {
+  it('Should handle cases where validate.errors is falsy', () => {
     (globalThis as any).mockErrorsNull = true;
     try {
       const result = validateData(schema, { age: -5 });
@@ -79,7 +79,7 @@ describe('validateData utility tests', () => {
     }
   });
 
-  it('handles cases where error.message is missing', () => {
+  it('Should handle cases where error.message is missing', () => {
     (globalThis as any).mockErrorMessageNull = true;
     try {
       const result = validateData(schema, { age: -5 });

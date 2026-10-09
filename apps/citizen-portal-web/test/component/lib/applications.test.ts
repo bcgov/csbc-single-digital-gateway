@@ -19,7 +19,7 @@ describe('Applications Library Test Suite', () => {
   });
 
   describe('requestJson API functions', () => {
-    it('getApplicationForm fetches form from the correct endpoint', async () => {
+    it('Should fetch form from the correct endpoint using getApplicationForm', async () => {
       const mockForm = { id: 'form1', title: 'Test Form' };
       const fetchSpy = createMockSpy(mockForm);
 
@@ -32,7 +32,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockForm);
     });
 
-    it('createOrResumeDraft sends POST to applications endpoint', async () => {
+    it('Should send POST to applications endpoint using createOrResumeDraft', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
       const fetchSpy = createMockSpy(mockSubmission);
 
@@ -47,7 +47,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('saveDraft sends PATCH with data to correct endpoint', async () => {
+    it('Should send PATCH with data to correct endpoint using saveDraft', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
       const fetchSpy = createMockSpy(mockSubmission);
 
@@ -63,7 +63,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('submitApplication sends POST with data to submit endpoint', async () => {
+    it('Should send POST with data to submit endpoint using submitApplication', async () => {
       const mockSubmission = { id: 'sub-1', status: 'pending' };
       const fetchSpy = createMockSpy(mockSubmission);
 
@@ -79,7 +79,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('getApplication fetches application detail by ID', async () => {
+    it('Should fetch application detail by ID using getApplication', async () => {
       const mockResult = { id: 'app-1', reference: 'REF-123' };
       const fetchSpy = createMockSpy(mockResult);
 
@@ -91,7 +91,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('reviseApplication sends POST to revise endpoint', async () => {
+    it('Should send POST to revise endpoint using reviseApplication', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
       const fetchSpy = createMockSpy(mockSubmission);
 
@@ -104,7 +104,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('throws error when response is not ok', async () => {
+    it('Should throw error when response is not ok', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 400,
@@ -122,7 +122,7 @@ describe('Applications Library Test Suite', () => {
   });
 
   describe('query options configuration', () => {
-    it('applicationQueryOptions creates correct options object', async () => {
+    it('Should create correct options object in applicationQueryOptions', async () => {
       const mockResult = { id: 'app-1', reference: 'REF-123' };
       const fetchSpy = createMockSpy(mockResult);
 
@@ -139,7 +139,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('applicationFormQueryOptions creates correct options object', async () => {
+    it('Should create correct options object in applicationFormQueryOptions', async () => {
       const mockForm = { id: 'form1', title: 'Test Form' };
       const fetchSpy = createMockSpy(mockForm);
 
@@ -156,7 +156,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockForm);
     });
 
-    it('draftQueryOptions creates correct options object when formVersionId is provided', async () => {
+    it('Should create correct options object when formVersionId is provided in draftQueryOptions', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
       const fetchSpy = createMockSpy(mockSubmission);
 
@@ -172,7 +172,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('draftQueryOptions disables query when formVersionId is undefined', () => {
+    it('Should disable query when formVersionId is undefined in draftQueryOptions', () => {
       const options = draftQueryOptions(undefined);
       expect(options.enabled).toBe(false);
     });

@@ -62,7 +62,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     capturedOnOpenChange = null;
   });
 
-  it('registers blocker and does not show dialog when blocker status is idle', () => {
+  it('Should register blocker and not show dialog when blocker status is idle', () => {
     mockBlockerStatus = 'idle';
     render(<UnsavedChangesGuard when={true} />);
 
@@ -81,7 +81,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(screen.queryByText('Discard unsaved changes?')).not.toBeInTheDocument();
   });
 
-  it('renders confirmation dialog when blocker status is blocked', () => {
+  it('Should render confirmation dialog when blocker status is blocked', () => {
     mockBlockerStatus = 'blocked';
     render(<UnsavedChangesGuard when={true} />);
 
@@ -94,7 +94,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(screen.getByRole('button', { name: 'Discard changes' })).toBeInTheDocument();
   });
 
-  it('calls reset when Keep editing is clicked', async () => {
+  it('Should call reset when Keep editing is clicked', async () => {
     const user = userEvent.setup();
     mockBlockerStatus = 'blocked';
     render(<UnsavedChangesGuard when={true} />);
@@ -105,7 +105,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(mockReset).toHaveBeenCalled();
   });
 
-  it('calls proceed when Discard changes is clicked', async () => {
+  it('Should call proceed when Discard changes is clicked', async () => {
     const user = userEvent.setup();
     mockBlockerStatus = 'blocked';
     render(<UnsavedChangesGuard when={true} />);
@@ -123,7 +123,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(callArgs?.enableBeforeUnload()).toBe(false);
   });
 
-  it('calls blocker.reset in onOpenChange when open is false', () => {
+  it('Should call blocker.reset in onOpenChange when open is false', () => {
     mockBlockerStatus = 'blocked';
     render(<UnsavedChangesGuard when={true} />);
 
@@ -138,7 +138,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(mockReset).toHaveBeenCalledTimes(1);
   });
 
-  it('handles onOpenChange(false) safely when blocker.reset is undefined', () => {
+  it('Should handle onOpenChange(false) safely when blocker.reset is undefined', () => {
     mockBlockerStatus = 'blocked';
     mockHasReset = false; // Mock blocker.reset as undefined
     render(<UnsavedChangesGuard when={true} />);
@@ -147,7 +147,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     expect(() => capturedOnOpenChange(false)).not.toThrow();
   });
 
-  it('handles Keep editing click safely when blocker.reset is undefined', async () => {
+  it('Should handle Keep editing click safely when blocker.reset is undefined', async () => {
     const user = userEvent.setup();
     mockBlockerStatus = 'blocked';
     mockHasReset = false; // Mock blocker.reset as undefined
@@ -157,7 +157,7 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     await expect(user.click(cancelBtn)).resolves.not.toThrow();
   });
 
-  it('handles Discard changes click safely when blocker.proceed is undefined', async () => {
+  it('Should handle Discard changes click safely when blocker.proceed is undefined', async () => {
     const user = userEvent.setup();
     mockBlockerStatus = 'blocked';
     mockHasProceed = false; // Mock blocker.proceed as undefined
@@ -184,13 +184,13 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     capturedOnOpenChange = null;
   });
 
-  it('renders no Save action when onSave is omitted', () => {
+  it('Should render no Save action when onSave is omitted', () => {
     render(<UnsavedChangesGuard when={true} />);
 
     expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument();
   });
 
-  it('offers Discard changes and Save changes, with Keep editing as the dismissal', () => {
+  it('Should offer Discard changes and Save changes, with Keep editing as the dismissal', () => {
     render(<UnsavedChangesGuard when={true} onSave={vi.fn().mockResolvedValue(undefined)} />);
 
     // Only two footer buttons — three overflow the dialog's max-width. Cancelling is the close
@@ -200,7 +200,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(screen.getByRole('button', { name: 'Keep editing' })).toBeInTheDocument();
   });
 
-  it('keeps the two-button shape (Keep editing + Discard) when there is no save to offer', () => {
+  it('Should keep the two-button shape (Keep editing + Discard) when there is no save to offer', () => {
     render(<UnsavedChangesGuard when={true} />);
 
     // The three pages that render this shape must not change: a solid destructive Discard beside
@@ -209,7 +209,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(screen.getAllByRole('button', { name: 'Keep editing' })).toHaveLength(1);
   });
 
-  it('awaits onSave then proceeds with the blocked navigation', async () => {
+  it('Should await onSave then proceeds with the blocked navigation', async () => {
     const user = userEvent.setup();
     const order: string[] = [];
     const onSave = vi.fn(async () => {
@@ -226,7 +226,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(order).toEqual(['save', 'proceed']);
   });
 
-  it('keeps the dialog open and shows the error when onSave rejects', async () => {
+  it('Should keep the dialog open and show the error when onSave rejects', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockRejectedValue(new Error('Version is no longer a draft'));
     render(<UnsavedChangesGuard when={true} onSave={onSave} />);
@@ -240,7 +240,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
 
-  it('disables Save and shows the reason when saveDisabled is true', () => {
+  it('Should disable Save and show the reason when saveDisabled is true', () => {
     render(
       <UnsavedChangesGuard
         when={true}
@@ -254,7 +254,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(screen.getByText('This step has a validation error.')).toBeInTheDocument();
   });
 
-  it('still discards while Save is disabled', async () => {
+  it('Should still discards while Save is disabled', async () => {
     const user = userEvent.setup();
     render(
       <UnsavedChangesGuard
@@ -269,7 +269,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(mockProceed).toHaveBeenCalledTimes(1);
   });
 
-  it('still cancels while Save is disabled', async () => {
+  it('Should still cancels while Save is disabled', async () => {
     const user = userEvent.setup();
     render(
       <UnsavedChangesGuard
@@ -310,7 +310,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect((calls.at(-1)?.[0] as any)?.shouldBlockFn).toBe(first);
   });
 
-  it('calls onDiscard before proceeding when discarding changes', async () => {
+  it('Should call onDiscard before proceeding when discarding changes', async () => {
     const user = userEvent.setup();
     const onDiscard = vi.fn();
     render(<UnsavedChangesGuard when={true} onDiscard={onDiscard} />);
@@ -321,7 +321,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(mockProceed).toHaveBeenCalledTimes(1);
   });
 
-  it('shows default error message when onSave rejects with a non-Error value', async () => {
+  it('Should show default error message when onSave rejects with a non-Error value', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockRejectedValue('string failure');
     render(<UnsavedChangesGuard when={true} onSave={onSave} />);
@@ -331,7 +331,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Your changes couldn’t be saved.');
   });
 
-  it('handles successful onSave safely when blocker.proceed is undefined', async () => {
+  it('Should handle successful onSave safely when blocker.proceed is undefined', async () => {
     const user = userEvent.setup();
     mockHasProceed = false;
     const onSave = vi.fn().mockResolvedValue(undefined);
@@ -343,7 +343,7 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
-  it('does not trigger concurrent saves while saving is already in progress', async () => {
+  it('Should not trigger concurrent saves while saving is already in progress', async () => {
     let resolveSave!: () => void;
     const onSave = vi.fn(
       () =>

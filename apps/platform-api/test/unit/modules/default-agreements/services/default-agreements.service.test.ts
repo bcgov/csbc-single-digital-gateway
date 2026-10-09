@@ -24,13 +24,13 @@ describe('DefaultAgreementsService', () => {
   });
 
   describe('list', () => {
-    it('throws NotFoundException if caller is not a member of the workspace', async () => {
+    it('Should throw NotFoundException if caller is not a member of the workspace', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([])); // requireMember check
 
       await expect(service.list('user-1', 'ws-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('returns mapped default agreements if caller is a member', async () => {
+    it('Should return mapped default agreements if caller is a member', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'member' }])) // requireMember check
         .mockImplementationOnce(() =>
@@ -62,13 +62,13 @@ describe('DefaultAgreementsService', () => {
   });
 
   describe('add', () => {
-    it('throws ForbiddenException if caller is not an admin when adding a default agreement', async () => {
+    it('Should throw ForbiddenException if caller is not an admin when adding a default agreement', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'member' }])); // requireMember check (requireAdmin uses this)
 
       await expect(service.add('user-1', 'ws-1', 'doc-1')).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws UnprocessableEntityException if the agreement is from a different workspace', async () => {
+    it('Should throw UnprocessableEntityException if the agreement is from a different workspace', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin -> requireMember
         .mockImplementationOnce(() =>
@@ -86,7 +86,7 @@ describe('DefaultAgreementsService', () => {
       );
     });
 
-    it('throws ConflictException if the agreement is already a default for the workspace', async () => {
+    it('Should throw ConflictException if the agreement is already a default for the workspace', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin
         .mockImplementationOnce(() =>
@@ -103,7 +103,7 @@ describe('DefaultAgreementsService', () => {
       await expect(service.add('user-1', 'ws-1', 'doc-1')).rejects.toThrow(ConflictException);
     });
 
-    it('throws UnprocessableEntityException if the agreement is not published', async () => {
+    it('Should throw UnprocessableEntityException if the agreement is not published', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin
         .mockImplementationOnce(() => createMockQuery([])); // resolvePublishedAgreement returns empty
@@ -115,7 +115,7 @@ describe('DefaultAgreementsService', () => {
       );
     });
 
-    it('throws Error if default agreement insert returned no row', async () => {
+    it('Should throw Error if default agreement insert returned no row', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin
         .mockImplementationOnce(() =>
@@ -136,7 +136,7 @@ describe('DefaultAgreementsService', () => {
       );
     });
 
-    it('adds and returns a default agreement successfully if all checks pass', async () => {
+    it('Should add and return a default agreement successfully if all checks pass', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin
         .mockImplementationOnce(() =>
@@ -171,20 +171,20 @@ describe('DefaultAgreementsService', () => {
   });
 
   describe('remove', () => {
-    it('throws ForbiddenException if caller is not an admin when removing a default agreement', async () => {
+    it('Should throw ForbiddenException if caller is not an admin when removing a default agreement', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'member' }])); // requireMember check
 
       await expect(service.remove('user-1', 'ws-1', 'def-1')).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws NotFoundException if default agreement to delete does not exist', async () => {
+    it('Should throw NotFoundException if default agreement to delete does not exist', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])); // requireAdmin
       dbMock.returning.mockResolvedValueOnce([]); // no rows deleted
 
       await expect(service.remove('user-1', 'ws-1', 'def-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('deletes default agreement successfully if admin and exists', async () => {
+    it('Should delete default agreement successfully if caller is admin and agreement exists', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])); // requireAdmin
       dbMock.returning.mockResolvedValueOnce([{ id: 'def-1' }]);
 

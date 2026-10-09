@@ -45,13 +45,13 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('create', () => {
-    it('throws ForbiddenException if non-admin attempts to create a global service agreement', async () => {
+    it('Should throw ForbiddenException if non-admin attempts to create a global service agreement', async () => {
       await expect(service.create(mockUserActor, { data: { title: 'Terms' } })).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('throws NotFoundException if user is not a member of the target workspace', async () => {
+    it('Should throw NotFoundException if user is not a member of the target workspace', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([])); // isMember -> false
 
       await expect(
@@ -62,7 +62,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('creates workspace-scoped service agreement successfully', async () => {
+    it('Should create workspace-scoped service agreement successfully', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'member' }])); // isMember -> true
       const mockDoc = createMockDoc({
         id: 'doc-123',
@@ -104,7 +104,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('creates global service agreement successfully by admin', async () => {
+    it('Should create global service agreement successfully by admin', async () => {
       const mockDoc = createMockDoc({
         id: 'doc-global',
         workspaceId: null,
@@ -128,7 +128,7 @@ describe('ServiceAgreementsService', () => {
       expect(result.agreement.title).toBe('Global Terms');
     });
 
-    it('throws Error if document insert returned no row when creating service agreements', async () => {
+    it('Should throw Error if document insert returned no row when creating service agreements', async () => {
       txMock.returning.mockResolvedValueOnce([]); // empty document insert returning
 
       await expect(
@@ -138,7 +138,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow('document insert returned no row');
     });
 
-    it('creates workspace-scoped service agreement with untitled fallback title if title is missing or empty', async () => {
+    it('Should create workspace-scoped service agreement with untitled fallback title if title is missing or empty', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'member' }])); // isMember -> true
       const mockDoc = createMockDoc({
         id: 'doc-123',
@@ -164,11 +164,11 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('list', () => {
-    it('throws ForbiddenException if non-admin tries to list global service agreements', async () => {
+    it('Should throw ForbiddenException if non-admin tries to list global service agreements', async () => {
       await expect(service.list(mockUserActor, {})).rejects.toThrow(ForbiddenException);
     });
 
-    it('lists agreements successfully', async () => {
+    it('Should list agreements successfully', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'member' }])) // isMember -> true
         .mockImplementationOnce(() =>
@@ -201,7 +201,7 @@ describe('ServiceAgreementsService', () => {
       ]);
     });
 
-    it('lists global agreements successfully by admin with various version statuses (draft, archived, none)', async () => {
+    it('Should list global agreements successfully by admin with various version statuses (draft, archived, none)', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([
@@ -248,7 +248,7 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('listPage', () => {
-    it('throws ForbiddenException if non-admin tries to list global service agreements', async () => {
+    it('Should throw ForbiddenException if non-admin tries to list global service agreements', async () => {
       await expect(
         service.listPage(mockUserActor, {
           sort: 'updated',
@@ -259,7 +259,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws NotFoundException if user is not a member of the target workspace', async () => {
+    it('Should throw NotFoundException if user is not a member of the target workspace', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([])); // isMember -> false
       await expect(
         service.listPage(mockUserActor, {
@@ -272,7 +272,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('lists workspace-scoped agreements with search query, sort title asc, and aggregates multiple versions', async () => {
+    it('Should list workspace-scoped agreements with search query, sort title asc, and aggregate multiple versions', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'member' }])) // isMember -> true
         .mockImplementationOnce(() =>
@@ -341,7 +341,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('lists global agreements by admin with sort status, blank q string, and totals fallback', async () => {
+    it('Should list global agreements by admin with sort status, blank q string, and totals fallback', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([
@@ -387,7 +387,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('returns empty items and does not query versions when docs is empty', async () => {
+    it('Should return empty items and not query versions when docs is empty', async () => {
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([])) // docs
         .mockImplementationOnce(() => createMockQuery([{ count: 0 }])); // totals
@@ -409,7 +409,7 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('get', () => {
-    it('throws NotFoundException if user has no access to workspace service agreement', async () => {
+    it('Should throw NotFoundException if user has no access to workspace service agreement', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([
@@ -425,7 +425,7 @@ describe('ServiceAgreementsService', () => {
       await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
     });
 
-    it('retrieves details successfully', async () => {
+    it('Should retrieve details successfully', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([
@@ -486,7 +486,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('retrieves details successfully by admin', async () => {
+    it('Should retrieve details successfully by admin', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([
@@ -525,7 +525,7 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('updateDraft', () => {
-    it('throws ConflictException if agreement status is not draft', async () => {
+    it('Should throw ConflictException if agreement status is not draft', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -540,7 +540,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('updates draft version data successfully', async () => {
+    it('Should update draft version data successfully', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -576,7 +576,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('updates draft title falling back to titleFromData when title input is omitted', async () => {
+    it('Should update draft title falling back to titleFromData when title input is omitted', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -603,7 +603,7 @@ describe('ServiceAgreementsService', () => {
       expect(result.data).toEqual({ title: 'Terms' });
     });
 
-    it('allows admin to update draft of workspace-scoped agreement even if not a member', async () => {
+    it('Should allow admin to update draft of workspace-scoped agreement even if not a member', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
@@ -633,7 +633,7 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('addVersion', () => {
-    it('appends a new version copying the latest data', async () => {
+    it('Should append a new version copying the latest data', async () => {
       dbMock.select.mockImplementationOnce(() =>
         createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
       ); // loadAgreement
@@ -667,7 +667,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('appends a new version using default fallbacks when latest version is undefined', async () => {
+    it('Should append a new version using default fallbacks when latest version is undefined', async () => {
       dbMock.select.mockImplementationOnce(() =>
         createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
       ); // loadAgreement
@@ -694,7 +694,7 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('publish', () => {
-    it('throws UnprocessableEntityException if validation fails against Zod schema', async () => {
+    it('Should throw UnprocessableEntityException if validation fails against Zod schema', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -710,7 +710,7 @@ describe('ServiceAgreementsService', () => {
       );
     });
 
-    it('publishes and archives previous version successfully', async () => {
+    it('Should publish and archive previous version successfully', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -751,7 +751,7 @@ describe('ServiceAgreementsService', () => {
       });
     });
 
-    it('throws Error if publish returning returns empty array', async () => {
+    it('Should throw Error if publish returning returns empty array', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -776,13 +776,13 @@ describe('ServiceAgreementsService', () => {
   });
 
   describe('error boundaries', () => {
-    it('throws NotFoundException if agreement is not found in loadAgreement', async () => {
+    it('Should throw NotFoundException if agreement is not found in loadAgreement', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([])); // loadAgreement returns empty
 
       await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if workspace agreement is read by non-member non-admin', async () => {
+    it('Should throw NotFoundException if workspace agreement is read by non-member non-admin', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
@@ -792,7 +792,7 @@ describe('ServiceAgreementsService', () => {
       await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws ForbiddenException if non-admin tries to update global agreement draft', async () => {
+    it('Should throw ForbiddenException if non-admin tries to update global agreement draft', async () => {
       dbMock.select.mockImplementationOnce(() =>
         createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
       ); // loadAgreement
@@ -805,7 +805,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws NotFoundException if non-member non-admin tries to update workspace agreement draft', async () => {
+    it('Should throw NotFoundException if non-member non-admin tries to update workspace agreement draft', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
@@ -820,7 +820,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws Error if document version insert returned no row in create', async () => {
+    it('Should throw Error if document version insert returned no row in create', async () => {
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ role: 'member' }])); // isMember -> true
       txMock.returning.mockResolvedValueOnce([{ id: 'doc-123' }]).mockResolvedValueOnce([]); // empty version insert
 
@@ -832,7 +832,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow('document version insert returned no row');
     });
 
-    it('throws NotFoundException if agreement version not found in requireDraftVersion', async () => {
+    it('Should throw NotFoundException if agreement version not found in requireDraftVersion', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
@@ -847,7 +847,7 @@ describe('ServiceAgreementsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws ConflictException if associated service is not in draft status in requireServiceEditable', async () => {
+    it('Should throw ConflictException if associated service is not in draft status in requireServiceEditable', async () => {
       dbMock.select
         .mockImplementationOnce(() =>
           createMockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),

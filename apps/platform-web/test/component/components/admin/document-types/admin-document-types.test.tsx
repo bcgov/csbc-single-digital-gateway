@@ -44,7 +44,7 @@ const basicEntry: Entry = {
 };
 
 describe('admin document types', () => {
-  it('lists document types with status', async () => {
+  it('Should list document types with status', async () => {
     mockDocumentTypesBff({ items: [basicEntry] });
     renderApp('/admin/document-types');
 
@@ -54,7 +54,7 @@ describe('admin document types', () => {
     expect(screen.getByText('Published v1')).toBeInTheDocument();
   });
 
-  it('does not offer a create-document-type action', async () => {
+  it('Should not offer a create-document-type action', async () => {
     mockDocumentTypesBff({ items: [basicEntry] });
     renderApp('/admin/document-types');
 
@@ -62,7 +62,7 @@ describe('admin document types', () => {
     expect(screen.queryByRole('button', { name: /new document type/i })).not.toBeInTheDocument();
   });
 
-  it('publishes a draft version from the detail page', async () => {
+  it('Should publish a draft version from the detail page', async () => {
     const draftEntry: Entry = {
       ...basicEntry,
       versions: [{ ...basicEntry.versions[0]!, status: 'draft', publishedAt: null }],

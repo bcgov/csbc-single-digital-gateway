@@ -24,7 +24,7 @@ describe('AgreementRefsService', () => {
   });
 
   describe('attach', () => {
-    it('throws BadRequestException if the agreement is from a different workspace', async () => {
+    it('Should throw BadRequestException if the agreement is from a different workspace', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
@@ -46,7 +46,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('throws ConflictException if already attached', async () => {
+    it('Should throw ConflictException if already attached', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
@@ -69,7 +69,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('throws UnprocessableEntityException if the agreement is not found or published', async () => {
+    it('Should throw UnprocessableEntityException if the agreement is not found or published', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
@@ -81,7 +81,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('throws NotFoundException if the service version is not found', async () => {
+    it('Should throw NotFoundException if the service version is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([])); // requireDraftOwner version not found
@@ -91,7 +91,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('throws ConflictException if the service version is not draft', async () => {
+    it('Should throw ConflictException if the service version is not draft', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'published' }])); // requireDraftOwner is not draft
@@ -101,7 +101,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('throws Error if agreement reference insert returned no row', async () => {
+    it('Should throw Error if agreement reference insert returned no row', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
@@ -127,7 +127,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('attaches agreement successfully if valid', async () => {
+    it('Should attach agreement successfully if valid', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
@@ -169,7 +169,7 @@ describe('AgreementRefsService', () => {
   });
 
   describe('detach', () => {
-    it('throws NotFoundException if reference does not exist', async () => {
+    it('Should throw NotFoundException if reference does not exist', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])); // requireDraftOwner
@@ -180,7 +180,7 @@ describe('AgreementRefsService', () => {
       );
     });
 
-    it('detaches agreement successfully', async () => {
+    it('Should detach agreement successfully', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])); // requireDraftOwner
@@ -192,7 +192,7 @@ describe('AgreementRefsService', () => {
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).resolves.not.toThrow();
     });
 
-    it('detaches agreement but does not delete if remaining references exist', async () => {
+    it('Should detach agreement but does not delete if remaining references exist', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
@@ -205,7 +205,7 @@ describe('AgreementRefsService', () => {
       expect(txMock.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('detaches agreement but does not delete if agreement is published', async () => {
+    it('Should detach agreement but does not delete if agreement is published', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
@@ -218,7 +218,7 @@ describe('AgreementRefsService', () => {
       expect(txMock.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('detaches agreement successfully when remaining count returns empty rows array', async () => {
+    it('Should detach agreement successfully when remaining count returns empty rows array', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
@@ -233,7 +233,7 @@ describe('AgreementRefsService', () => {
   });
 
   describe('list', () => {
-    it('returns empty list if no agreement references are attached', async () => {
+    it('Should return empty list if no agreement references are attached', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
       dbMock.select.mockImplementationOnce(() => createMockQuery([]));
 
@@ -241,7 +241,7 @@ describe('AgreementRefsService', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns mapped agreement references list', async () => {
+    it('Should return mapped agreement references list', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select.mockImplementationOnce(() =>
@@ -275,7 +275,7 @@ describe('AgreementRefsService', () => {
   });
 
   describe('nextPosition boundary', () => {
-    it('uses fallback position 0 if max returned is null or rows undefined', async () => {
+    it('Should use fallback position 0 if max returned is null or rows undefined', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
