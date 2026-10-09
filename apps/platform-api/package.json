@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "nest build",
+    "db:backfill-links": "tsx src/scripts/backfill-document-links.ts",
     "dev": "nest start --watch",
     "lint": "oxlint",
     "start": "node dist/src/main.js",

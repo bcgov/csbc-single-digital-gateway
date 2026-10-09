@@ -3,10 +3,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ServicesService } from '../../../../../src/modules/services/services/services.service';
 import { reactivateServiceTx } from '../../../../../src/modules/services/util/version-copy';
+import { rebuildLinksTx } from '../../../../../src/modules/services/util/document-links';
 import { documents, documentVersions } from '@repo/database';
 
 vi.mock('../../../../../src/modules/services/util/version-copy', () => ({
   reactivateServiceTx: vi.fn(),
+}));
+vi.mock('../../../../../src/modules/services/util/document-links', () => ({
+  rebuildLinksTx: vi.fn(),
 }));
 
 const mockQuery = (resolvedValue: any) => {
@@ -28,6 +32,7 @@ describe('ServicesService', () => {
   let dbMock: any;
   let txMock: any;
   let templatesMock: any;
+  let lifecycleMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,6 +44,8 @@ describe('ServicesService', () => {
       delete: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       select: vi.fn().mockImplementation(() => mockQuery([])),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
     });
 
     dbMock = Object.assign(Promise.resolve([]), {
@@ -65,7 +72,12 @@ describe('ServicesService', () => {
       contentsForVersions: vi.fn().mockResolvedValue({}),
     };
 
-    service = new ServicesService(dbMock, templatesMock);
+    lifecycleMock = {
+      archiveMethodsTx: vi.fn(),
+      reactivateMethodsTx: vi.fn(),
+      deleteMethodsTx: vi.fn(),
+    };
+    service = new ServicesService(dbMock, templatesMock, lifecycleMock);
   });
 
   describe('create', () => {
@@ -464,8 +476,9 @@ describe('ServicesService', () => {
 
       await service.remove('user-1', 'service-1');
 
-      expect(dbMock.delete).toHaveBeenCalledTimes(1);
-      expect(dbMock.delete).toHaveBeenCalledWith(documents);
+      // Doc 290 rule 11: inside one transaction with the method cleanup.
+      expect(txMock.delete).toHaveBeenCalledTimes(1);
+      expect(txMock.delete).toHaveBeenCalledWith(documents);
     });
 
     it('throws ConflictException if the service has submissions', async () => {
@@ -485,7 +498,8 @@ describe('ServicesService', () => {
 
       await service.remove('user-1', 'service-1');
 
-      expect(dbMock.delete).toHaveBeenCalledWith(documents);
+      // Doc 290 rule 11: the delete runs in the transaction.
+      expect(txMock.delete).toHaveBeenCalledWith(documents);
     });
   });
 
@@ -499,7 +513,8 @@ describe('ServicesService', () => {
       await service.archive('user-1', 'service-1');
 
       expect(dbMock.select).toHaveBeenCalledTimes(1);
-      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
+      // Doc 290 rule 9: inside one transaction with the method cascade.
+      expect(txMock.update).toHaveBeenCalledWith(documentVersions);
     });
   });
 
@@ -511,6 +526,66 @@ describe('ServicesService', () => {
       await service.reactivate('user-1', 'service-1');
 
       expect(vi.mocked(reactivateServiceTx)).toHaveBeenCalledWith(txMock, 'service-1');
+    });
+  });
+
+  // Doc 290.
+  describe('method lifecycle (doc 290)', () => {
+    const SERVICE = { id: 'service-1', workspaceId: 'ws-1' };
+
+    describe('create (rule 2)', () => {
+      it('rebuilds the first version links in the create transaction', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+        const doc = { id: 'service-doc-1', workspaceId: 'ws-1', type: 'services.service' };
+        const version = { id: 'service-version-1', documentId: 'service-doc-1', content: {} };
+        txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
+
+        await service
+          .create('user-1', { workspaceId: 'ws-1', title: 'New' })
+          .catch(() => undefined);
+
+        expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(rebuildLinksTx)).toHaveBeenCalledWith(txMock, version);
+      });
+    });
+
+    describe('archive / reactivate (rules 9-10)', () => {
+      it('archives the service and its methods in one transaction with one timestamp', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([{ doc: SERVICE }]));
+
+        await service.archive('user-1', 'service-1');
+
+        expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+        const at = txMock.set.mock.calls[0][0].archivedAt;
+        expect(at).toBeInstanceOf(Date);
+        expect(lifecycleMock.archiveMethodsTx).toHaveBeenCalledWith(txMock, SERVICE, at);
+      });
+
+      it('reactivates the methods archived with the service', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([{ doc: SERVICE }]));
+        const archived = { id: 'v2', archivedAt: new Date('2026-10-08T00:00:00.000Z') };
+        vi.mocked(reactivateServiceTx).mockResolvedValueOnce(archived as any);
+
+        await service.reactivate('user-1', 'service-1');
+
+        expect(lifecycleMock.reactivateMethodsTx).toHaveBeenCalledWith(txMock, SERVICE, archived);
+      });
+    });
+
+    describe('remove (rule 11)', () => {
+      it('deletes the methods only it uses in the delete transaction', async () => {
+        dbMock.select = vi
+          .fn()
+          .mockReturnValueOnce(mockQuery([{ doc: SERVICE }]))
+          .mockReturnValueOnce(mockQuery([{ n: 0 }]));
+
+        await service.remove('user-1', 'service-1');
+
+        expect(lifecycleMock.deleteMethodsTx).toHaveBeenCalledWith(txMock, SERVICE);
+        expect(lifecycleMock.deleteMethodsTx.mock.invocationCallOrder[0]).toBeLessThan(
+          txMock.delete.mock.invocationCallOrder[0],
+        );
+      });
     });
   });
 });
@@ -570,7 +645,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       contentForVersion: vi.fn(),
       contentsForVersions: vi.fn().mockResolvedValue({}),
     };
-    service = new ServicesService(dbMock, templatesMock);
+    service = new ServicesService(dbMock, templatesMock, {} as any);
   });
 
   it('should resolve the definition from the selected version type_version_id', async () => {

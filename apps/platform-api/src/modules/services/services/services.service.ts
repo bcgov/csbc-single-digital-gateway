@@ -24,7 +24,9 @@ import {
   toServiceDto,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
+import { rebuildLinksTx } from '../util/document-links';
 import { reactivateServiceTx } from '../util/version-copy';
+import { ServiceMethodLifecycle } from './service-method-lifecycle.service';
 
 function summarizeStatus(
   versions: Array<{ status: 'draft' | 'published' | 'archived' }>,
@@ -48,6 +50,7 @@ export class ServicesService {
   constructor(
     @InjectDatabase() private readonly db: Database,
     private readonly templates: TemplateResolver,
+    private readonly lifecycle: ServiceMethodLifecycle,
   ) {}
 
   /**
@@ -88,6 +91,8 @@ export class ServicesService {
       if (version === undefined) {
         throw new Error('document version insert returned no row');
       }
+      // Doc 290 rule 2: every content write rebuilds its links (a template's content references nothing yet).
+      await rebuildLinksTx(tx, version);
       return {
         service: toServiceDto(doc, version),
         versions: [toServiceVersionDto(version)],
@@ -254,26 +259,40 @@ export class ServicesService {
    * the submitted data. Deleting the document cascades its versions.
    */
   async remove(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
+    const service = await this.requireDocument(userId, id);
     if (await this.hasSubmissions(id)) {
       throw new ConflictException(SERVICE_HAS_SUBMISSIONS);
     }
-    await this.db.delete(documents).where(eq(documents.id, id));
+    await this.db.transaction(async (tx) => {
+      // Doc 290 rule 11: first the methods only this service uses — its links go with it.
+      await this.lifecycle.deleteMethodsTx(tx, service);
+      await tx.delete(documents).where(eq(documents.id, id));
+    });
   }
 
-  /** Archive a service: archive every non-archived version → status derives to 'archived'. */
+  /** Archive a service: archive every non-archived version → status derives to 'archived'; its methods too (doc 290). */
   async archive(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
-    await this.db
-      .update(documentVersions)
-      .set({ archivedAt: new Date() })
-      .where(and(eq(documentVersions.documentId, id), sql`${documentVersions.archivedAt} is null`));
+    const service = await this.requireDocument(userId, id);
+    // Doc 290 rules 9-10: ONE timestamp for the service and its methods — reactivate matches on it.
+    const at = new Date();
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(documentVersions)
+        .set({ archivedAt: at })
+        .where(
+          and(eq(documentVersions.documentId, id), sql`${documentVersions.archivedAt} is null`),
+        );
+      await this.lifecycle.archiveMethodsTx(tx, service, at);
+    });
   }
 
   /** Reactivate an archived service: clear `archived_at` on the LATEST version. */
   async reactivate(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
-    await this.db.transaction((tx) => reactivateServiceTx(tx, id));
+    const service = await this.requireDocument(userId, id);
+    await this.db.transaction(async (tx) => {
+      const archived = await reactivateServiceTx(tx, id);
+      await this.lifecycle.reactivateMethodsTx(tx, service, archived);
+    });
   }
 
   private async versionsOf(documentId: string): Promise<DocumentVersion[]> {

@@ -2,6 +2,12 @@ import { NotFoundException } from '@nestjs/common';
 import { documentVersions } from '@repo/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceMethodsService } from '../../../../../src/modules/services/services/service-methods.service';
+import { linkUsers } from '../../../../../src/modules/services/util/document-links';
+
+// Doc 290: who else uses a method comes from `document_links` — stubbed, nobody else unless a case says so.
+vi.mock('../../../../../src/modules/services/util/document-links', () => ({
+  linkUsers: vi.fn(async () => new Map()),
+}));
 
 const mockQuery = (resolvedValue: unknown) => {
   const qb = Promise.resolve(resolvedValue);
@@ -296,6 +302,30 @@ describe('ServiceMethodsService (doc 289)', () => {
       );
       // Never looked the method up.
       expect(db.select).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // Doc 290 rule 6.
+  describe('check — one service per method (doc 290 rule 6)', () => {
+    it('reports Also used by <title> for a method another service links to', async () => {
+      found(db, [methodDoc(M1), methodDoc(M2)], [methodVersion(M1, 1), methodVersion(M2, 1)]);
+      vi.mocked(linkUsers).mockResolvedValueOnce(
+        new Map([
+          [
+            M1,
+            [
+              { documentId: 'other-1', title: 'Parking permits' },
+              { documentId: 'other-2', title: null },
+            ],
+          ],
+        ]),
+      );
+      const check = await service.check(db, SERVICE_DOC as any, serviceVersion([M1, M2]) as any);
+
+      expect(vi.mocked(linkUsers)).toHaveBeenCalledWith(db, [M1, M2], 'service-1');
+      expect(check.methods[0]?.problems).toEqual(['Also used by Parking permits, Untitled']);
+      expect(check.methods[1]?.problems).toEqual([]);
+      expect(check.ok).toBe(false);
     });
   });
 });

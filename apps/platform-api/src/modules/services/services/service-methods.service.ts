@@ -1,15 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
-  DOCUMENT_TYPE,
   type Database,
   type Document,
   type DocumentVersion,
-  documents,
   documentVersions,
 } from '@repo/database';
 import { applicationMethodIds, documentContentOf } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { type FormWithVersion, toFormDto, toFormVersionDto } from '../../forms/dtos/form.dtos';
 import { TemplateResolver } from '../../templates/services/template.resolver';
 import {
@@ -18,20 +16,11 @@ import {
   methodProblems,
   versionFor,
 } from '../util/method-checks';
+import { linkUsers } from '../util/document-links';
+import { type Executor, type Method, type Tx, findMethods } from '../util/method-lookup';
 import { ServicesService } from './services.service';
 
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
-/** Reads run on the pool or inside the caller's transaction (rule 13). */
-type Executor = Database | Tx;
 type ServiceDoc = Document & { workspaceId: string };
-
-/** One referenced application method: its document and every version, oldest first. */
-interface Method {
-  doc: Document;
-  versions: DocumentVersion[];
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Doc 289 — a service version's application methods: the publish precheck, the method version each service version
@@ -60,17 +49,27 @@ export class ServiceMethodsService {
     serviceVersion: DocumentVersion,
   ): Promise<PublishCheck> {
     const ids = idsOf(serviceVersion.content);
-    const found = await this.methods(executor, service, ids);
+    const [found, users] = await Promise.all([
+      this.methods(executor, service, ids),
+      // Doc 290 rule 6: one service per method — a policy, so lifting it is deleting this lookup.
+      linkUsers(executor, ids, service.id),
+    ]);
     const methods = ids.map((id): MethodCheck => {
       const method = found.get(id);
       const version = method && versionFor(serviceVersion, method.versions);
       if (method === undefined || version === undefined)
         return { id, title: null, status: null, problems: ['Not found'] };
+      const others = users.get(id) ?? [];
       return {
         id,
         title: version.title,
         status: version.status,
-        problems: methodProblems(method.doc, version),
+        problems: [
+          ...methodProblems(method.doc, version),
+          ...(others.length === 0
+            ? []
+            : [`Also used by ${others.map((user) => user.title ?? 'Untitled').join(', ')}`]),
+        ],
       };
     });
     const hasMethods = ids.length > 0;
@@ -162,42 +161,12 @@ export class ServiceMethodsService {
   }
 
   /** Rule 3: the application-method documents among `ids` in the service's workspace, with their versions. */
-  private async methods(
+  private methods(
     executor: Executor,
     service: ServiceDoc,
     ids: readonly string[],
   ): Promise<Map<string, Method>> {
-    // A malformed id would make Postgres refuse the whole uuid comparison; it is simply not found.
-    const valid = ids.filter((id) => UUID.test(id));
-    if (valid.length === 0) return new Map();
-    const docs = await executor
-      .select()
-      .from(documents)
-      .where(
-        and(
-          inArray(documents.id, valid),
-          eq(documents.type, DOCUMENT_TYPE.applicationMethod),
-          eq(documents.kind, 'document'),
-          eq(documents.workspaceId, service.workspaceId),
-        ),
-      );
-    if (docs.length === 0) return new Map();
-    const versions = await executor
-      .select()
-      .from(documentVersions)
-      .where(
-        inArray(
-          documentVersions.documentId,
-          docs.map((doc) => doc.id),
-        ),
-      )
-      .orderBy(asc(documentVersions.versionNumber));
-    return new Map(
-      docs.map((doc) => [
-        doc.id,
-        { doc, versions: versions.filter((version) => version.documentId === doc.id) },
-      ]),
-    );
+    return findMethods(executor, service.workspaceId, ids);
   }
 
   private async serviceVersion(id: string, versionId: string): Promise<DocumentVersion> {

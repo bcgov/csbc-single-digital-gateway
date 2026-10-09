@@ -16,8 +16,10 @@ import {
   type UpdateVersionContentInput,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
+import { rebuildLinksTx } from '../util/document-links';
 import { publishRefusal } from '../util/method-checks';
 import { discardVersionTx } from '../util/version-copy';
+import { ServiceMethodLifecycle } from './service-method-lifecycle.service';
 import { ServiceMethodsService } from './service-methods.service';
 import { ServicesService } from './services.service';
 
@@ -40,6 +42,7 @@ export class ServiceVersionsService {
     private readonly services: ServicesService,
     private readonly templates: TemplateResolver,
     private readonly methods: ServiceMethodsService,
+    private readonly lifecycle: ServiceMethodLifecycle,
   ) {}
 
   /** Save a draft version's content. Drafts only. */
@@ -66,12 +69,17 @@ export class ServiceVersionsService {
       content,
       await this.templates.capabilitiesForVersion(version.templateVersionId),
     );
-    const rows = await this.db
-      .update(documentVersions)
-      .set({ content, revision: sql`${documentVersions.revision} + 1` })
-      .where(eq(documentVersions.id, versionId))
-      .returning();
-    return toServiceVersionDto(this.orThrow(rows[0]));
+    return this.db.transaction(async (tx) => {
+      const rows = await tx
+        .update(documentVersions)
+        .set({ content, revision: sql`${documentVersions.revision} + 1` })
+        .where(eq(documentVersions.id, versionId))
+        .returning();
+      const saved = this.orThrow(rows[0]);
+      // Doc 290 rule 2: the links follow the content, in the same transaction.
+      await rebuildLinksTx(tx, saved);
+      return toServiceVersionDto(saved);
+    });
   }
 
   /**
@@ -142,8 +150,10 @@ export class ServiceVersionsService {
       throw new ConflictException('Only draft versions can be discarded');
     }
     await this.db.transaction(async (tx) => {
-      // Doc 289 rule 14: first the method drafts this version brought with it.
+      // Doc 289 rule 14: first the method drafts this version brought with it…
       await this.methods.discardMethodDraftsTx(tx, service, version.content);
+      // …doc 290 rule 8: and the methods created in it, while its links still say so.
+      await this.lifecycle.discardCreatedMethodsTx(tx, service, version);
       await discardVersionTx(tx, id, versionId);
     });
   }
@@ -173,6 +183,8 @@ export class ServiceVersionsService {
         })
         .returning();
       const created = this.orThrow(inserted[0]);
+      // Doc 290 rule 2: the copied content carries its references, so it carries their links.
+      await rebuildLinksTx(tx, created);
       // Doc 289 rule 12: each of its application methods gets a draft to edit with it.
       await this.methods.draftMethodsTx(tx, service, created.content);
       return toServiceVersionDto(created);

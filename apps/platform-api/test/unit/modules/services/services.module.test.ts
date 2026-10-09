@@ -8,6 +8,7 @@ import { ServicesService } from '../../../../src/modules/services/services/servi
 import { ServiceVersionsService } from '../../../../src/modules/services/services/service-versions.service';
 import { ReferenceableServicesService } from '../../../../src/modules/services/services/referenceable-services.service';
 import { ServiceMethodsService } from '../../../../src/modules/services/services/service-methods.service';
+import { ServiceMethodLifecycle } from '../../../../src/modules/services/services/service-method-lifecycle.service';
 
 describe('ServicesModule Unit Test Suite', () => {
   it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
@@ -39,6 +40,8 @@ describe('ServicesModule Unit Test Suite', () => {
     expect(moduleRef.get(ServiceVersionsService)).toBeDefined();
     // Doc 289.
     expect(moduleRef.get(ServiceMethodsService)).toBeDefined();
+    // Doc 290.
+    expect(moduleRef.get(ServiceMethodLifecycle)).toBeDefined();
     expect(moduleRef.get(ReferenceableServicesService)).toBeDefined();
 
     await moduleRef.close();
@@ -57,6 +60,7 @@ describe('ServicesModule Unit Test Suite', () => {
     expect(providers).toContain(ServiceVersionsService);
     expect(providers).toContain(ReferenceableServicesService);
     expect(providers).toContain(ServiceMethodsService);
-    expect(providers).toHaveLength(4);
+    expect(providers).toContain(ServiceMethodLifecycle);
+    expect(providers).toHaveLength(5);
   });
 });

@@ -2,8 +2,12 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { documentVersions } from '@repo/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceVersionsService } from '../../../../../src/modules/services/services/service-versions.service';
+import { rebuildLinksTx } from '../../../../../src/modules/services/util/document-links';
 import { discardVersionTx } from '../../../../../src/modules/services/util/version-copy';
 
+vi.mock('../../../../../src/modules/services/util/document-links', () => ({
+  rebuildLinksTx: vi.fn(),
+}));
 vi.mock('../../../../../src/modules/services/util/version-copy', () => ({
   discardVersionTx: vi.fn(),
   reactivateServiceTx: vi.fn(),
@@ -73,6 +77,7 @@ describe('ServiceVersionsService', () => {
   let servicesServiceMock: any;
   let templatesMock: any;
   let methodsMock: any;
+  let lifecycleMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,20 +119,27 @@ describe('ServiceVersionsService', () => {
       draftMethodsTx: vi.fn(),
       discardMethodDraftsTx: vi.fn(),
     };
-    service = new ServiceVersionsService(dbMock, servicesServiceMock, templatesMock, methodsMock);
+    lifecycleMock = { discardCreatedMethodsTx: vi.fn() };
+    service = new ServiceVersionsService(
+      dbMock,
+      servicesServiceMock,
+      templatesMock,
+      methodsMock,
+      lifecycleMock,
+    );
   });
 
   describe('updateDraft', () => {
     it('writes the content and bumps the revision', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
-      dbMock.returning.mockResolvedValueOnce([draftVersion({ revision: 2 })]);
+      txMock.returning.mockResolvedValueOnce([draftVersion({ revision: 2 })]);
 
       const result = await service.updateDraft('user-1', 'service-1', 'version-1', {
         content: CONTENT,
       });
 
-      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
-      const setArg = dbMock.set.mock.calls[0][0];
+      expect(txMock.update).toHaveBeenCalledWith(documentVersions);
+      const setArg = txMock.set.mock.calls[0][0];
       expect(setArg.content).toEqual(CONTENT);
       expect(setArg.revision).toBeDefined();
       expect(result.revision).toBe(2);
@@ -135,12 +147,12 @@ describe('ServiceVersionsService', () => {
 
     it('never writes a document title — there is no title column to sync', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
-      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+      txMock.returning.mockResolvedValueOnce([draftVersion()]);
 
       await service.updateDraft('user-1', 'service-1', 'version-1', { content: CONTENT });
 
-      expect(dbMock.update).toHaveBeenCalledTimes(1);
-      expect(dbMock.set.mock.calls[0][0]).not.toHaveProperty('title');
+      expect(txMock.update).toHaveBeenCalledTimes(1);
+      expect(txMock.set.mock.calls[0][0]).not.toHaveProperty('title');
     });
 
     it.each(['Service', 'Flow'])(
@@ -271,24 +283,24 @@ describe('ServiceVersionsService', () => {
 
     it('stores the answers sent with the document', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([draftVersion({ content: FORM })]));
-      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+      txMock.returning.mockResolvedValueOnce([draftVersion()]);
 
       await service.updateDraft('user-1', 'service-1', 'version-1', {
         content: { ...FORM, data: { name: 'Acme' } },
       });
 
-      expect(dbMock.set.mock.calls[0][0].content).toEqual({ ...FORM, data: { name: 'Acme' } });
+      expect(txMock.set.mock.calls[0][0].content).toEqual({ ...FORM, data: { name: 'Acme' } });
     });
 
     it('keeps the stored answers when a save sends none', async () => {
       dbMock.select.mockReturnValueOnce(
         mockQuery([draftVersion({ content: { ...FORM, data: { name: 'Kept' } } })]),
       );
-      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+      txMock.returning.mockResolvedValueOnce([draftVersion()]);
 
       await service.updateDraft('user-1', 'service-1', 'version-1', { content: FORM });
 
-      expect(dbMock.set.mock.calls[0][0].content.data).toEqual({ name: 'Kept' });
+      expect(txMock.set.mock.calls[0][0].content.data).toEqual({ name: 'Kept' });
     });
 
     it('refuses to publish answers the form rejects, and says which', async () => {
@@ -496,6 +508,56 @@ describe('ServiceVersionsService', () => {
           CONTENT,
         );
         expect(methodsMock.discardMethodDraftsTx.mock.invocationCallOrder[0]).toBeLessThan(
+          vi.mocked(discardVersionTx).mock.invocationCallOrder[0]!,
+        );
+      });
+    });
+  });
+
+  // Doc 290.
+  describe('links (doc 290)', () => {
+    describe('content writes (rule 2)', () => {
+      it('updateDraft rebuilds the version links in its transaction', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+        txMock.returning.mockResolvedValueOnce([draftVersion({ revision: 2 })]);
+
+        await service.updateDraft('user-1', 'service-1', 'version-1', { content: CONTENT });
+
+        expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(rebuildLinksTx)).toHaveBeenCalledWith(
+          txMock,
+          draftVersion({ revision: 2 }),
+        );
+      });
+
+      it('addVersion rebuilds the new version links in its transaction', async () => {
+        txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ versionNumber: 2 })]));
+        const created = draftVersion({ id: 'version-3', versionNumber: 3 });
+        txMock.returning.mockResolvedValueOnce([created]);
+
+        await service.addVersion('user-1', 'service-1');
+
+        expect(vi.mocked(rebuildLinksTx)).toHaveBeenCalledWith(txMock, created);
+        // Links first, then the method drafts read them (doc 289 rule 12).
+        expect(vi.mocked(rebuildLinksTx).mock.invocationCallOrder[0]).toBeLessThan(
+          methodsMock.draftMethodsTx.mock.invocationCallOrder[0],
+        );
+      });
+    });
+
+    describe('discardVersion (rule 8)', () => {
+      it('deletes the methods created in the discarded version in its transaction', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+
+        await service.discardVersion('user-1', 'service-1', 'version-1');
+
+        expect(lifecycleMock.discardCreatedMethodsTx).toHaveBeenCalledWith(
+          txMock,
+          SERVICE_DOC,
+          draftVersion(),
+        );
+        // While the version (and its links) still exist.
+        expect(lifecycleMock.discardCreatedMethodsTx.mock.invocationCallOrder[0]).toBeLessThan(
           vi.mocked(discardVersionTx).mock.invocationCallOrder[0]!,
         );
       });

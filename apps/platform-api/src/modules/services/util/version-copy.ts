@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { type Database, documentVersions } from '@repo/database';
+import { type Database, type DocumentVersion, documentVersions } from '@repo/database';
 import { desc, eq, sql } from 'drizzle-orm';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -8,11 +8,10 @@ type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
  * Reactivate an archived service: clear `archived_at` on the LATEST version, restoring its prior
  * published/draft state. Older versions stay archived as history.
  *
- * Feature 217: this used to also un-archive the application-method form versions the service
- * version referenced. `document_references` is gone, so a service now carries only its own
- * versions.
+ * Returns that version AS IT WAS (still carrying `archived_at`), so the caller can restore what was archived with it
+ * (doc 290 rule 10 — feature 217 had dropped this cascade along with `document_references`).
  */
-export async function reactivateServiceTx(tx: Tx, id: string): Promise<void> {
+export async function reactivateServiceTx(tx: Tx, id: string): Promise<DocumentVersion> {
   const latest = (
     await tx
       .select()
@@ -31,6 +30,7 @@ export async function reactivateServiceTx(tx: Tx, id: string): Promise<void> {
     .update(documentVersions)
     .set({ archivedAt: null })
     .where(eq(documentVersions.id, latest.id));
+  return latest;
 }
 
 /**

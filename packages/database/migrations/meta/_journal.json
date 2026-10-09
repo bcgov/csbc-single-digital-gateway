@@ -176,6 +176,13 @@
       "when": 1791320707180,
       "tag": "0024_document_content_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791504573295,
+      "tag": "0025_document_links",
+      "breakpoints": true
     }
   ]
 }
