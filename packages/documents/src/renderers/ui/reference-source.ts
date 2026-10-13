@@ -27,6 +27,11 @@ export interface DocumentReferenceSource {
   remove(type: DocumentType, id: string): Promise<void>;
   /** Where a reference's card links to, or `undefined` for no link (rule 18). */
   href?(type: DocumentType, reference: DocumentReference): string | undefined;
+  /**
+   * Whether a card's link opens a new tab — the default (`true`), right for staff authoring beside the document. A
+   * citizen following a service to its application stays in the same tab (doc 291 rule 8).
+   */
+  readonly openInNewTab?: boolean;
 }
 
 const DocumentReferenceContext = createContext<DocumentReferenceSource | null>(null);

@@ -10,6 +10,7 @@ import { Button } from '@repo/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import type { DocumentType } from '../../studio/document-types';
 import type { DocumentReference } from './document-reference';
+import { useReferenceSource } from './reference-source';
 
 /** The icon a card shows for its referenced document type. */
 const TYPE_ICON: Readonly<Record<DocumentType, string>> = {
@@ -24,8 +25,9 @@ export function referenceTitle(reference: DocumentReference): string {
 }
 
 /**
- * The title, as a link opening the document in a new tab when the host gives one (rules 6, 13). The link's `after:`
- * overlay stretches over the nearest positioned ancestor — the card — so the whole card is clickable.
+ * The title, as a link to the document when the host gives one (rules 6, 13) — in a new tab unless the host's source
+ * says otherwise (doc 291 rule 8). The link's `after:` overlay stretches over the nearest positioned ancestor — the card
+ * — so the whole card is clickable.
  */
 export function ReferenceTitle({
   reference,
@@ -34,18 +36,22 @@ export function ReferenceTitle({
   reference: DocumentReference;
   href: string | undefined;
 }) {
+  const newTab = useReferenceSource()?.openInNewTab !== false;
   const title = referenceTitle(reference);
   if (href === undefined) return <>{title}</>;
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noreferrer"
+      {...(newTab && { target: '_blank', rel: 'noreferrer' })}
       className="inline-flex items-center gap-1 underline-offset-4 outline-none group-hover/card:underline after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
     >
       {title}
-      <Icon path={mdiOpenInNew} size="0.75rem" aria-hidden />
-      <span className="sr-only">(opens in a new tab)</span>
+      {newTab ? (
+        <>
+          <Icon path={mdiOpenInNew} size="0.75rem" aria-hidden />
+          <span className="sr-only">(opens in a new tab)</span>
+        </>
+      ) : null}
     </a>
   );
 }

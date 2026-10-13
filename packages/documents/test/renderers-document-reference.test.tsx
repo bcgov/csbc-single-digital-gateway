@@ -125,6 +125,28 @@ describe('DocumentReferenceControl', () => {
   });
 
   describe('grid', () => {
+    it('opens the document in a new tab by default and in the same tab when the source says so (doc 291 rule 8)', () => {
+      const card = (openInNewTab?: boolean) => {
+        const { container, unmount } = renderControl(
+          typed('services.service'),
+          { refs: [{ id: 's1', title: 'Parking', workspaceId: 'w1' }] },
+          { source: fakeSource(openInNewTab === undefined ? {} : { openInNewTab }) },
+        );
+        const link = within(
+          container.querySelector('[data-slot="reference-card"]') as HTMLElement,
+        ).getByRole('link', { name: /Parking/ });
+        const shape = {
+          target: link.getAttribute('target'),
+          announcesNewTab: /opens in a new tab/.test(link.textContent ?? ''),
+        };
+        unmount();
+        return shape;
+      };
+      expect(card()).toEqual({ target: '_blank', announcesNewTab: true });
+      expect(card(true)).toEqual({ target: '_blank', announcesNewTab: true });
+      expect(card(false)).toEqual({ target: null, announcesNewTab: false });
+    });
+
     it('renders each stored reference as a card with title, description and a link when href returns one', () => {
       const { container } = renderControl(
         typed('services.service'),

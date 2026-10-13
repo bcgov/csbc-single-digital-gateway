@@ -313,6 +313,8 @@ describe('ServiceDetailPage — application methods + side nav (doc 291)', () =>
         'href',
         '/services/svc-1/apply/m1',
       );
+      // Rule 8: a citizen stays in the same tab.
+      expect(cards.getByRole('link', { name: /Apply online/ })).not.toHaveAttribute('target');
       expect(cards.queryByRole('link', { name: /Retired/ })).toBeNull();
       expect(cards.getByText('Retired')).toBeInTheDocument();
     });

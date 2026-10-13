@@ -32,6 +32,8 @@ export function citizenReferenceSource(
     templates: READ_ONLY,
     create: READ_ONLY,
     remove: READ_ONLY,
+    // A citizen following a service to its application stays in this tab.
+    openInNewTab: false,
     href: (type, reference) =>
       type === 'services.service-application-method' && listed.has(reference.id)
         ? applyHref(serviceId, reference.id)
