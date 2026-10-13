@@ -11,7 +11,7 @@ import {
 } from '@repo/database';
 import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { deletableFor, SERVICE_HAS_SUBMISSIONS } from './service-deletable';
 import { TemplateResolver, type TemplateContent } from '../../templates/services/template.resolver';
 import {
@@ -19,31 +19,14 @@ import {
   type ListServicesPageQuery,
   type ServiceDetail,
   type ServiceListResponse,
-  type ServiceSummary,
   type ServiceWithVersions,
   toServiceDto,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
 import { rebuildLinksTx } from '../util/document-links';
+import { currentVersion, listServicesPage } from '../util/services-list';
 import { reactivateServiceTx } from '../util/version-copy';
 import { ServiceMethodLifecycle } from './service-method-lifecycle.service';
-
-function summarizeStatus(
-  versions: Array<{ status: 'draft' | 'published' | 'archived' }>,
-): ServiceSummary['status'] {
-  if (versions.some((v) => v.status === 'published')) return 'published';
-  if (versions.some((v) => v.status === 'draft')) return 'draft';
-  if (versions.length > 0) return 'archived';
-  return 'none';
-}
-
-/**
- * The version a service is currently represented by: the published one if there is one, else the
- * newest. `versions` must be ordered oldest-first.
- */
-function currentVersion<T extends { publishedAt: Date | null }>(versions: T[]): T | undefined {
-  return versions.findLast((version) => version.publishedAt !== null) ?? versions.at(-1);
-}
 
 @Injectable()
 export class ServicesService {
@@ -109,104 +92,10 @@ export class ServicesService {
     return { schema: template.schema, variants: template.variants };
   }
 
-  /**
-   * List a workspace's services — paginated, sortable, searchable (initiative `staff-list-query`).
-   * Paging/sort/search run in SQL; the page's derived fields (status, version count, submissions)
-   * are computed in two batched follow-up queries (not per-row), so cost is bounded by the page
-   * size.
-   *
-   * Feature 217: `title` / `description` moved to the VERSION and became generated, so search and
-   * title-sort go through a correlated subquery over the latest version rather than reading a
-   * column on `documents`.
-   */
+  /** A workspace's services, paginated / sorted / searched (`util/services-list.ts`). Members only. */
   async list(userId: string, query: ListServicesPageQuery): Promise<ServiceListResponse> {
     await this.requireMembership(userId, query.workspaceId);
-    const q = query.q?.trim();
-    // The latest version's generated title/description — the row's current identity.
-    const latestTitle = sql<string>`(SELECT dv.title FROM ${documentVersions} dv
-      WHERE dv.document_id = ${documents.id} ORDER BY dv.version_number DESC LIMIT 1)`;
-    const latestDescription = sql<string>`(SELECT dv.description FROM ${documentVersions} dv
-      WHERE dv.document_id = ${documents.id} ORDER BY dv.version_number DESC LIMIT 1)`;
-    const search =
-      q !== undefined && q !== ''
-        ? or(ilike(latestTitle, `%${q}%`), ilike(latestDescription, `%${q}%`))
-        : undefined;
-    const where = and(
-      eq(documents.workspaceId, query.workspaceId),
-      eq(documents.type, DOCUMENT_TYPE.service),
-      eq(documents.kind, 'document'),
-      search,
-    );
-    // Derived status precedence for `sort: 'status'` — published(0) → draft(1) → archived(2) → none(3).
-    const statusRank = sql`(CASE
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'published') THEN 0
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'draft') THEN 1
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id}) THEN 2
-      ELSE 3 END)`;
-    const sortExpr =
-      query.sort === 'title'
-        ? latestTitle
-        : query.sort === 'status'
-          ? statusRank
-          : documents.updatedAt;
-    const direction = query.order === 'asc' ? asc : desc;
-    const [docs, totals] = await Promise.all([
-      this.db
-        .select()
-        .from(documents)
-        .where(where)
-        .orderBy(direction(sortExpr), desc(documents.createdAt))
-        .limit(query.limit)
-        .offset(query.offset),
-      this.db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(documents)
-        .where(where),
-    ]);
-    const docIds = docs.map((doc) => doc.id);
-    const [versionRows, submissionRows] = await Promise.all([
-      docIds.length === 0
-        ? []
-        : this.db
-            .select({
-              documentId: documentVersions.documentId,
-              versionNumber: documentVersions.versionNumber,
-              status: documentVersions.status,
-              title: documentVersions.title,
-              description: documentVersions.description,
-              publishedAt: documentVersions.publishedAt,
-            })
-            .from(documentVersions)
-            .where(inArray(documentVersions.documentId, docIds))
-            .orderBy(asc(documentVersions.versionNumber)),
-      docIds.length === 0
-        ? []
-        : this.db
-            .select({ documentId: submissions.documentId, n: sql<number>`count(*)::int` })
-            .from(submissions)
-            .where(inArray(submissions.documentId, docIds))
-            .groupBy(submissions.documentId),
-    ]);
-    const versionsByDoc = new Map<string, Array<(typeof versionRows)[number]>>();
-    for (const row of versionRows) {
-      const list = versionsByDoc.get(row.documentId);
-      if (list) list.push(row);
-      else versionsByDoc.set(row.documentId, [row]);
-    }
-    const submissionDocIds = new Set(submissionRows.map((row) => row.documentId));
-    const items = docs.map((doc) => {
-      const versions = versionsByDoc.get(doc.id) ?? [];
-      // versions are ordered asc by version_number, so the last row is the latest version.
-      const latest = versions[versions.length - 1];
-      // Object.assign onto the fresh DTO (not a spread) keeps oxlint's no-map-spread happy.
-      return Object.assign(toServiceDto(doc, currentVersion(versions)), {
-        status: summarizeStatus(versions),
-        versionCount: versions.length,
-        hasSubmissions: submissionDocIds.has(doc.id),
-        latestPublished: latest?.publishedAt != null,
-      });
-    });
-    return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
+    return listServicesPage(this.db, query);
   }
 
   /**
