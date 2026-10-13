@@ -1,3 +1,4 @@
+import type { DocumentReferenceSource } from '@repo/documents/studio';
 import { DocumentView, viewSections, type DocumentViewProps } from '@repo/documents/view';
 import {
   mdiCardAccountDetailsOutline,
@@ -56,10 +57,13 @@ export function ServiceSections({
   schema,
   variants,
   data,
+  references,
 }: {
   schema: Record<string, unknown>;
   variants: Readonly<Record<string, Record<string, unknown>>>;
   data: Record<string, unknown>;
+  /** Doc 291 rule 8: links the read-back's application-method cards to their apply page. */
+  references?: DocumentReferenceSource | undefined;
 }) {
   const uischema = useMemo(() => citizenUischema(variants), [variants]);
   const items = useMemo<OnThisPageItem[]>(
@@ -81,6 +85,7 @@ export function ServiceSections({
           data={data}
           unanswered="hide"
           anchorSections
+          {...(references !== undefined && { references })}
         />
       </div>
     </OnThisPageLayout>

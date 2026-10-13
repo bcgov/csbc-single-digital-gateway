@@ -563,4 +563,24 @@ describe('ServiceVersionsService', () => {
       });
     });
   });
+
+  // Doc 291 rule 13.
+  describe('adopt template variants (doc 291 rule 13)', () => {
+    it('inserts the latest content plus the pinned template variants it lacks', async () => {
+      const citizen = { type: 'Form', elements: [] };
+      templatesMock.forDocument.mockResolvedValueOnce({
+        ...TEMPLATE,
+        variants: { default: { type: 'Funnel', elements: [] }, Citizen: citizen },
+      });
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ versionNumber: 2 })]));
+      txMock.returning.mockResolvedValueOnce([draftVersion({ id: 'version-3', versionNumber: 3 })]);
+
+      await service.addVersion('user-1', 'service-1');
+
+      const values = txMock.values.mock.calls[0][0];
+      expect(values.content.variants).toEqual({ ...CONTENT.variants, Citizen: citizen });
+      expect(values.content.schema).toEqual(CONTENT.schema);
+      expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
+    });
+  });
 });

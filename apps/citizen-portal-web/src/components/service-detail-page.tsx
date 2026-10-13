@@ -1,25 +1,32 @@
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { serviceQueryOptions } from '@/lib/catalog';
 import { ServiceSections } from './services/detail-sections';
+import { StartApplication, citizenReferenceSource } from './services/start-application';
 
 /**
  * A single service's detail page (`/services/:serviceId`) — public (feature 60). Always shows the
  * current PUBLISHED version (no version switcher; a specific version is reachable only via its
  * permalink).
  *
- * The header — title, description and a disabled call to action (feature 217: no way to apply to
- * link to without `document_references`) — then the service's citizen variant read back through
- * `@repo/documents`, with "On this page" built from its Section titles (`ServiceSections`).
+ * The header — title, description and "Start an application" over the service's published application methods
+ * (doc 291) — then the service's citizen variant read back through `@repo/documents`, with "On this page" built from
+ * its Section titles (`ServiceSections`) and its application-method cards linked to their apply page.
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
   const { data: service, isPending, isError } = useQuery(serviceQueryOptions(serviceId));
+  const methods = service?.applicationMethods;
+  const references = useMemo(
+    () => (methods === undefined ? undefined : citizenReferenceSource(serviceId, methods)),
+    [serviceId, methods],
+  );
 
   if (isPending) {
     return (
@@ -75,11 +82,7 @@ export function ServiceDetailPage() {
                 <p className="max-w-2xl text-sm text-muted-foreground">{service.description}</p>
               ) : null}
             </div>
-            {/* Feature 217: there is no way to apply to link to until documents can reference
-                one another again. */}
-            <Button className="shrink-0" disabled>
-              Start an application
-            </Button>
+            <StartApplication serviceId={serviceId} methods={service.applicationMethods ?? []} />
           </header>
         </PageHeaderBanner>
 
@@ -88,6 +91,7 @@ export function ServiceDetailPage() {
             schema={service.schema}
             variants={service.variants}
             data={service.data}
+            references={references}
           />
         </div>
       </div>

@@ -30,6 +30,7 @@ import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$s
 import { Route as AccountServiceAgreementsIndexRouteImport } from './routes/account_.service-agreements.index'
 import { Route as AccountServiceAgreementsServiceAgreementIdRouteImport } from './routes/account_.service-agreements.$serviceAgreementId'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
+import { Route as ServicesServiceIdApplyMethodIdRouteImport } from './routes/services.$serviceId.apply.$methodId'
 
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
@@ -139,6 +140,12 @@ const ServicesServiceIdVersionsVersionIdRoute =
     path: '/services/$serviceId/versions/$versionId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ServicesServiceIdApplyMethodIdRoute =
+  ServicesServiceIdApplyMethodIdRouteImport.update({
+    id: '/services/$serviceId/apply/$methodId',
+    path: '/services/$serviceId/apply/$methodId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesByTo {
@@ -183,6 +191,7 @@ export interface FileRoutesByTo {
   '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account/service-agreements': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesById {
@@ -207,6 +216,7 @@ export interface FileRoutesById {
   '/account_/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account_/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRouteTypes {
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/account/service-agreements/$serviceAgreementId'
     | '/account/service-agreements/'
     | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/account/service-agreements/$serviceAgreementId'
     | '/account/service-agreements'
     | '/services/$serviceId'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   id:
     | '__root__'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/account_/service-agreements/$serviceAgreementId'
     | '/account_/service-agreements/'
     | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesById: FileRoutesById
 }
@@ -289,6 +302,7 @@ export interface RootRouteChildren {
   AccountServiceAgreementsServiceAgreementIdRoute: typeof AccountServiceAgreementsServiceAgreementIdRoute
   AccountServiceAgreementsIndexRoute: typeof AccountServiceAgreementsIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
+  ServicesServiceIdApplyMethodIdRoute: typeof ServicesServiceIdApplyMethodIdRoute
   ServicesServiceIdVersionsVersionIdRoute: typeof ServicesServiceIdVersionsVersionIdRoute
 }
 
@@ -441,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceIdVersionsVersionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/$serviceId/apply/$methodId': {
+      id: '/services/$serviceId/apply/$methodId'
+      path: '/services/$serviceId/apply/$methodId'
+      fullPath: '/services/$serviceId/apply/$methodId'
+      preLoaderRoute: typeof ServicesServiceIdApplyMethodIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -488,6 +509,7 @@ const rootRouteChildren: RootRouteChildren = {
     AccountServiceAgreementsServiceAgreementIdRoute,
   AccountServiceAgreementsIndexRoute: AccountServiceAgreementsIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
+  ServicesServiceIdApplyMethodIdRoute: ServicesServiceIdApplyMethodIdRoute,
   ServicesServiceIdVersionsVersionIdRoute:
     ServicesServiceIdVersionsVersionIdRoute,
 }

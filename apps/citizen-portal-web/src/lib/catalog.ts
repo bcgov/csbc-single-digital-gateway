@@ -19,10 +19,24 @@ export interface CatalogService {
   description: string | null;
 }
 
+/** Doc 291: one of a service's published application methods, as its published version names it. */
+export interface CatalogApplicationMethod {
+  id: string;
+  title: string | null;
+  description: string | null;
+}
+
+/** Doc 291 rule 7: an application method's PUBLISHED form — the document the apply page fills. */
+export interface CatalogApplicationMethodDetail extends CatalogApplicationMethod {
+  schema: Record<string, unknown>;
+  /** Doc 275: the uischemas by variant name; `default` is always present. */
+  variants: Record<string, Record<string, unknown>>;
+}
+
 /**
  * A service detail — the card fields + its current published version + the authored document to
  * render. Feature 217 dropped `applications` (the ways to apply, from `document_references`); doc 281
- * brought back `data`, the service's answers.
+ * brought back `data`, the service's answers; doc 291 brought back the ways to apply as `applicationMethods`.
  */
 export interface CatalogServiceDetail extends CatalogService {
   publishedVersionId: string;
@@ -33,6 +47,8 @@ export interface CatalogServiceDetail extends CatalogService {
   variants: Record<string, Record<string, unknown>>;
   /** Doc 281: the service's answers (`content.data`); `{}` when none. */
   data: Record<string, unknown>;
+  /** Doc 291 rules 4-6: the service's published application methods, in reference order. */
+  applicationMethods: CatalogApplicationMethod[];
 }
 
 /** A historical service version (published or archived) + the document to render. */
@@ -114,6 +130,21 @@ export async function getService(id: string): Promise<CatalogServiceDetail> {
   return (await res.json()) as CatalogServiceDetail;
 }
 
+/** Doc 291 rule 7: one of a service's application methods, as published. Throws on 404/any non-OK. */
+export async function getApplicationMethod(
+  serviceId: string,
+  methodId: string,
+): Promise<CatalogApplicationMethodDetail> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/services/${encodeURIComponent(serviceId)}/application-methods/${encodeURIComponent(methodId)}`,
+    { credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`GET application method failed: ${res.status}`);
+  }
+  return (await res.json()) as CatalogApplicationMethodDetail;
+}
+
 /** A specific service version (published or archived). Throws on 404/any non-OK. */
 export async function getServiceVersion(
   serviceId: string,
@@ -151,6 +182,16 @@ export function serviceQueryOptions(id: string) {
   return queryOptions({
     queryKey: ['services', 'detail', id] as const,
     queryFn: () => getService(id),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+}
+
+/** Doc 291: an application method's published form. */
+export function applicationMethodQueryOptions(serviceId: string, methodId: string) {
+  return queryOptions({
+    queryKey: ['services', serviceId, 'application-methods', methodId] as const,
+    queryFn: () => getApplicationMethod(serviceId, methodId),
     staleTime: 60 * 1000,
     retry: false,
   });

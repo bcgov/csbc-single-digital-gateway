@@ -39,8 +39,16 @@ export class CatalogServiceListDto extends createZodDto(
  * A service detail = the card fields + a pointer to its current published version (so the detail
  * page can render the version content and link to the version permalink). Workspace-free.
  *
- * Feature 217 dropped `applications` (the ways to apply): they came from `document_references`.
+ * Feature 217 dropped `applications` (the ways to apply): they came from `document_references`; doc 291 brings them back
+ * as `applicationMethods`, read from the published version's document-reference answers.
  */
+/** Doc 291 rule 5: an application method a citizen may open, as its published version names it. */
+export const catalogApplicationMethodSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+});
+
 export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   publishedVersionId: z.string(),
   versionNumber: z.number().int(),
@@ -51,6 +59,8 @@ export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   variants: z.record(z.string(), z.record(z.string(), z.unknown())),
   /** Doc 281: the service's answers (`content.data`); `{}` when none. */
   data: z.record(z.string(), z.unknown()),
+  /** Doc 291 rules 4-6: the published application methods, in reference order. */
+  applicationMethods: z.array(catalogApplicationMethodSchema),
 });
 export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
 export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}
@@ -78,3 +88,13 @@ export const catalogServiceVersionSchema = z.object({
 });
 export type CatalogServiceVersion = z.infer<typeof catalogServiceVersionSchema>;
 export class CatalogServiceVersionDto extends createZodDto(catalogServiceVersionSchema) {}
+
+/** Doc 291 rule 7: one application method's PUBLISHED form — what the apply page fills. No answers. */
+export const catalogApplicationMethodDetailSchema = catalogApplicationMethodSchema.extend({
+  schema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+});
+export type CatalogApplicationMethodDetail = z.infer<typeof catalogApplicationMethodDetailSchema>;
+export class CatalogApplicationMethodDetailDto extends createZodDto(
+  catalogApplicationMethodDetailSchema,
+) {}

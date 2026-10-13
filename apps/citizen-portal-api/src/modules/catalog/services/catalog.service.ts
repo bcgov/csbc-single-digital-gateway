@@ -3,12 +3,14 @@ import { type Database, documentVersions, documents, DOCUMENT_TYPE } from '@repo
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type {
+  CatalogApplicationMethodDetail,
   CatalogService as CatalogServiceDto,
   CatalogServiceDetail,
   CatalogServiceVersion,
   ListServicesQuery,
 } from '../dtos/catalog.dtos';
 import { contentSchemas } from '../util/format';
+import { publishedMethods } from './catalog-methods';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
@@ -17,8 +19,8 @@ import { contentSchemas } from '../util/format';
  *
  * Feature 217: a service is an AUTHORED document. Title and description are GENERATED columns on
  * its version, and the version's own `content` is what renders — there is no type template to
- * resolve and no `data` to fill into it. The "ways to apply" list is gone with
- * `document_references`.
+ * resolve and no `data` to fill into it. The "ways to apply" came back with doc 291, read from the published
+ * version's document-reference answers (`catalog-methods.ts`) — workspace-scoped internally, never exposed.
  */
 @Injectable()
 export class CatalogService {
@@ -72,12 +74,57 @@ export class CatalogService {
 
   /**
    * A single published service + its current published version, so the detail page can render the
-   * content and link to the version permalink. 404 when not a published service.
+   * content and link to the version permalink, plus its published application methods (doc 291). 404 when not a
+   * published service.
    */
   async getService(id: string): Promise<CatalogServiceDetail> {
+    const row = await this.publishedService(id);
+    const methods = await publishedMethods(this.db, row.workspaceId, row.content);
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      publishedVersionId: row.versionId,
+      versionNumber: row.versionNumber,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      ...contentSchemas(row.content),
+      applicationMethods: methods.map(({ id: methodId, title, description }) => ({
+        id: methodId,
+        title,
+        description,
+      })),
+    };
+  }
+
+  /**
+   * Doc 291 rule 7: one application method's PUBLISHED form — only one the service's published version lists (rule 5),
+   * so an id alone never reaches a document. 404 otherwise.
+   */
+  async getApplicationMethod(
+    serviceId: string,
+    methodId: string,
+  ): Promise<CatalogApplicationMethodDetail> {
+    const service = await this.publishedService(serviceId);
+    const method = (await publishedMethods(this.db, service.workspaceId, service.content)).find(
+      (candidate) => candidate.id === methodId,
+    );
+    if (method === undefined) throw new NotFoundException('Application method not found');
+    const { schema, variants } = contentSchemas(method.content);
+    return {
+      id: method.id,
+      title: method.title,
+      description: method.description,
+      schema,
+      variants,
+    };
+  }
+
+  /** A published service's current published version, with the workspace it lives in (never returned). */
+  private async publishedService(id: string) {
     const rows = await this.db
       .select({
         id: documents.id,
+        workspaceId: documents.workspaceId,
         title: documentVersions.title,
         description: documentVersions.description,
         versionId: documentVersions.id,
@@ -105,15 +152,7 @@ export class CatalogService {
     if (row === undefined) {
       throw new NotFoundException('Service not found');
     }
-    return {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      publishedVersionId: row.versionId,
-      versionNumber: row.versionNumber,
-      publishedAt: row.publishedAt?.toISOString() ?? null,
-      ...contentSchemas(row.content),
-    };
+    return row;
   }
 
   /**

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 
@@ -37,8 +38,8 @@ const variants = {
 };
 
 /**
- * Feature 217: title and description are GENERATED columns on the version, a service renders from
- * its own `content` (no `data`), and the "ways to apply" list is gone with `document_references`.
+ * Feature 217: title and description are GENERATED columns on the version and a service renders from its own
+ * `content`. Doc 291: `applicationMethods` is absent here, as from an API that predates it — the page treats it as none.
  */
 const detail = {
   id: 'svc-1',
@@ -142,7 +143,7 @@ describe('service detail page', () => {
     expect(screen.queryByText('Financial support for residents.')).not.toBeInTheDocument();
   });
 
-  it('disables the call to action — there is no way to apply to link to yet', async () => {
+  it('disables the call to action when the service lists no application method (doc 291)', async () => {
     mockBff();
     await renderRoute('/services/svc-1');
     await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
@@ -198,5 +199,122 @@ describe('service version page', () => {
       expect(router.state.location.pathname.replace(/\/$/, '')).toBe('/services/svc-1'),
     );
     expect(screen.queryByText(/historical version/i)).not.toBeInTheDocument();
+  });
+});
+
+// Doc 291.
+const T = { timeout: 10000 };
+const method = (id: string, title: string) => ({
+  id,
+  title,
+  description: `${title}, start to finish.`,
+});
+const withMethods = (applicationMethods: unknown[], over: Record<string, unknown> = {}) =>
+  jsonResponse({ ...detail, applicationMethods, ...over });
+
+describe('ServiceDetailPage — application methods + side nav (doc 291)', () => {
+  describe('side nav (rule 3)', () => {
+    it('shows On this page for the Citizen variant Sections', async () => {
+      mockBff({ svc: withMethods([]) });
+      await renderRoute('/services/svc-1');
+      await screen.findByRole('heading', { name: 'Overview', level: 2 }, T);
+      const nav = screen.getByRole('link', { name: 'Overview' });
+      expect(nav).toHaveAttribute('href', '#overview');
+      expect(screen.getByText('On this page')).toBeInTheDocument();
+    });
+  });
+
+  describe('start an application (rule 9)', () => {
+    it('is disabled with a note when there are no methods', async () => {
+      mockBff({ svc: withMethods([]) });
+      await renderRoute('/services/svc-1');
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, T);
+      expect(screen.getByRole('button', { name: 'Start an application' })).toBeDisabled();
+      expect(screen.getByText('Applications are not open yet')).toBeInTheDocument();
+    });
+
+    it('links straight to the only method', async () => {
+      mockBff({ svc: withMethods([method('m1', 'Apply online')]) });
+      await renderRoute('/services/svc-1');
+      expect(await screen.findByRole('link', { name: 'Start an application' }, T)).toHaveAttribute(
+        'href',
+        '/services/svc-1/apply/m1',
+      );
+      expect(screen.queryByText('Applications are not open yet')).toBeNull();
+    });
+
+    it('offers a menu of several methods', async () => {
+      mockBff({ svc: withMethods([method('m1', 'Apply online'), method('m2', 'Apply by mail')]) });
+      await renderRoute('/services/svc-1');
+      const trigger = await screen.findByRole('button', { name: 'Start an application' }, T);
+      await userEvent.click(trigger);
+      const menu = await screen.findByRole('menu');
+      const items = within(menu).getAllByRole('menuitem');
+      expect(items.map((item) => item.textContent)).toEqual([
+        'Apply onlineApply online, start to finish.',
+        'Apply by mailApply by mail, start to finish.',
+      ]);
+      expect(items[1]).toHaveAttribute('href', '/services/svc-1/apply/m2');
+    });
+  });
+
+  describe('cards (rule 8)', () => {
+    it('links method cards to their apply page', async () => {
+      const citizen = {
+        type: 'Form',
+        elements: [
+          {
+            id: 'sec-apply',
+            type: 'Section',
+            label: 'How to apply',
+            elements: [
+              {
+                type: 'Control',
+                scope: '#/properties/methods',
+                options: {
+                  component: 'document-reference',
+                  documentType: 'services.service-application-method',
+                },
+              },
+            ],
+          },
+        ],
+      };
+      const refSchema = {
+        type: 'object',
+        properties: {
+          methods: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id'],
+              properties: { id: { type: 'string' }, title: { type: 'string' } },
+            },
+          },
+        },
+      };
+      mockBff({
+        svc: withMethods([method('m1', 'Apply online')], {
+          schema: refSchema,
+          variants: { default: citizen, Citizen: citizen },
+          // m9 was stored but is not a published method: its card stays unlinked.
+          data: {
+            methods: [
+              { id: 'm1', title: 'Apply online' },
+              { id: 'm9', title: 'Retired' },
+            ],
+          },
+        }),
+      });
+      await renderRoute('/services/svc-1');
+      await screen.findByRole('heading', { name: 'How to apply', level: 2 }, T);
+      const cards = within(document.querySelector('[data-slot="plain-document-references"]')!);
+      expect(cards.getByRole('link', { name: /Apply online/ })).toHaveAttribute(
+        'href',
+        '/services/svc-1/apply/m1',
+      );
+      expect(cards.queryByRole('link', { name: /Retired/ })).toBeNull();
+      expect(cards.getByText('Retired')).toBeInTheDocument();
+    });
   });
 });

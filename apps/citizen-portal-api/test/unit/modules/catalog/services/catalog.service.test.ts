@@ -175,7 +175,7 @@ describe('CatalogService Unit Test Suite', () => {
       await expect(service.getService('svc-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it("renders from the version's OWN content and answers, with no ways-to-apply list", async () => {
+    it("renders from the version's OWN content and answers, with an empty methods list when none are referenced", async () => {
       mockResponse(
         serviceRow({
           content: {
@@ -200,6 +200,8 @@ describe('CatalogService Unit Test Suite', () => {
         schema: { type: 'object' },
         variants: { default: { type: 'Form', elements: [] } },
         data: { about: 'x' },
+        // Doc 291: the ways to apply are back — none, for a version that references no method.
+        applicationMethods: [],
       });
       expect(result).not.toHaveProperty('applications');
     });
@@ -299,6 +301,117 @@ describe('CatalogService Unit Test Suite', () => {
       await expect(service.getServiceVersion('service-123', 'version-456')).resolves.toMatchObject({
         title: null,
       });
+    });
+  });
+});
+
+// Doc 291.
+const M1 = '11111111-1111-4111-8111-111111111111';
+const M2 = '22222222-2222-4222-8222-222222222222';
+const referencing = (ids: string[]) =>
+  serviceRow({
+    workspaceId: 'ws-1',
+    content: {
+      schema: { type: 'object' },
+      variants: {
+        default: {
+          type: 'Form',
+          elements: [
+            {
+              type: 'Control',
+              scope: '#/properties/methods',
+              options: {
+                component: 'document-reference',
+                documentType: 'services.service-application-method',
+              },
+            },
+          ],
+        },
+      },
+      data: { methods: ids.map((id) => ({ id })) },
+    },
+  });
+const methodRow = (id: string, title: string) => ({
+  id,
+  title,
+  description: `${title} description`,
+  content: {
+    schema: { type: 'object', properties: { name: { type: 'string' } } },
+    variants: {
+      default: { type: 'Form', elements: [] },
+      Citizen: { type: 'Form', elements: [] },
+    },
+    data: { secret: 'never sent' },
+  },
+});
+
+describe('CatalogService — application methods (doc 291 rules 4-7)', () => {
+  let service: CatalogService;
+  let mockResponse: any;
+
+  beforeEach(() => {
+    const db = createDbMock();
+    mockResponse = db.mockResponse;
+    service = new CatalogService(db.dbMock as unknown as Database);
+  });
+
+  describe('getService', () => {
+    it('lists the published methods the published version references, in order, with title and description', async () => {
+      mockResponse(referencing([M2, M1]), documents, 'select');
+      // The DB answers in its own order; the list keeps the reference order.
+      mockResponse([methodRow(M1, 'Online'), methodRow(M2, 'By mail')], documents, 'select');
+
+      const result = await service.getService('service-123');
+
+      expect(result.applicationMethods).toEqual([
+        { id: M2, title: 'By mail', description: 'By mail description' },
+        { id: M1, title: 'Online', description: 'Online description' },
+      ]);
+      // The workspace is used, never returned.
+      expect(result).not.toHaveProperty('workspaceId');
+    });
+
+    it('leaves out ids that are not published application methods in the service workspace', async () => {
+      mockResponse(referencing([M1, M2, 'not-a-uuid']), documents, 'select');
+      // The workspace/type/published filter is the query's: it returned only M1.
+      mockResponse([methodRow(M1, 'Online')], documents, 'select');
+
+      const result = await service.getService('service-123');
+
+      expect(result.applicationMethods.map((method) => method.id)).toEqual([M1]);
+    });
+  });
+
+  describe('getApplicationMethod', () => {
+    it('returns the method published content for a listed method', async () => {
+      mockResponse(referencing([M1]), documents, 'select');
+      mockResponse([methodRow(M1, 'Online')], documents, 'select');
+
+      const result = await service.getApplicationMethod('service-123', M1);
+
+      expect(result).toEqual({
+        id: M1,
+        title: 'Online',
+        description: 'Online description',
+        schema: { type: 'object', properties: { name: { type: 'string' } } },
+        variants: {
+          default: { type: 'Form', elements: [] },
+          Citizen: { type: 'Form', elements: [] },
+        },
+      });
+      // Only the form — never stored answers.
+      expect(result).not.toHaveProperty('data');
+    });
+
+    it('throws NotFound for a method the service does not list', async () => {
+      mockResponse(referencing([M1]), documents, 'select');
+      mockResponse([methodRow(M1, 'Online')], documents, 'select');
+
+      await expect(service.getApplicationMethod('service-123', M2)).rejects.toThrow(
+        'Application method not found',
+      );
+      mockResponse([], documents, 'select');
+      await expect(service.getApplicationMethod('missing', M1)).rejects.toThrow(NotFoundException);
     });
   });
 });

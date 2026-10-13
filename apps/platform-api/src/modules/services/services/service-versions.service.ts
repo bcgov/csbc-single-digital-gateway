@@ -16,6 +16,7 @@ import {
   type UpdateVersionContentInput,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
+import { adoptVariants } from '../util/adopt-variants';
 import { rebuildLinksTx } from '../util/document-links';
 import { publishRefusal } from '../util/method-checks';
 import { discardVersionTx } from '../util/version-copy';
@@ -179,7 +180,11 @@ export class ServiceVersionsService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: next,
-          content: latest?.content ?? { schema: template.schema, variants: template.variants },
+          // Doc 291 rule 13: the latest content, plus variants its pinned template has gained since.
+          content:
+            latest === undefined
+              ? { schema: template.schema, variants: template.variants }
+              : adoptVariants(latest.content, template.variants),
         })
         .returning();
       const created = this.orThrow(inserted[0]);
