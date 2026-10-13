@@ -16,6 +16,12 @@
       "development": "./src/notification-center.ts",
       "import": "./dist/notification-center.js",
       "require": "./dist/notification-center.cjs"
+    },
+    "./shared-event-stream": {
+      "types": "./dist/shared-event-stream.d.ts",
+      "development": "./src/shared-event-stream.ts",
+      "import": "./dist/shared-event-stream.js",
+      "require": "./dist/shared-event-stream.cjs"
     }
   },
   "files": [
