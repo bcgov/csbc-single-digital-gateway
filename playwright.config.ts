@@ -1,17 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import { type TestOptions } from './tests/k6/utils/playwright-test.fixture';
+import dotenv from 'dotenv';
+import path from 'node:path';
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(import.meta.dirname, '.env') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-export default defineConfig({
+export default defineConfig<TestOptions>({
   testDir: './tests/playwright/tests',
   testMatch: '**/*.pw.ts',
   /* Run tests in files in parallel */
@@ -37,6 +34,9 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     // baseURL: 'http://localhost:3000',
+    testClientDevUrl: 'http://localhost:3000',
+    testClientUsername: 'citizen',
+    testClientPassword: 'password',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -99,12 +99,15 @@ export default defineConfig({
         baseURL: process.env.PLATFORM_URL || 'http://localhost:3001',
       },
     },
+    {
+      name: 'K6 Client Dev Setup',
+      testMatch: 'playwright-client-dev.setup.ts',
+      testDir: './tests/k6/utils/',
+      use: {
+        testClientDevUrl: process.env.K6_CLIENT_DEV_URL,
+        testClientUsername: process.env.K6_CLIENT_USERNAME,
+        testClientPassword: process.env.K6_CLIENT_PASSWORD,
+      },
+    },
   ],
-
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
 });
