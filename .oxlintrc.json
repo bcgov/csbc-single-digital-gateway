@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc"],
+  "jsPlugins": ["@shadcn/lint"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -18,10 +19,43 @@
     "**/routeTree.gen.ts"
   ],
   "rules": {
-    "no-extraneous-class": ["warn", { "allowWithDecorator": true }],
-    "no-underscore-dangle": ["warn", { "allow": ["__APP_CONFIG__", "__UI_SRC__"] }]
+    "no-extraneous-class": [
+      "warn",
+      {
+        "allowWithDecorator": true
+      }
+    ],
+    "no-underscore-dangle": [
+      "warn",
+      {
+        "allow": ["__APP_CONFIG__", "__UI_SRC__"]
+      }
+    ],
+    "shadcn/no-restyle": "off",
+    "shadcn/no-raw-colors": "off",
+    "shadcn/no-arbitrary-values": "off",
+    "shadcn/no-inline-styles": "off",
+    "shadcn/no-unknown-classes": "off",
+    "shadcn/require-static-classes": "off"
+  },
+  "settings": {
+    "shadcn": {
+      "ui": "@repo/ui",
+      "componentImports": ["^@repo/ui(/|$)"],
+      "note": "See apps/citizen-portal-web/src/catalog/README.md — pages compose only from @repo/ui, never restyle via className, always use semantic tokens (bg-primary, text-muted-foreground), never arbitrary values or raw hex/px."
+    }
   },
   "overrides": [
+    {
+      "files": ["apps/citizen-portal-web/src/**/*.tsx"],
+      "rules": {
+        "shadcn/no-raw-colors": "warn",
+        "shadcn/no-arbitrary-values": "warn",
+        "shadcn/no-inline-styles": "warn",
+        "shadcn/no-unknown-classes": "warn",
+        "shadcn/require-static-classes": "warn"
+      }
+    },
     {
       "files": ["packages/ui/src/components/ui/**/*.tsx"],
       "rules": {

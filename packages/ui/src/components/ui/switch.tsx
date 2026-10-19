@@ -14,7 +14,7 @@ function Switch({
       data-slot="switch"
       data-size={size}
       className={cn(
-        'peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-[size=default]:h-5 data-[size=default]:w-10 data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] not-data-disabled:hover:cursor-pointer not-data-disabled:data-checked:bg-primary not-data-disabled:data-checked:hover:bg-primary-hover not-data-disabled:data-unchecked:bg-input data-disabled:cursor-not-allowed data-disabled:bg-secondary-hover',
+        'peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-[size=default]:h-5 data-[size=default]:w-10 data-[size=sm]:h-3.5 data-[size=sm]:w-6 not-data-disabled:hover:cursor-pointer not-data-disabled:data-checked:bg-primary not-data-disabled:data-checked:hover:bg-primary-hover not-data-disabled:data-unchecked:bg-input data-disabled:cursor-not-allowed data-disabled:bg-secondary-hover',
         className,
       )}
       {...props}

@@ -64,7 +64,7 @@ vi.mock('@dnd-kit/react/sortable', () => ({
 }));
 
 vi.mock('@dnd-kit/helpers', () => ({
-  move: vi.fn((_, __) => {
+  move: vi.fn(() => {
     return {
       'application-methods': ['ref-multi-123', 'ref-basic-123'],
     };
