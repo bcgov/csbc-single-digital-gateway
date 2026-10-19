@@ -3,6 +3,7 @@ import uiCatalog from '@repo/ui/a11y-catalog.json';
 import breadcrumbA11y from './breadcrumb.a11y';
 import formElementsA11y from './form-elements-reference-page.a11y';
 import iconA11y from './icon-reference-page.a11y';
+import pageLayoutsA11y from './page-layouts.a11y';
 import statusBannerA11y from './status-banner.a11y';
 
 // Components documented in this app but not owned by @repo/ui (app-local components, or
@@ -12,6 +13,7 @@ const appLocalCatalog: ComponentA11yMetadata[] = [
   iconA11y,
   formElementsA11y,
   breadcrumbA11y,
+  pageLayoutsA11y,
 ];
 
 const catalog: ComponentA11yMetadata[] = [

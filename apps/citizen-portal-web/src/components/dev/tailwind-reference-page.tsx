@@ -1,6 +1,5 @@
 import { useRef, type ReactNode } from 'react';
 import {
-  mdiCreation,
   mdiFormatFont,
   mdiPalette,
   mdiPaletteSwatch,
@@ -8,7 +7,6 @@ import {
   mdiViewDashboard,
   mdiViewGrid,
 } from '@mdi/js';
-import { Link } from '@tanstack/react-router';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import { useDevPageNav } from '@/components/dev/dev-page-nav';
 import { DevSection } from '@/components/dev/dev-section';
@@ -313,7 +311,6 @@ const SECTION_ICONS: Record<string, string> = {
   'spacing-borders-radius-and-shadows': mdiRuler,
   structure: mdiViewDashboard,
   groupings: mdiViewGrid,
-  'coming-next': mdiCreation,
 };
 
 export function TailwindReferencePage() {
@@ -736,30 +733,6 @@ export function TailwindReferencePage() {
           </div>
         </div>
       </DevSection>
-
-      <DevSection
-        id="coming-next"
-        title="Coming next"
-        description="Reserved space for the next component patterns."
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <Link
-            to="/dev/button"
-            className="rounded-lg border border-border bg-background p-6 text-center no-underline hover:bg-blue-10 transition-colors"
-          >
-            <div className="font-semibold text-foreground">Button</div>
-            <div className="mt-1 text-sm text-muted-foreground">Variants, sizes & links</div>
-          </Link>
-          <Link
-            to="/dev/accordion"
-            className="rounded-lg border border-border bg-background p-6 text-center no-underline hover:bg-blue-10 transition-colors"
-          >
-            <div className="font-semibold text-foreground">Accordion</div>
-            <div className="mt-1 text-sm text-muted-foreground">Accordion & AccordionGroup</div>
-          </Link>
-          <TodoCard title="Layouts" />
-        </div>
-      </DevSection>
     </DevPageLayout>
   );
 }
@@ -986,15 +959,6 @@ function TokenPill({ label, token }: { label: string; token: string }) {
     <div className="rounded-md border border-border bg-card px-3 py-2">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
       <code className="text-xs text-bcgov-blue">{token}</code>
-    </div>
-  );
-}
-
-function TodoCard({ title }: { title: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-background p-6 text-center text-muted-foreground">
-      <div className="font-semibold text-foreground">{title}</div>
-      <div className="mt-1 text-sm">To come</div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { Button } from '@repo/ui/button';
 import {
   Dialog,
@@ -269,32 +271,7 @@ export function DialogReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">DialogTitle</code> is required
-            on every dialog — base-ui needs it for the popup's accessible name. Hide it visually
-            with <code className="text-xs bg-muted px-1.5 py-0.5 rounded">sr-only</code> rather than
-            omitting it, like the full-screen example above.
-          </li>
-          <li>
-            Modal dialogs (the default —{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">modal</code> defaults to{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">true</code>) trap focus and
-            return it to the trigger on close, automatically.
-          </li>
-          <li>
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'modal={false}'}</code> is a
-            real, if rare, escape hatch — CreateWorkspaceModal's forced onboarding variant uses it
-            so the sidebar profile card stays interactive while the gate is up.
-          </li>
-          <li>
-            An icon-only{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">DialogTrigger</code> or{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">DialogClose</code> (e.g. the
-            full-screen example's menu/close buttons) always needs an{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code>.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('dialog')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

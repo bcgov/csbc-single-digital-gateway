@@ -36,6 +36,62 @@
     "knownExceptions": []
   },
   {
+    "component": "alert",
+    "wcagCriteria": [
+      {
+        "id": "1.1.1",
+        "name": "Non-text Content",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html"
+      },
+      {
+        "id": "1.4.1",
+        "name": "Use of Color",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html"
+      },
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "4.1.3",
+        "name": "Status Messages",
+        "level": "AA",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "role-note-default",
+        "description": "Alert renders role=\"note\" by default. Override with \"complementary\", \"status\" or (sparingly) \"alert\" only when the message warrants it; a message that warrants none of these should be plain text, not an Alert.",
+        "severity": "required"
+      },
+      {
+        "id": "role-alert-sparingly",
+        "description": "role=\"alert\" interrupts assistive tech immediately — reserve it for messages that need the user’s immediate attention.",
+        "severity": "recommended"
+      },
+      {
+        "id": "icon-decorative",
+        "description": "The variant icon is decorative (the title/description carry the meaning) — always aria-hidden={true}.",
+        "severity": "required"
+      },
+      {
+        "id": "icon-only-action-labelled",
+        "description": "An icon-only AlertAction button (e.g. dismiss) needs its own aria-label — there is no visible text for assistive tech to read.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Relying on the variant’s color (icon, border, background) as the only signal — body text stays neutral across variants by design, so the copy itself must say what kind of message it is."
+    ],
+    "notes": [],
+    "knownExceptions": []
+  },
+  {
     "component": "badge",
     "wcagCriteria": [
       {
@@ -553,6 +609,66 @@
       "DialogDescription's text changes between the two MethodDialog steps (\"Choose the kind of contact method to add.\" → \"Enter the details for this contact method.\") while DialogTitle stays fixed (\"Add contact method\" / \"Edit contact method\" — constant across both steps of a given add/edit flow). Since aria-describedby is wired once to the DialogDescription element's id, the accessible description DOES update correctly for a user who re-reads it, but nothing proactively announces that change to a screen reader user who already has focus elsewhere in the dialog when the step transitions.",
       "DialogOverlay is a `fixed inset-0` backdrop with no explicit aria-hidden coordination with page content behind it — base-ui's modal Dialog handles hiding the rest of the document from assistive tech (via aria-modal / inert) automatically while open, so this is expected to work without extra wiring, but it depends entirely on `modal` staying true (or \"trap-focus\") for any dialog that's meant to be modal; explicitly verify background content is actually inaccessible to AT if a dialog in this system is ever given `modal={false}`."
     ],
+    "knownExceptions": []
+  },
+  {
+    "component": "dropdown-menu",
+    "wcagCriteria": [
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "1.4.1",
+        "name": "Use of Color",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html"
+      },
+      {
+        "id": "2.4.4",
+        "name": "Link Purpose (In Context)",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Menu Button",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/"
+    },
+    "rules": [
+      {
+        "id": "roles-and-keys-built-in",
+        "description": "base-ui’s Menu wires up role=\"menu\"/\"menuitem\" and arrow-key / Escape keyboard navigation automatically — don’t re-add them.",
+        "severity": "required"
+      },
+      {
+        "id": "icon-only-trigger-labelled",
+        "description": "An icon-only DropdownMenuTrigger (e.g. an overflow ⋯ button) always needs an aria-label.",
+        "severity": "required"
+      },
+      {
+        "id": "destructive-variant",
+        "description": "Use variant=\"destructive\" on a destructive item rather than a hand-rolled text-destructive className — the variant also tints hover/focus and any icon — and keep clear label text, since color alone isn’t a reliable signal.",
+        "severity": "recommended"
+      },
+      {
+        "id": "links-only-for-navigation",
+        "description": "Only render an item as a <Link> (render prop) when it actually navigates; an action item rendered as a link with no destination is forbidden.",
+        "severity": "forbidden"
+      }
+    ],
+    "commonMisuses": [
+      "Destructive items that only set text color by hand (several in this app predate the variant prop)."
+    ],
+    "notes": [],
     "knownExceptions": []
   },
   {

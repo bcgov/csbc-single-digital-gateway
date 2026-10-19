@@ -1,8 +1,9 @@
 # `/dev` accessibility metadata
 
-Every documented `/dev` reference page (`accordion`, `badge`, `button`, `cards`, `status-banner`,
-`icons`, `form-elements`) renders its **Accessibility** section from structured, machine-readable
-metadata instead of hand-typed prose. The same metadata is what an automated checker runs against,
+Every `/dev` reference page except the Tailwind tokens index (`accordion`, `alert`, `badge`,
+`breadcrumb`, `button`, `cards`, `dialog`, `dropdown-menu`, `form-elements`, `icons`,
+`page-layouts`, `status-banner`) renders its **Accessibility** section from structured,
+machine-readable metadata instead of hand-typed prose. The same metadata is what an automated checker runs against,
 so the docs and the enforcement can't drift apart.
 
 This metadata catalog is also the exceptions source for the _real_ app routes (not just `/dev`
@@ -27,15 +28,15 @@ queryable data, and it's enforced by a test.
                                                     (renders the page)          (axe-core gate)
 ```
 
-| Piece                | Location                                                                                 | Purpose                                                                                                                                                                                                                                                                                                                                |
-| -------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Schema               | `packages/ui/src/a11y/a11y-types.ts`                                                     | The `ComponentA11yMetadata` type: WCAG criteria, ARIA pattern link, rules, misuses, notes, `knownExceptions`.                                                                                                                                                                                                                          |
-| Sidecars (shared)    | `packages/ui/src/a11y/{accordion,badge,button,card}.a11y.ts`                             | Metadata for `@repo/ui` components.                                                                                                                                                                                                                                                                                                    |
-| Sidecars (app-local) | `src/a11y/status-banner.a11y.ts`, `src/a11y/{icon,form-elements}-reference-page.a11y.ts` | Metadata for things that aren't `@repo/ui` components (app-local component, or a usage-pattern page with no single owner).                                                                                                                                                                                                             |
-| Catalog generator    | `packages/ui/scripts/gen-a11y-catalog.mjs`                                               | Aggregates the 4 shared sidecars into the committed `packages/ui/src/a11y/a11y-catalog.json`.                                                                                                                                                                                                                                          |
-| Catalog lookup       | `src/a11y/a11y-catalog.ts`                                                               | Merges the `@repo/ui` catalog with the 3 app-local sidecars; exports `getA11yMetadata(name)` (throws on a miss — for `/dev` pages, where the name is always known ahead of time) and `findA11yMetadata(name)` (returns `undefined` on a miss — for aggregating exceptions across whatever components a _real_ page happens to render). |
-| Rendered section     | `src/components/dev/a11y-rules-section.tsx`                                              | Turns metadata into the badges/rules/exceptions UI on each reference page.                                                                                                                                                                                                                                                             |
-| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts`                                  | Renders all 10 `/dev` routes and runs `jest-axe` against each. (Real app routes have their own, separate checker — see `test/A11Y-TESTING.md`.)                                                                                                                                                                                        |
+| Piece                | Location                                                | Purpose                                                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema               | `packages/ui/src/a11y/a11y-types.ts`                    | The `ComponentA11yMetadata` type: WCAG criteria, ARIA pattern link, rules, misuses, notes, `knownExceptions`.                                                                                                                                                                           |
+| Sidecars (shared)    | `packages/ui/src/a11y/*.a11y.ts` (22)                   | Metadata for `@repo/ui` components — the ones with `/dev` pages plus the JSON Forms input primitives shown on `/dev/form-elements`.                                                                                                                                                     |
+| Sidecars (app-local) | `src/a11y/*.a11y.ts` (5)                                | `breadcrumb`, `status-banner` (app-local components); `icons`, `form-elements`, `page-layouts` (pattern pages with no single owning component).                                                                                                                                         |
+| Catalog generator    | `packages/ui/scripts/gen-a11y-catalog.mjs`              | Aggregates the shared sidecars into the committed `packages/ui/src/a11y/a11y-catalog.json`.                                                                                                                                                                                             |
+| Catalog lookup       | `src/a11y/a11y-catalog.ts`                              | Merges the `@repo/ui` catalog with the app-local sidecars; exports `getA11yMetadata(name)` (throws on a miss — for `/dev` pages, where the name is always known) and `findA11yMetadata(name)` (returns `undefined` — for aggregating exceptions across whatever a _real_ page renders). |
+| Rendered section     | `src/components/dev/a11y-rules-section.tsx`             | Turns metadata into the badges/rules/exceptions UI on each reference page.                                                                                                                                                                                                              |
+| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts` | Renders all 13 `/dev` routes and runs `jest-axe` against each. (Real app routes have their own, separate checker — see `test/A11Y-TESTING.md`.)                                                                                                                                         |
 
 All accessibility metadata lives in a dedicated `src/a11y/` directory in each package/app — not
 co-located with the component it describes — matching this repo's existing convention of keeping
@@ -89,14 +90,11 @@ violation not explicitly listed as a known exception.
 
 ## Known gaps (by design)
 
-- `draggable` and the `tailwind` index page have no sidecar yet (nothing to document — a
-  placeholder and a design-tokens page respectively) but are still axe-checked with an empty
-  exceptions list.
-- Metadata covers the 7 currently-documented components, not all ~60 primitives in `packages/ui`.
-  Extending coverage is just adding another sidecar — no structural changes needed.
-- No MCP server and no LLM-based judgment-call review pass yet. `a11y-catalog.json` is the exact
-  artifact either would consume later, so building them won't require reworking this system. A
-  first version of that judgment-call layer now exists as a genuinely separate system — see
-  `CLAUDE.md`'s "Building pages" section, `packages/ui/src/catalog/` (a structural clone of this
-  a11y pipeline, but its own schema/generator/catalog), and `.claude/skills/build-page/SKILL.md` —
-  built independently so it can be removed without touching anything here.
+- The `tailwind` index page (`/dev`) has no sidecar — it documents design tokens, not a component —
+  but is still axe-checked with an empty exceptions list.
+- Metadata covers the documented components, not all ~60 primitives in `packages/ui`. Extending
+  coverage is just adding another sidecar — no structural changes needed.
+- No MCP server and no LLM-based judgment-call review pass yet; `a11y-catalog.json` is the artifact
+  either would consume. The separate page-building catalog (`src/catalog/`, see its `README.md`)
+  is the first step toward that layer, built independently so it can be removed without touching
+  anything here.

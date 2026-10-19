@@ -20,11 +20,10 @@ const DEV_PAGES = [
   { to: '/dev/button', label: 'Button' },
   { to: '/dev/cards', label: 'Cards' },
   { to: '/dev/dialog', label: 'Dialog' },
-  { to: '/dev/draggable', label: 'Draggable' },
   { to: '/dev/dropdown-menu', label: 'Dropdown menu' },
   { to: '/dev/form-elements', label: 'Form elements' },
   { to: '/dev/icons', label: 'Icons' },
-  { to: '/dev/page-content', label: 'Page content' },
+  { to: '/dev/page-layouts', label: 'Page layouts' },
   { to: '/dev/status-banner', label: 'Status banner' },
 ] as const;
 

@@ -10,9 +10,9 @@ afterEach(() => {
 });
 
 // Every /dev reference page (apps/citizen-portal-web/src/components/dev/dev-pages-menu.tsx's
-// DEV_PAGES list). `component` is the .a11y.ts sidecar's identifier — undefined for the two pages
-// with no documented component yet (draggable is a placeholder, the tailwind index page is design
-// tokens, not a component). Adding a new /dev page later is one entry here, not a new test file.
+// DEV_PAGES list). `component` is the .a11y.ts sidecar's identifier — undefined only for the
+// tailwind index page, which documents design tokens, not a component. Adding a new /dev page
+// later is one entry here, not a new test file.
 const DEV_PAGES: { path: string; component?: string }[] = [
   { path: '/dev' },
   { path: '/dev/cards', component: 'card' },
@@ -23,8 +23,10 @@ const DEV_PAGES: { path: string; component?: string }[] = [
   { path: '/dev/icons', component: 'icons' },
   { path: '/dev/status-banner', component: 'status-banner' },
   { path: '/dev/form-elements', component: 'form-elements' },
-  { path: '/dev/draggable' },
-  { path: '/dev/page-content' },
+  { path: '/dev/alert', component: 'alert' },
+  { path: '/dev/dialog', component: 'dialog' },
+  { path: '/dev/dropdown-menu', component: 'dropdown-menu' },
+  { path: '/dev/page-layouts', component: 'page-layouts' },
 ];
 
 describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {

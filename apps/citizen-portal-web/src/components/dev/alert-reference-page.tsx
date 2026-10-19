@@ -1,3 +1,5 @@
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import {
   mdiAlertOutline,
   mdiCheckCircleOutline,
@@ -236,30 +238,7 @@ export function AlertReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Alert renders with{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">role="note"</code> by default —
-            see "ARIA roles" above for when to override it, and don't use Alert at all for messages
-            that aren't important enough to warrant any of these roles (that's what plain text is
-            for).
-          </li>
-          <li>
-            Icons are decorative (the title/description already carry the meaning) — always add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>.
-          </li>
-          <li>
-            Body text stays a neutral color across all variants by design — color alone (icon,
-            border, background) never carries the only signal, so don't rely on it either when
-            writing the title/description copy.
-          </li>
-          <li>
-            An icon-only <code className="text-xs bg-muted px-1.5 py-0.5 rounded">AlertAction</code>{' '}
-            button (e.g. dismiss) needs its own{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code> — there's no
-            visible text for assistive tech to read.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('alert')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

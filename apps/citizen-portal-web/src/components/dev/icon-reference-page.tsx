@@ -202,7 +202,7 @@ export function IconReferencePage() {
               className="flex flex-col items-center gap-2 rounded-md border border-border p-3 text-center"
             >
               <Icon path={icon.path} size="24px" aria-hidden={true} />
-              <code className="text-[0.625rem] text-muted-foreground break-all">{icon.name}</code>
+              <code className="text-xs text-muted-foreground break-all">{icon.name}</code>
             </div>
           ))}
         </div>

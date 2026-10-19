@@ -15,11 +15,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
-import { Route as DevPageContentRouteImport } from './routes/dev/page-content'
+import { Route as DevPageLayoutsRouteImport } from './routes/dev/page-layouts'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
 import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
 import { Route as DevDropdownMenuRouteImport } from './routes/dev/dropdown-menu'
-import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
 import { Route as DevDialogRouteImport } from './routes/dev/dialog'
 import { Route as DevCardsRouteImport } from './routes/dev/cards'
 import { Route as DevButtonRouteImport } from './routes/dev/button'
@@ -65,9 +64,9 @@ const DevStatusBannerRoute = DevStatusBannerRouteImport.update({
   path: '/status-banner',
   getParentRoute: () => DevRouteRoute,
 } as any)
-const DevPageContentRoute = DevPageContentRouteImport.update({
-  id: '/page-content',
-  path: '/page-content',
+const DevPageLayoutsRoute = DevPageLayoutsRouteImport.update({
+  id: '/page-layouts',
+  path: '/page-layouts',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevIconsRoute = DevIconsRouteImport.update({
@@ -83,11 +82,6 @@ const DevFormElementsRoute = DevFormElementsRouteImport.update({
 const DevDropdownMenuRoute = DevDropdownMenuRouteImport.update({
   id: '/dropdown-menu',
   path: '/dropdown-menu',
-  getParentRoute: () => DevRouteRoute,
-} as any)
-const DevDraggableRoute = DevDraggableRouteImport.update({
-  id: '/draggable',
-  path: '/draggable',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevDialogRoute = DevDialogRouteImport.update({
@@ -178,11 +172,10 @@ export interface FileRoutesByFullPath {
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
   '/dev/dialog': typeof DevDialogRoute
-  '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
-  '/dev/page-content': typeof DevPageContentRoute
+  '/dev/page-layouts': typeof DevPageLayoutsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -204,11 +197,10 @@ export interface FileRoutesByTo {
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
   '/dev/dialog': typeof DevDialogRoute
-  '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
-  '/dev/page-content': typeof DevPageContentRoute
+  '/dev/page-layouts': typeof DevPageLayoutsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
@@ -232,11 +224,10 @@ export interface FileRoutesById {
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
   '/dev/dialog': typeof DevDialogRoute
-  '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
-  '/dev/page-content': typeof DevPageContentRoute
+  '/dev/page-layouts': typeof DevPageLayoutsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -261,11 +252,10 @@ export interface FileRouteTypes {
     | '/dev/button'
     | '/dev/cards'
     | '/dev/dialog'
-    | '/dev/draggable'
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
-    | '/dev/page-content'
+    | '/dev/page-layouts'
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
@@ -287,11 +277,10 @@ export interface FileRouteTypes {
     | '/dev/button'
     | '/dev/cards'
     | '/dev/dialog'
-    | '/dev/draggable'
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
-    | '/dev/page-content'
+    | '/dev/page-layouts'
     | '/dev/status-banner'
     | '/dev'
     | '/services'
@@ -314,11 +303,10 @@ export interface FileRouteTypes {
     | '/dev/button'
     | '/dev/cards'
     | '/dev/dialog'
-    | '/dev/draggable'
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
-    | '/dev/page-content'
+    | '/dev/page-layouts'
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
@@ -387,11 +375,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevStatusBannerRouteImport
       parentRoute: typeof DevRouteRoute
     }
-    '/dev/page-content': {
-      id: '/dev/page-content'
-      path: '/page-content'
-      fullPath: '/dev/page-content'
-      preLoaderRoute: typeof DevPageContentRouteImport
+    '/dev/page-layouts': {
+      id: '/dev/page-layouts'
+      path: '/page-layouts'
+      fullPath: '/dev/page-layouts'
+      preLoaderRoute: typeof DevPageLayoutsRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/icons': {
@@ -413,13 +401,6 @@ declare module '@tanstack/react-router' {
       path: '/dropdown-menu'
       fullPath: '/dev/dropdown-menu'
       preLoaderRoute: typeof DevDropdownMenuRouteImport
-      parentRoute: typeof DevRouteRoute
-    }
-    '/dev/draggable': {
-      id: '/dev/draggable'
-      path: '/draggable'
-      fullPath: '/dev/draggable'
-      preLoaderRoute: typeof DevDraggableRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/dialog': {
@@ -531,11 +512,10 @@ interface DevRouteRouteChildren {
   DevButtonRoute: typeof DevButtonRoute
   DevCardsRoute: typeof DevCardsRoute
   DevDialogRoute: typeof DevDialogRoute
-  DevDraggableRoute: typeof DevDraggableRoute
   DevDropdownMenuRoute: typeof DevDropdownMenuRoute
   DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
-  DevPageContentRoute: typeof DevPageContentRoute
+  DevPageLayoutsRoute: typeof DevPageLayoutsRoute
   DevStatusBannerRoute: typeof DevStatusBannerRoute
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -548,11 +528,10 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevButtonRoute: DevButtonRoute,
   DevCardsRoute: DevCardsRoute,
   DevDialogRoute: DevDialogRoute,
-  DevDraggableRoute: DevDraggableRoute,
   DevDropdownMenuRoute: DevDropdownMenuRoute,
   DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
-  DevPageContentRoute: DevPageContentRoute,
+  DevPageLayoutsRoute: DevPageLayoutsRoute,
   DevStatusBannerRoute: DevStatusBannerRoute,
   DevIndexRoute: DevIndexRoute,
 }

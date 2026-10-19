@@ -1,3 +1,5 @@
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { Avatar, AvatarFallback } from '@repo/ui/avatar';
 import { Button } from '@repo/ui/button';
 import {
@@ -161,7 +163,7 @@ function WithHeaderExample() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Account menu"
-        className="rounded-full focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="rounded-full focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <Avatar variant="card" size="sm">
           <AvatarFallback variant="card">AA</AvatarFallback>
@@ -169,7 +171,7 @@ function WithHeaderExample() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="flex flex-col px-2 py-1.5">
-          <span className="text-[13px] font-semibold">Amina Ali</span>
+          <span className="text-sm font-semibold">Amina Ali</span>
           <span className="truncate text-xs font-normal text-muted-foreground">
             amina@example.com
           </span>
@@ -300,37 +302,7 @@ export function DropdownMenuReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            base-ui's Menu wires up{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">role="menu"</code>/
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">"menuitem"</code> and arrow-key
-            / Escape keyboard navigation automatically.
-          </li>
-          <li>
-            An icon-only{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">DropdownMenuTrigger</code>{' '}
-            (e.g. the overflow ⋯ button) always needs an{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code> — there's no
-            visible text for assistive tech to read.
-          </li>
-          <li>
-            Prefer{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">variant="destructive"</code> on
-            the item (shown in the full example) over hand-rolling a{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">text-destructive</code>{' '}
-            className — the variant also tints hover/focus background and any icon inside, not just
-            the text. Every real destructive item in this app today predates the variant prop and
-            only sets text color by hand.
-          </li>
-          <li>Either way, keep clear label text too — color alone isn't a reliable signal.</li>
-          <li>
-            Only use <code className="text-xs bg-muted px-1.5 py-0.5 rounded">render</code> +{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'<Link>'}</code> (see "Actions
-            vs. links" above) for items that actually navigate — an action item rendered as a link
-            with no destination is a real anti-pattern, not just a style choice.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('dropdown-menu')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">
