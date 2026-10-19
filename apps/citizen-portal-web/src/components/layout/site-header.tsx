@@ -15,6 +15,7 @@ import { Link } from '@tanstack/react-router';
 import { LogOut, Menu, UserCog, X } from 'lucide-react';
 import { useState } from 'react';
 import { initials, useLoginUrl } from '@/lib/auth';
+import { PAGE_COLUMN_CLASS } from '@/components/layout/page-content';
 import { HeaderNotifications } from '@/components/notifications/header-notifications';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
@@ -109,7 +110,7 @@ function MobileMenu({
             for an X close control in the same top-right position. Title kept for a11y, hidden. */}
         <DialogTitle className="sr-only">Menu</DialogTitle>
         <div className="border-b bg-background">
-          <div className="mx-auto px-4 md:px-3 w-full max-w-285 flex items-center gap-4">
+          <div className={`${PAGE_COLUMN_CLASS} flex items-center gap-4`}>
             <BrandLockup />
             <div className="ml-auto flex items-center gap-2 lg:gap-6">
               <DialogClose aria-label="Close menu" render={<Button variant="ghost" size="icon" />}>
@@ -157,7 +158,7 @@ function ProfileMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="rounded-full focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="rounded-full focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label="Account menu"
       >
         <Avatar variant="card">
@@ -167,7 +168,7 @@ function ProfileMenu({
       <DropdownMenuContent align="end" className="w-56">
         {user ? (
           <div className="flex flex-col px-2 py-1.5">
-            <span className="text-[13px] font-semibold">{label}</span>
+            <span className="text-sm font-semibold">{label}</span>
             {user.email ? (
               <span className="truncate text-xs font-normal text-muted-foreground">
                 {user.email}
@@ -204,7 +205,7 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
   const loginUrl = useLoginUrl();
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto px-4 md:px-3 w-full max-w-285 flex items-center gap-4">
+      <div className={`${PAGE_COLUMN_CLASS} flex items-center gap-4`}>
         <BrandLockup />
         <div className="ml-auto flex items-center gap-2 lg:gap-6">
           <PrimaryNav active={activeNav} />

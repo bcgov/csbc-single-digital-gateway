@@ -2,7 +2,7 @@ import { mdiChevronRight } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
-import { SectionHeading } from '@/components/landing/section-heading';
+import { SectionHeading } from '@/components/layout/page-section';
 import { ServiceCard } from '@/components/services/service-card';
 import type { CatalogService } from '@/lib/catalog';
 

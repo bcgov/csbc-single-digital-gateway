@@ -1,15 +1,19 @@
 import { FormRunner } from '@repo/react/form-runner';
 import { Button } from '@repo/ui/button';
-import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
+import { MessageCard } from '@/components/layout/message-card';
 import { PageContent } from '@/components/layout/page-content';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
+import { PageLoading } from '@/components/layout/page-loading';
+import { PageTitle } from '@/components/layout/page-title';
 import { Breadcrumb } from '@/components/services/service-content';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import {
   type ApplicationFormToFill,
   RequestError,
@@ -20,27 +24,28 @@ import {
   serviceAgreementsQueryOptions,
   submitApplication,
 } from '@/lib/applications';
-/** Confirmation shown after a successful submit. */
+/** Confirmation shown after a successful submit, under the page's banner (so its heading is an h2). */
 function Submitted({ serviceId, submission }: { serviceId: string; submission: Submission }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-      <CheckCircle2 className="size-10 text-primary" aria-hidden />
-      <h1 className="font-heading text-xl font-semibold text-foreground">Application submitted</h1>
-      <p className="text-sm text-muted-foreground">
-        Your reference is{' '}
-        <span className="font-medium text-foreground">{submission.reference}</span>. You can track
-        its progress in your applications.
-      </p>
-      <div className="mt-2 flex flex-wrap justify-center gap-3">
-        <Button render={<Link to="/" />}>Track your applications</Button>
-        <Button
-          variant="outline"
-          render={<Link to="/services/$serviceId" params={{ serviceId }} />}
-        >
-          Back to the service
-        </Button>
-      </div>
-    </div>
+    <MessageCard
+      title="Application submitted"
+      headingLevel={2}
+      icon={<CheckCircle2 className="size-10 text-primary" aria-hidden />}
+      actions={
+        <>
+          <Button render={<Link to="/" />}>Track your applications</Button>
+          <Button
+            variant="outline"
+            render={<Link to="/services/$serviceId" params={{ serviceId }} />}
+          >
+            Back to the service
+          </Button>
+        </>
+      }
+    >
+      Your reference is <span className="font-medium text-foreground">{submission.reference}</span>.
+      You can track its progress in your applications.
+    </MessageCard>
   );
 }
 
@@ -147,30 +152,39 @@ export function ApplicationPage() {
   }, [consentNeeded]);
   const showGate = (gateEngaged || consentNeeded) && !proceeded;
 
+  // The banner's h1 needs the form title, so it appears once the form loads; until then (and if it
+  // fails to load) the body's message card carries the page's h1 instead.
+  const title = form.data ? `Apply — ${form.data.title}` : undefined;
+  const messageHeadingLevel = title ? 2 : 1;
+
   return (
     <CitizenShell activeNav="services">
-      <PageContent>
-        <Breadcrumb
-          trail={[
-            { label: 'Services', href: '/services' },
-            { label: form.data?.title ?? 'Service', href: `/services/${serviceId}` },
-            { label: 'Apply' },
-          ]}
-        />
+      <PageHeaderBanner
+        breadcrumb={
+          <Breadcrumb
+            trail={[
+              { label: 'Home', href: '/' },
+              { label: 'Services', href: '/services' },
+              { label: form.data?.title ?? 'Service', href: `/services/${serviceId}` },
+              { label: 'Apply' },
+            ]}
+          />
+        }
+      >
+        {title ? <PageTitle>{title}</PageTitle> : null}
+      </PageHeaderBanner>
 
+      <PageContent>
         {form.isPending ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-32 w-full" />
-          </div>
+          <PageLoading />
         ) : form.isError || !form.data ? (
-          <Unavailable serviceId={serviceId} />
+          <Unavailable serviceId={serviceId} headingLevel={messageHeadingLevel} />
         ) : !authPending && !user ? (
-          <LoginPrompt />
+          <LoginGate message="You need to be signed in to apply." label="Log in to apply" />
         ) : draft.isError || agreements.isError ? (
-          <Unavailable serviceId={serviceId} />
+          <Unavailable serviceId={serviceId} headingLevel={messageHeadingLevel} />
         ) : !draft.data || !agreements.isSuccess ? (
-          <Skeleton className="h-32 w-full" />
+          <PageLoading />
         ) : showGate ? (
           <ConsentGate
             agreements={agreements.data}
@@ -178,49 +192,35 @@ export function ApplicationPage() {
             onContinue={() => setProceeded(true)}
           />
         ) : (
-          <>
-            <h1 className="font-heading text-2xl font-semibold text-foreground">
-              Apply — {form.data.title}
-            </h1>
-            <ApplicationForm
-              form={form.data}
-              draft={draft.data}
-              onConsentError={() => {
-                setProceeded(false);
-                void agreements.refetch();
-              }}
-            />
-          </>
+          <ApplicationForm
+            form={form.data}
+            draft={draft.data}
+            onConsentError={() => {
+              setProceeded(false);
+              void agreements.refetch();
+            }}
+          />
         )}
       </PageContent>
     </CitizenShell>
   );
 }
 
-function LoginPrompt() {
-  const loginUrl = useLoginUrl();
+function Unavailable({ serviceId, headingLevel }: { serviceId: string; headingLevel: 1 | 2 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-      <p className="text-sm text-muted-foreground">You need to be signed in to apply.</p>
-      <Button render={<a href={loginUrl} />}>Log in to apply</Button>
-    </div>
-  );
-}
-
-function Unavailable({ serviceId }: { serviceId: string }) {
-  return (
-    <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-      <h1 className="font-heading text-lg font-semibold">Application unavailable</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        This application form isn’t available right now.
-      </p>
-      <Button
-        variant="outline"
-        className="mt-4"
-        render={<Link to="/services/$serviceId" params={{ serviceId }} />}
-      >
-        Back to the service
-      </Button>
-    </div>
+    <MessageCard
+      title="Application unavailable"
+      headingLevel={headingLevel}
+      actions={
+        <Button
+          variant="outline"
+          render={<Link to="/services/$serviceId" params={{ serviceId }} />}
+        >
+          Back to the service
+        </Button>
+      }
+    >
+      This application form isn’t available right now.
+    </MessageCard>
   );
 }

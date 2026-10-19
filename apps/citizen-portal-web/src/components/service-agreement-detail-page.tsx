@@ -1,7 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { mdiArrowLeft, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
+import { mdiArrowLeft, mdiFileDocumentCheckOutline } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
@@ -11,9 +10,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
+import { MessageCard } from '@/components/layout/message-card';
 import { PageContent } from '@/components/layout/page-content';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import {
   RequestError,
   serviceAgreementQueryOptions,
@@ -87,7 +88,6 @@ export function ServiceAgreementDetailPage() {
     from: '/account_/service-agreements/$serviceAgreementId',
   });
   const { data: user, isPending: authPending } = useAuth();
-  const loginUrl = useLoginUrl();
   const agreement = useQuery({
     ...serviceAgreementQueryOptions(serviceAgreementId),
     enabled: user != null,
@@ -98,25 +98,12 @@ export function ServiceAgreementDetailPage() {
   if (authPending) {
     body = <Skeleton className="h-56 w-full" />;
   } else if (!user) {
-    body = (
-      <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-        <p className="text-sm text-muted-foreground">
-          You need to be signed in to view this service agreement.
-        </p>
-        <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
-          <Icon path={mdiLogin} aria-hidden={true} />
-          Log in
-        </a>
-      </div>
-    );
+    body = <LoginGate message="You need to be signed in to view this service agreement." />;
   } else if (agreement.isSuccess) {
     body = <AgreementDetailCard agreement={agreement.data} />;
   } else if (agreement.error instanceof RequestError && agreement.error.status === 404) {
     body = (
-      <div className="flex flex-col items-start gap-3">
-        <BackLink />
-        <p className="text-sm text-muted-foreground">This service agreement could not be found.</p>
-      </div>
+      <MessageCard actions={<BackLink />}>This service agreement could not be found.</MessageCard>
     );
   } else if (agreement.isError) {
     body = (
@@ -135,28 +122,26 @@ export function ServiceAgreementDetailPage() {
 
   return (
     <CitizenShell>
-      <div className="flex flex-col">
-        <SettingsPageHeader
-          icon={mdiFileDocumentCheckOutline}
-          title={title}
-          subtitle={subtitle}
-          meta={
-            loaded ? (
-              <p className="text-sm font-medium text-foreground">{statusLine(loaded)}</p>
-            ) : undefined
-          }
-          breadcrumb={
-            <Breadcrumb
-              trail={[
-                { label: 'Account settings', href: '/account' },
-                { label: 'Service Agreements', href: '/account/service-agreements' },
-                { label: title },
-              ]}
-            />
-          }
-        />
-        <PageContent gap={6}>{body}</PageContent>
-      </div>
+      <SettingsPageHeader
+        icon={mdiFileDocumentCheckOutline}
+        title={title}
+        subtitle={subtitle}
+        meta={
+          loaded ? (
+            <p className="text-sm font-medium text-foreground">{statusLine(loaded)}</p>
+          ) : undefined
+        }
+        breadcrumb={
+          <Breadcrumb
+            trail={[
+              { label: 'Account settings', href: '/account' },
+              { label: 'Service Agreements', href: '/account/service-agreements' },
+              { label: title },
+            ]}
+          />
+        }
+      />
+      <PageContent gap={6}>{body}</PageContent>
     </CitizenShell>
   );
 }

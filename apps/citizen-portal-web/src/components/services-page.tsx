@@ -4,7 +4,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { SectionHeading } from '@/components/landing/section-heading';
+import { PageSection } from '@/components/layout/page-section';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageContent } from '@/components/layout/page-content';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
@@ -56,43 +56,39 @@ export function ServicesPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="flex flex-col">
-        {/* Header region — heading + search above the shared full-width bcgov-gold divider. */}
-        <PageHeaderBanner>
-          <div className="flex flex-col gap-6">
-            <header className="flex flex-col gap-2">
-              <h1>Services</h1>
-              <p className="text-lg">Find and use Government of British Columbia services.</p>
-            </header>
+      {/* Header region — heading + search above the shared full-width bcgov-gold divider. */}
+      <PageHeaderBanner>
+        <div className="flex flex-col gap-6">
+          <header className="flex flex-col gap-2">
+            <h1>Services</h1>
+            <p className="text-lg">Find and use Government of British Columbia services.</p>
+          </header>
 
-            <ServiceSearch onSearch={setQuery} />
-          </div>
-        </PageHeaderBanner>
+          <ServiceSearch onSearch={setQuery} />
+        </div>
+      </PageHeaderBanner>
 
-        <PageContent>
-          <section className="flex flex-col gap-4">
-            <SectionHeading title="All services" />
-
-            {services.isPending ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : items.length === 0 ? (
-              <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No services found{query ? ` for “${query}”` : ''}.
-              </p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {items.map((service) => (
-                  <ServiceCard key={service.id} service={service} />
-                ))}
-              </div>
-            )}
-          </section>
-        </PageContent>
-      </div>
+      <PageContent>
+        <PageSection title="All services" gap={4}>
+          {services.isPending ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No services found{query ? ` for “${query}”` : ''}.
+            </p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {items.map((service) => (
+                <ServiceCard key={service.id} service={service} />
+              ))}
+            </div>
+          )}
+        </PageSection>
+      </PageContent>
     </CitizenShell>
   );
 }

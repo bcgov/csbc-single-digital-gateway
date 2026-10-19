@@ -1,11 +1,14 @@
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
-import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { MessageCard } from '@/components/layout/message-card';
 import { PageContent } from '@/components/layout/page-content';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
+import { PageLoading } from '@/components/layout/page-loading';
+import { PageTitle } from '@/components/layout/page-title';
 import { type ApplicationMethod, ServiceSections } from '@/components/services/detail-sections';
 import { Breadcrumb } from '@/components/services/service-content';
 import {
@@ -26,7 +29,7 @@ function validityRange(version: CatalogServiceVersion): string {
   return '';
 }
 
-/** The loaded historical version, laid out exactly like the detail page + a historical header. */
+/** The loaded historical version: the detail page's layout, plus a historical callout in the banner. */
 function VersionDetail({
   serviceId,
   version,
@@ -40,17 +43,20 @@ function VersionDetail({
   const range = validityRange(version);
   return (
     <>
-      <Breadcrumb
-        trail={[
-          { label: 'Services', href: '/services' },
-          { label: version.title, href: `/services/${serviceId}` },
-          { label: `Version ${version.version}` },
-        ]}
-      />
-
-      <header className="flex flex-col gap-3 border-b pb-6">
+      <PageHeaderBanner
+        breadcrumb={
+          <Breadcrumb
+            trail={[
+              { label: 'Home', href: '/' },
+              { label: 'Services', href: '/services' },
+              { label: version.title, href: `/services/${serviceId}` },
+              { label: `Version ${version.version}` },
+            ]}
+          />
+        }
+      >
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">{version.title}</h1>
+          <PageTitle>{version.title}</PageTitle>
           <Badge color="yellow" className="capitalize">
             {version.status}
           </Badge>
@@ -58,8 +64,8 @@ function VersionDetail({
         {typeof description === 'string' && description ? (
           <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
         ) : null}
-        <div className="flex items-start gap-2 rounded-lg border-l-2 border-amber-500 bg-amber-50/50 p-3 text-xs text-muted-foreground">
-          <History className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+        <div className="flex items-start gap-2 rounded-lg border-l-2 border-warning-border bg-warning-surface p-3 text-xs text-muted-foreground">
+          <History className="mt-0.5 size-4 shrink-0 text-icon-warning" aria-hidden />
           <span>
             You’re viewing a historical version of this service (version {version.version}
             {range ? ` · ${range}` : ''}).{' '}
@@ -73,15 +79,17 @@ function VersionDetail({
             .
           </span>
         </div>
-      </header>
+      </PageHeaderBanner>
 
-      <ServiceSections
-        serviceId={serviceId}
-        schema={version.schema}
-        uischema={version.uischema}
-        data={version.data}
-        applications={applications}
-      />
+      <PageContent>
+        <ServiceSections
+          serviceId={serviceId}
+          schema={version.schema}
+          uischema={version.uischema}
+          data={version.data}
+          applications={applications}
+        />
+      </PageContent>
     </>
   );
 }
@@ -101,34 +109,33 @@ export function ServiceVersionPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <PageContent>
-        {version.isPending || service.isPending ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-full max-w-lg" />
-          </div>
-        ) : version.isError || !version.data ? (
-          <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <h1 className="font-heading text-lg font-semibold">Version not available</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              This version doesn’t exist or isn’t published.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              render={<Link to="/services/$serviceId" params={{ serviceId }} />}
-            >
-              Back to the service
-            </Button>
-          </div>
-        ) : (
-          <VersionDetail
-            serviceId={serviceId}
-            version={version.data}
-            applications={service.data?.applications ?? []}
-          />
-        )}
-      </PageContent>
+      {version.isPending || service.isPending ? (
+        <PageContent>
+          <PageLoading variant="detail" />
+        </PageContent>
+      ) : version.isError || !version.data ? (
+        <PageContent>
+          <MessageCard
+            title="Version not available"
+            actions={
+              <Button
+                variant="outline"
+                render={<Link to="/services/$serviceId" params={{ serviceId }} />}
+              >
+                Back to the service
+              </Button>
+            }
+          >
+            This version doesn’t exist or isn’t published.
+          </MessageCard>
+        </PageContent>
+      ) : (
+        <VersionDetail
+          serviceId={serviceId}
+          version={version.data}
+          applications={service.data?.applications ?? []}
+        />
+      )}
     </CitizenShell>
   );
 }

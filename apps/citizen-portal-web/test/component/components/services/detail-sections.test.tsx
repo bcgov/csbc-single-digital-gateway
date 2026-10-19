@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import {
   DETAIL_SECTIONS,
-  Section,
   InAGlance,
   EligibilityCriteria,
   HowToApply,
@@ -127,19 +126,6 @@ describe('OnThisPageLayout', () => {
     );
     expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
     expect(screen.getByText('content')).toBeInTheDocument();
-  });
-});
-
-describe('Section Component', () => {
-  it('renders a section with a heading and children', () => {
-    render(
-      <Section id="test-sec" title="Test Section Title">
-        <p>Test Child Content</p>
-      </Section>,
-    );
-    const heading = screen.getByRole('heading', { name: /Test Section Title/i, level: 2 });
-    expect(heading).toBeInTheDocument();
-    expect(screen.getByText('Test Child Content')).toBeInTheDocument();
   });
 });
 

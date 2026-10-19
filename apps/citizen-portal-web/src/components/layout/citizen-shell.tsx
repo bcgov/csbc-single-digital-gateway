@@ -9,9 +9,10 @@ async function handleLogout(): Promise<void> {
 }
 
 /**
- * Page chrome for the always-accessible citizen pages (services list/detail/version): renders the
- * authenticated header when there's a session, the anonymous header otherwise. The page body
- * decides what auth-gated content (if any) to show.
+ * Page chrome for every citizen page: wires {@link PageShell} to the session — the authenticated
+ * header when signed in, the anonymous one otherwise. The page body decides what auth-gated content
+ * (if any) to show; a page that needs the session itself calls `useAuth()` too (it's one shared
+ * query, so that costs no extra request).
  */
 export function CitizenShell({
   activeNav,

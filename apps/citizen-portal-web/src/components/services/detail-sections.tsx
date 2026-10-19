@@ -12,11 +12,11 @@ import {
   mdiPulse,
   mdiSend,
 } from '@mdi/js';
-import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
 import { ContactSection } from '@/components/services/contact-section';
 import { ServiceContent } from '@/components/services/service-content';
-import { OnThisPageLayout } from '@/components/layout/on-this-page';
+import { PageSection } from '@/components/layout/page-section';
+import { PageWithRail } from '@/components/layout/page-with-rail';
 import { myApplicationsQueryOptions } from '@/lib/catalog';
 
 /**
@@ -43,26 +43,6 @@ export const DETAIL_SECTIONS = [
   { id: 'contact', label: 'Contact information', icon: mdiCardAccountDetailsOutline },
 ] as const;
 
-/** A titled content section with an anchor id for the side nav. */
-export function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section id={id} className="scroll-mt-6 flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <h2 className="section-heading">{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
 const GLANCE = [
   { icon: Wallet, label: 'Cost', value: 'Free' },
   { icon: Clock, label: 'Processing time', value: '2–4 weeks' },
@@ -82,7 +62,7 @@ export function InAGlance() {
                 <Icon className="size-4" aria-hidden />
               </span>
               <div className="flex flex-col">
-                <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                <span className="text-xs text-muted-foreground">{item.label}</span>
                 <span className="text-sm font-medium text-foreground">{item.value}</span>
               </div>
             </div>
@@ -169,9 +149,7 @@ export function HowToApply({
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <div className="flex flex-col">
-                  <span className="font-heading text-sm font-semibold text-foreground">
-                    {form.title}
-                  </span>
+                  <span className="text-sm font-semibold text-foreground">{form.title}</span>
                   <span className="text-xs text-muted-foreground">
                     {isExternal
                       ? 'Apply on an external site.'
@@ -217,7 +195,7 @@ export function YourActivity({ serviceId }: { serviceId: string }) {
   const mine = (data ?? []).filter((application) => application.serviceId === serviceId);
   if (mine.length === 0) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-6">
+      <div className="rounded-xl border border-warning-border bg-warning-surface p-6">
         <span className="text-sm font-semibold text-foreground">No applications yet</span>
         <p className="mt-0.5 text-xs text-muted-foreground">
           When you apply for this service, you’ll see your applications and their status here.
@@ -280,34 +258,32 @@ export function ServiceSections({
   applications: readonly ApplicationMethod[];
 }) {
   return (
-    <OnThisPageLayout items={DETAIL_SECTIONS}>
-      <div className="flex min-w-0 flex-1 flex-col gap-10">
-        <Section id="overview" title="Overview">
-          <InAGlance />
-          <ServiceContent
-            schema={schema}
-            uischema={uischema}
-            data={data}
-            // `omitControls` recurses, so this drops `contact_methods` at either path (feature 174).
-            omit={['title', 'description', 'contact_methods']}
-          />
-        </Section>
-        <Section id="eligibility" title="Eligibility criteria">
-          <EligibilityCriteria />
-        </Section>
-        <Section id="how-to-apply" title="How to apply">
-          <HowToApply serviceId={serviceId} applications={applications} />
-        </Section>
-        <Section id="your-activity" title="Your activity">
-          <YourActivity serviceId={serviceId} />
-        </Section>
-        <Section id="help" title="Help and information">
-          <HelpAndInformation />
-        </Section>
-        <Section id="contact" title="Contact information">
-          <ContactSection value={readContactMethods(data)} />
-        </Section>
-      </div>
-    </OnThisPageLayout>
+    <PageWithRail items={DETAIL_SECTIONS}>
+      <PageSection id="overview" title="Overview">
+        <InAGlance />
+        <ServiceContent
+          schema={schema}
+          uischema={uischema}
+          data={data}
+          // `omitControls` recurses, so this drops `contact_methods` at either path (feature 174).
+          omit={['title', 'description', 'contact_methods']}
+        />
+      </PageSection>
+      <PageSection id="eligibility" title="Eligibility criteria">
+        <EligibilityCriteria />
+      </PageSection>
+      <PageSection id="how-to-apply" title="How to apply">
+        <HowToApply serviceId={serviceId} applications={applications} />
+      </PageSection>
+      <PageSection id="your-activity" title="Your activity">
+        <YourActivity serviceId={serviceId} />
+      </PageSection>
+      <PageSection id="help" title="Help and information">
+        <HelpAndInformation />
+      </PageSection>
+      <PageSection id="contact" title="Contact information">
+        <ContactSection value={readContactMethods(data)} />
+      </PageSection>
+    </PageWithRail>
   );
 }

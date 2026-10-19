@@ -240,7 +240,8 @@ describe('citizen application page', () => {
       await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const input = screen.getByRole('textbox', { name: 'Name' });
+    // The banner heading renders once the form structure loads; the form itself mounts after the draft.
+    const input = await screen.findByRole('textbox', { name: 'Name' });
 
     // Trigger changes using fireEvent
     fireEvent.change(input, { target: { value: 'A' } });
@@ -283,7 +284,8 @@ describe('citizen application page', () => {
       await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const input = screen.getByRole('textbox', { name: 'Name' });
+    // The banner heading renders once the form structure loads; the form itself mounts after the draft.
+    const input = await screen.findByRole('textbox', { name: 'Name' });
 
     // 1. Trigger change to set active timer
     fireEvent.change(input, { target: { value: 'A' } });
@@ -298,7 +300,7 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
 
     // Click submit immediately without changes (so timer.current is null)
-    const submitBtn = screen.getByRole('button', { name: 'Submit application' });
+    const submitBtn = await screen.findByRole('button', { name: 'Submit application' });
     await userEvent.click(submitBtn);
 
     // Verify submitting is true
@@ -339,13 +341,14 @@ describe('citizen application page', () => {
       await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const input = screen.getByRole('textbox', { name: 'Name' });
+    // The banner heading renders once the form structure loads; the form itself mounts after the draft.
+    const input = await screen.findByRole('textbox', { name: 'Name' });
 
     // 1. Trigger change to set active timer
     fireEvent.change(input, { target: { value: 'Typing and submitting' } });
 
     // 2. Click submit immediately while timer is active
-    const submitBtn = screen.getByRole('button', { name: 'Submit application' });
+    const submitBtn = await screen.findByRole('button', { name: 'Submit application' });
     await userEvent.click(submitBtn);
 
     // Resolve the submit call

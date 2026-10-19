@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SectionHeading } from '@/components/landing/section-heading';
+import { PageSection, SectionHeading } from '@/components/layout/page-section';
 
 describe('SectionHeading Component', () => {
   it('renders the title correctly', () => {
@@ -30,5 +30,43 @@ describe('SectionHeading Component', () => {
 
     expect(screen.getByTestId('child-btn')).toBeInTheDocument();
     expect(screen.getByText('Extra Action')).toBeInTheDocument();
+  });
+});
+
+describe('PageSection', () => {
+  it('renders a section with a level-2 heading and its children', () => {
+    render(
+      <PageSection id="test-sec" title="Test Section Title">
+        <p>Test Child Content</p>
+      </PageSection>,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Test Section Title', level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Test Child Content')).toBeInTheDocument();
+  });
+
+  it('becomes a scroll-offset anchor target only when given an id', () => {
+    const { container, rerender } = render(
+      <PageSection id="anchor" title="Anchored">
+        <p>body</p>
+      </PageSection>,
+    );
+    expect(container.querySelector('section#anchor')).toHaveClass('scroll-mt-6');
+    rerender(
+      <PageSection title="Plain">
+        <p>body</p>
+      </PageSection>,
+    );
+    expect(container.querySelector('section')).not.toHaveClass('scroll-mt-6');
+  });
+
+  it('renders the description under the heading', () => {
+    render(
+      <PageSection title="With description" description="Supporting copy.">
+        <p>body</p>
+      </PageSection>,
+    );
+    expect(screen.getByText('Supporting copy.')).toBeInTheDocument();
   });
 });

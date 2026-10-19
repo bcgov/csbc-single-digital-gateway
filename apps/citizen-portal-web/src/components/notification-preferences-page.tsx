@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import { Button, buttonVariants } from '@repo/ui/button';
+import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Switch } from '@repo/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
-import { Icon } from '@mdi/react';
-import { mdiBellOutline, mdiLogin } from '@mdi/js';
+import { mdiBellOutline } from '@mdi/js';
 
 import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
 import { PageContent } from '@/components/layout/page-content';
+import { PageLoading } from '@/components/layout/page-loading';
+import { PageSection } from '@/components/layout/page-section';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import {
   NOTIFICATIONS_KEY,
   notificationPreferencesQueryOptions,
@@ -90,13 +92,11 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
   });
 
   return (
-    <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h2 className="section-heading">Notification Channels</h2>
-        <p className="text-sm text-muted-foreground">
-          Choose how you want to receive notifications.
-        </p>
-      </div>
+    <PageSection
+      title="Notification Channels"
+      description="Choose how you want to receive notifications."
+      gap={6}
+    >
       {channels.map((entry) => {
         const meta = CHANNEL_LABELS[entry.channel];
         return (
@@ -169,7 +169,7 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
           {save.isPending ? 'Saving…' : 'Save preferences'}
         </Button>
       </div>
-    </section>
+    </PageSection>
   );
 }
 
@@ -179,15 +179,13 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
  */
 export function NotificationPreferencesPage() {
   const { data: user, isPending: authPending } = useAuth();
-  const loginUrl = useLoginUrl();
   const prefs = useQuery({ ...notificationPreferencesQueryOptions(), enabled: user != null });
 
   if (authPending) {
     return (
       <CitizenShell>
-        <PageContent gap={3}>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
+        <PageContent>
+          <PageLoading variant="settings" />
         </PageContent>
       </CitizenShell>
     );
@@ -196,16 +194,8 @@ export function NotificationPreferencesPage() {
   if (!user) {
     return (
       <CitizenShell>
-        <PageContent gap={0}>
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <p className="text-sm text-muted-foreground">
-              You need to be signed in to manage notifications.
-            </p>
-            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
-              <Icon path={mdiLogin} aria-hidden={true} />
-              Log in
-            </a>
-          </div>
+        <PageContent>
+          <LoginGate message="You need to be signed in to manage notifications." />
         </PageContent>
       </CitizenShell>
     );
@@ -213,32 +203,30 @@ export function NotificationPreferencesPage() {
 
   return (
     <CitizenShell>
-      <div className="flex flex-col">
-        <SettingsPageHeader
-          icon={mdiBellOutline}
-          title="Notification settings"
-          subtitle="Choose how you hear about updates to your applications."
-          breadcrumb={
-            <Breadcrumb
-              trail={[
-                { label: 'Account settings', href: '/account' },
-                { label: 'Notification settings' },
-              ]}
-            />
-          }
-        />
-        <PageContent>
-          {prefs.isSuccess ? (
-            <PreferencesForm initial={prefs.data} />
-          ) : prefs.isError ? (
-            <p className="text-sm text-destructive" role="alert">
-              Notification settings are temporarily unavailable.
-            </p>
-          ) : (
-            <Skeleton className="h-56 w-full" />
-          )}
-        </PageContent>
-      </div>
+      <SettingsPageHeader
+        icon={mdiBellOutline}
+        title="Notification settings"
+        subtitle="Choose how you hear about updates to your applications."
+        breadcrumb={
+          <Breadcrumb
+            trail={[
+              { label: 'Account settings', href: '/account' },
+              { label: 'Notification settings' },
+            ]}
+          />
+        }
+      />
+      <PageContent>
+        {prefs.isSuccess ? (
+          <PreferencesForm initial={prefs.data} />
+        ) : prefs.isError ? (
+          <p className="text-sm text-destructive" role="alert">
+            Notification settings are temporarily unavailable.
+          </p>
+        ) : (
+          <Skeleton className="h-56 w-full" />
+        )}
+      </PageContent>
     </CitizenShell>
   );
 }

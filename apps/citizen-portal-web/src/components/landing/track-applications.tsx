@@ -1,5 +1,5 @@
 import { Skeleton } from '@repo/ui/skeleton';
-import { SectionHeading } from '@/components/landing/section-heading';
+import { SectionHeading } from '@/components/layout/page-section';
 import { ApplicationRow } from '@/components/services/application-row';
 import type { MyApplication } from '@/lib/catalog';
 
@@ -11,7 +11,7 @@ interface TrackApplicationsProps {
 /** Empty-state card shown when the citizen has no applications in flight. */
 function EmptyState() {
   return (
-    <div className="rounded-lg border border-dashed bg-amber-50/60 p-6 text-center">
+    <div className="rounded-lg border border-dashed bg-warning-surface p-6 text-center">
       <p className="text-sm font-semibold text-foreground">You have no applications to track</p>
       <p className="mt-1 text-xs text-muted-foreground">
         When you apply for a service, you’ll be able to track its status here.

@@ -28,8 +28,8 @@ interface PageContentProps {
 /**
  * The standard citizen-portal-web page body: a centered, width-constrained, padded flex column with
  * a `my-6` top/bottom margin. Every page under `apps/citizen-portal-web` renders its main content
- * through this component instead of hand-rolling the same Tailwind string — see `CLAUDE.md`'s
- * "Building pages" section.
+ * through this component instead of hand-rolling the same Tailwind string — see the rules in
+ * `src/catalog/README.md`.
  */
 export function PageContent({ children, gap = 9, className }: PageContentProps) {
   const gapClass = GAP_CLASS[gap];

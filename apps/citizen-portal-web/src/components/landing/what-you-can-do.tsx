@@ -1,6 +1,6 @@
 import { Icon } from '@mdi/react';
 import { Card, CardDescription, CardHeader, CardIconAction, CardTitle } from '@repo/ui/card';
-import { SectionHeading } from '@/components/landing/section-heading';
+import { SectionHeading } from '@/components/layout/page-section';
 import { FEATURE_CARDS } from '@/lib/content';
 
 /** The three centred "What you can do" feature cards (icon, title, description). */

@@ -97,7 +97,7 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">Before you apply</h1>
+        <h2 className="text-2xl font-semibold text-foreground">Before you apply</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Please review and respond to the following{' '}
           {pending.length === 1 ? 'agreement' : 'agreements'} to continue your application.

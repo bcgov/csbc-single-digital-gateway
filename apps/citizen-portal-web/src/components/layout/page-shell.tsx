@@ -10,7 +10,11 @@ interface PageShellProps {
   children: ReactNode;
 }
 
-/** Full-page chrome: site header, a centered max-width main column, and the shared footer. */
+/**
+ * Full-page chrome: skip link, site header, the page's one `<main>`, and the shared footer. `<main>`
+ * is a flex column so a page's title band and {@link PageContent} stack as siblings without each
+ * page wrapping them; width constraints belong to those children, not to `<main>`.
+ */
 export function PageShell({ variant, user, onLogout, activeNav, children }: PageShellProps) {
   return (
     <div className="flex min-h-svh flex-col">
@@ -21,7 +25,7 @@ export function PageShell({ variant, user, onLogout, activeNav, children }: Page
         Skip to main content
       </a>
       <SiteHeader variant={variant} user={user} onLogout={onLogout} activeNav={activeNav} />
-      <main id="main-content" tabIndex={-1}>
+      <main id="main-content" tabIndex={-1} className="flex flex-col">
         {children}
       </main>
       <SiteFooter />

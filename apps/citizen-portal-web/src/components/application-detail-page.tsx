@@ -1,19 +1,20 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
-import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
-import { mdiLogin } from '@mdi/js';
-import { Icon } from '@mdi/react';
-import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
+import { MessageCard } from '@/components/layout/message-card';
 import { PageContent } from '@/components/layout/page-content';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
+import { PageLoading } from '@/components/layout/page-loading';
+import { PageTitle } from '@/components/layout/page-title';
 import { Breadcrumb } from '@/components/services/service-content';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import {
   type ApplicationDetail,
   applicationQueryOptions,
@@ -72,7 +73,6 @@ function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
 export function ApplicationDetailPage() {
   const { id } = useParams({ from: '/applications/$id' });
   const { data: user, isPending: authPending } = useAuth();
-  const loginUrl = useLoginUrl();
   const { data: application, isPending, isError } = useQuery(applicationQueryOptions(id));
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -104,44 +104,39 @@ export function ApplicationDetailPage() {
     <CitizenShell activeNav="services">
       {!authPending && !user ? (
         <PageContent>
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <p className="text-sm text-muted-foreground">
-              You need to be signed in to view this application.
-            </p>
-            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
-              <Icon path={mdiLogin} aria-hidden={true} />
-              Log in
-            </a>
-          </div>
+          <LoginGate message="You need to be signed in to view this application." />
         </PageContent>
       ) : isPending ? (
         <PageContent>
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-32 w-full" />
+          <PageLoading />
         </PageContent>
       ) : isError || !application ? (
         <PageContent>
-          <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <h1 className="font-heading text-lg font-semibold">Application not found</h1>
-            <Button variant="outline" className="mt-4" render={<Link to="/" />}>
-              Your applications
-            </Button>
-          </div>
+          <MessageCard
+            title="Application not found"
+            actions={
+              <Button variant="outline" render={<Link to="/" />}>
+                Your applications
+              </Button>
+            }
+          />
         </PageContent>
       ) : (
         <>
-          <PageContent>
-            <Breadcrumb
-              trail={[
-                { label: 'Services', href: '/services' },
-                { label: application.serviceTitle, href: `/services/${application.serviceId}` },
-                { label: 'Application' },
-              ]}
-            />
-            <header className="flex flex-col gap-2 border-b pb-6">
-              <h1 className="font-heading text-2xl font-semibold text-foreground">
-                {application.formTitle}
-              </h1>
+          <PageHeaderBanner
+            breadcrumb={
+              <Breadcrumb
+                trail={[
+                  { label: 'Home', href: '/' },
+                  { label: 'Services', href: '/services' },
+                  { label: application.serviceTitle, href: `/services/${application.serviceId}` },
+                  { label: 'Application' },
+                ]}
+              />
+            }
+          >
+            <div className="flex flex-col gap-2">
+              <PageTitle>{application.formTitle}</PageTitle>
               <p className="text-sm text-muted-foreground">{application.serviceTitle}</p>
               <p className="text-xs text-muted-foreground">
                 {application.reference} ·{' '}
@@ -149,38 +144,38 @@ export function ApplicationDetailPage() {
                   ? `Submitted ${new Date(application.submittedAt).toLocaleDateString()}`
                   : `Last updated ${new Date(application.updatedAt).toLocaleDateString()}`}
               </p>
-            </header>
-            <div className="flex flex-col gap-9">
-              {editing || application.status === 'draft' ? (
-                <ReviseForm
-                  application={application}
-                  onSubmitted={() => setEditing(false)}
-                  onCancel={() => setEditing(false)}
-                  submitLabel={
-                    application.status === 'draft' ? 'Submit application' : 'Resubmit application'
-                  }
-                  showCancel={application.status !== 'draft'}
-                />
-              ) : (
-                <>
-                  <StatusBanner
-                    status={application.status}
-                    reviewReason={application.reviewReason}
-                    action={bannerAction(application.status)}
-                  />
-                  <section className="flex flex-col gap-3">
-                    <h2 className="font-heading text-sm font-semibold uppercase text-muted-foreground">
-                      Your answers
-                    </h2>
-                    <Card>
-                      <CardContent className="py-4">
-                        <SubmittedAnswers application={application} />
-                      </CardContent>
-                    </Card>
-                  </section>
-                </>
-              )}
             </div>
+          </PageHeaderBanner>
+          <PageContent>
+            {editing || application.status === 'draft' ? (
+              <ReviseForm
+                application={application}
+                onSubmitted={() => setEditing(false)}
+                onCancel={() => setEditing(false)}
+                submitLabel={
+                  application.status === 'draft' ? 'Submit application' : 'Resubmit application'
+                }
+                showCancel={application.status !== 'draft'}
+              />
+            ) : (
+              <>
+                <StatusBanner
+                  status={application.status}
+                  reviewReason={application.reviewReason}
+                  action={bannerAction(application.status)}
+                />
+                <section className="flex flex-col gap-3">
+                  <h2 className="text-sm font-semibold uppercase text-muted-foreground">
+                    Your answers
+                  </h2>
+                  <Card>
+                    <CardContent className="py-4">
+                      <SubmittedAnswers application={application} />
+                    </CardContent>
+                  </Card>
+                </section>
+              </>
+            )}
           </PageContent>
         </>
       )}

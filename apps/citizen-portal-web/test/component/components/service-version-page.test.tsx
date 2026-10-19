@@ -111,7 +111,7 @@ describe('ServiceVersionPage Component', () => {
     render(<ServiceVersionPage />);
 
     expect(screen.getByTestId('citizen-shell')).toHaveAttribute('data-active-nav', 'services');
-    expect(screen.getAllByTestId('skeleton').length).toBe(2);
+    expect(screen.getAllByTestId('skeleton').length).toBe(3);
     expect(screen.queryByTestId('service-sections')).not.toBeInTheDocument();
   });
 
@@ -164,6 +164,7 @@ describe('ServiceVersionPage Component', () => {
     const breadcrumb = screen.getByTestId('breadcrumb');
     const trail = JSON.parse(breadcrumb.getAttribute('data-trail') || '[]');
     expect(trail).toEqual([
+      { label: 'Home', href: '/' },
       { label: 'Services', href: '/services' },
       { label: 'Historical Title', href: '/services/svc-abc' },
       { label: 'Version 2' },

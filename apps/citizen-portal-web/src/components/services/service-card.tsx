@@ -13,7 +13,7 @@ import type { CatalogService } from '@/lib/catalog';
  */
 export function ServiceCard({ service }: { service: CatalogService }) {
   return (
-    <Card className="group relative h-full transition-shadow hover:ring-primary/40 focus-within:ring-[3px] focus-within:ring-ring/50">
+    <Card className="group relative h-full transition-shadow hover:ring-primary/40 focus-within:ring-3 focus-within:ring-ring/50">
       <CardHeader>
         <CardTitle className="flex items-start justify-between gap-2 text-base font-semibold">
           <Link

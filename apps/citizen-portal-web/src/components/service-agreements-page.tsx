@@ -1,15 +1,18 @@
-import { mdiChevronRight, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
+import { mdiChevronRight, mdiFileDocumentCheckOutline } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { buttonVariants } from '@repo/ui/button';
 import { Card, CardDescription, CardHeader, CardIconAction, CardTitle } from '@repo/ui/card';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
+import { MessageCard } from '@/components/layout/message-card';
 import { PageContent } from '@/components/layout/page-content';
+import { PageLoading } from '@/components/layout/page-loading';
+import { PageSection } from '@/components/layout/page-section';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { Breadcrumb } from '@/components/breadcrumb';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import {
   serviceAgreementsQueryOptions,
   type ServiceAgreementListItem,
@@ -125,14 +128,13 @@ function Timeline({ items }: { items: ServiceAgreementListItem[] }) {
   return (
     <div className="flex flex-col gap-10">
       {months.map((month) => (
-        <section key={month.key} className="flex flex-col gap-4">
-          <h2 className="section-heading">{month.label}</h2>
+        <PageSection key={month.key} title={month.label} gap={4}>
           <div className="flex flex-col gap-6">
             {month.days.map((day, i) => (
               <DayRow key={day.key} day={day} isLast={i === month.days.length - 1} />
             ))}
           </div>
-        </section>
+        </PageSection>
       ))}
     </div>
   );
@@ -144,15 +146,13 @@ function Timeline({ items }: { items: ServiceAgreementListItem[] }) {
  */
 export function ServiceAgreementsPage() {
   const { data: user, isPending: authPending } = useAuth();
-  const loginUrl = useLoginUrl();
   const agreements = useQuery({ ...serviceAgreementsQueryOptions(), enabled: user != null });
 
   if (authPending) {
     return (
       <CitizenShell>
-        <PageContent gap={3}>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
+        <PageContent>
+          <PageLoading variant="settings" />
         </PageContent>
       </CitizenShell>
     );
@@ -161,16 +161,8 @@ export function ServiceAgreementsPage() {
   if (!user) {
     return (
       <CitizenShell>
-        <PageContent gap={0}>
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <p className="text-sm text-muted-foreground">
-              You need to be signed in to view your service agreements.
-            </p>
-            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
-              <Icon path={mdiLogin} aria-hidden={true} />
-              Log in
-            </a>
-          </div>
+        <PageContent>
+          <LoginGate message="You need to be signed in to view your service agreements." />
         </PageContent>
       </CitizenShell>
     );
@@ -178,40 +170,36 @@ export function ServiceAgreementsPage() {
 
   return (
     <CitizenShell>
-      <div className="flex flex-col">
-        <SettingsPageHeader
-          icon={mdiFileDocumentCheckOutline}
-          title="Service Agreements"
-          subtitle="Agreements you've accepted to use government services."
-          breadcrumb={
-            <Breadcrumb
-              trail={[
-                { label: 'Account settings', href: '/account' },
-                { label: 'Service Agreements' },
-              ]}
-            />
-          }
-        />
-        <PageContent>
-          {agreements.isSuccess ? (
-            agreements.data.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-                <p className="text-sm text-muted-foreground">
-                  You have no service agreements yet. Agreements you accept will appear here.
-                </p>
-              </div>
-            ) : (
-              <Timeline items={agreements.data} />
-            )
-          ) : agreements.isError ? (
-            <p className="text-sm text-destructive" role="alert">
-              Your service agreements are temporarily unavailable.
-            </p>
+      <SettingsPageHeader
+        icon={mdiFileDocumentCheckOutline}
+        title="Service Agreements"
+        subtitle="Agreements you've accepted to use government services."
+        breadcrumb={
+          <Breadcrumb
+            trail={[
+              { label: 'Account settings', href: '/account' },
+              { label: 'Service Agreements' },
+            ]}
+          />
+        }
+      />
+      <PageContent>
+        {agreements.isSuccess ? (
+          agreements.data.length === 0 ? (
+            <MessageCard>
+              You have no service agreements yet. Agreements you accept will appear here.
+            </MessageCard>
           ) : (
-            <Skeleton className="h-56 w-full" />
-          )}
-        </PageContent>
-      </div>
+            <Timeline items={agreements.data} />
+          )
+        ) : agreements.isError ? (
+          <p className="text-sm text-destructive" role="alert">
+            Your service agreements are temporarily unavailable.
+          </p>
+        ) : (
+          <Skeleton className="h-56 w-full" />
+        )}
+      </PageContent>
     </CitizenShell>
   );
 }

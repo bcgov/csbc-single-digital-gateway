@@ -1,38 +1,37 @@
 import { buttonVariants } from '@repo/ui/button';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
+import { FullBleedBand } from '@/components/layout/full-bleed-band';
 import { useLoginUrl } from '@/lib/auth';
 
 /** Anonymous landing hero: headline, supporting copy, BC Services Card login, and an illustration. */
 export function Hero() {
   const loginUrl = useLoginUrl();
   return (
-    <div className="border-b-2 border-bcgov-gold bg-linear-to-t from-blue-10 to-white">
-      <div className="mx-auto px-4 md:px-3 w-full max-w-285 flex flex-col">
-        <section className="grid items-center gap-8 py-12 lg:grid-cols-2 lg:py-6">
-          <div className="flex flex-col gap-2">
-            <h1>Access government services online</h1>
-            <p className="text-lg mb-4">Find and use Government of British Columbia services.</p>
-            <div className="">
-              <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'lg' })}>
-                <Icon path={mdiLogin} aria-hidden={true} />
-                Log in with BC Services Card Account
-              </a>
-            </div>
+    <FullBleedBand className="border-b-2 border-bcgov-gold bg-linear-to-t from-blue-10 to-white">
+      <section className="grid items-center gap-8 py-12 lg:grid-cols-2 lg:py-6">
+        <div className="flex flex-col gap-2">
+          <h1>Access government services online</h1>
+          <p className="text-lg mb-4">Find and use Government of British Columbia services.</p>
+          <div className="">
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'lg' })}>
+              <Icon path={mdiLogin} aria-hidden={true} />
+              Log in with BC Services Card Account
+            </a>
           </div>
+        </div>
 
-          {/* Illustration placeholder — skeleton only, colours approximate. */}
-          <div
-            className="hidden aspect-4/3 items-center justify-center rounded-lg lg:flex bg-white bg-opacity-25"
-            aria-hidden
-          >
-            <div className="flex items-end gap-1">
-              <span className="h-24 w-16 rounded-full bg-primary/80" />
-              <span className="h-10 w-10 -translate-y-4 rounded-full bg-amber-500/80" />
-            </div>
+        {/* Illustration placeholder — skeleton only, colours approximate. */}
+        <div
+          className="hidden aspect-4/3 items-center justify-center rounded-lg lg:flex bg-white/25"
+          aria-hidden
+        >
+          <div className="flex items-end gap-1">
+            <span className="h-24 w-16 rounded-full bg-primary/80" />
+            <span className="h-10 w-10 -translate-y-4 rounded-full bg-bcgov-gold/80" />
           </div>
-        </section>
-      </div>
-    </div>
+        </div>
+      </section>
+    </FullBleedBand>
   );
 }

@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { PAGE_COLUMN_CLASS } from '@/components/layout/page-content';
 
 /**
- * The shared citizen page-header banner: a **full-width `bcgov-gold` bottom divider** whose content
- * is constrained to the standard `max-w-285` column with standard page padding. Render it as a
- * full-width sibling above the constrained page body so the rule spans the whole main area.
+ * The shared citizen page-header (title band): an optional breadcrumb strip (full-width bottom
+ * border), then the header body held to the standard page column with a `bcgov-gold` bottom rule
+ * spanning that column. Render it as a sibling **above** {@link PageContent}, never inside it.
  *
- * It owns only the divider, the constrained width, and an optional breadcrumb slot — each caller
- * supplies its own header body as `children`. Used directly by `/services` and the service detail
- * page, and composed by {@link SettingsPageHeader} for the Account settings surfaces.
+ * It owns only the layout, the rule, and the breadcrumb slot — each caller supplies its header body
+ * as `children`, normally a {@link PageTitle} plus any subtitle/meta/actions. Composed by
+ * {@link SettingsPageHeader} for the Account settings surfaces.
  */
 export function PageHeaderBanner({
   breadcrumb,

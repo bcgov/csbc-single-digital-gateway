@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Icon } from '@mdi/react';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
+import { PageTitle } from '@/components/layout/page-title';
 
 /**
  * Shared page header for the citizen settings pages (account, notifications, service agreements):
@@ -31,7 +32,7 @@ export function SettingsPageHeader({
           <Icon path={icon} size="32px" className="text-blue-80" aria-hidden={true} />
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">{title}</h1>
+          <PageTitle>{title}</PageTitle>
           {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
           {meta}
         </div>

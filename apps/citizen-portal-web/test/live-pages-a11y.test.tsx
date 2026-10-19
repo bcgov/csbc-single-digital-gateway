@@ -364,7 +364,9 @@ const CASES: RealPageCase[] = [
     scenario: 'default',
     components: ['button'],
     fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
+    // The banner heading appears as soon as the form structure loads; wait for the mounted form
+    // itself so the audit covers it.
+    ready: () => screen.findByLabelText(/^Name/, {}, { timeout: 10000 }),
     timeout: 30000,
   },
   {
@@ -372,7 +374,9 @@ const CASES: RealPageCase[] = [
     scenario: 'validation error (required field cleared)',
     components: ['button'],
     fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
+    // The banner heading appears as soon as the form structure loads; wait for the mounted form
+    // itself so the audit covers it.
+    ready: () => screen.findByLabelText(/^Name/, {}, { timeout: 10000 }),
     interact: async () => {
       // A required control's label is "<title> required" (@repo/react ControlWrapper appends the
       // word, not an asterisk) — match on a prefix rather than an exact string.

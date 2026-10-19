@@ -5,25 +5,21 @@ import {
   mdiChevronRight,
   mdiCog,
   mdiFileDocumentCheckOutline,
-  mdiLogin,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { buttonVariants } from '@repo/ui/button';
 import { Card, CardDescription, CardHeader, CardIconAction, CardTitle } from '@repo/ui/card';
-import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { LoginGate } from '@/components/layout/login-gate';
 import { PageContent } from '@/components/layout/page-content';
+import { PageLoading } from '@/components/layout/page-loading';
+import { SectionHeading } from '@/components/layout/page-section';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
-import { useAuth, useLoginUrl } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import type { AuthUser, OidcAddress } from '@/lib/bff';
 
 /** Placeholder shown for any identity claim the IdP did not provide. */
 const EMPTY = '—';
-
-/** The exact account-details gradient from the design spec (feature 138). */
-const SECTION_GRADIENT =
-  'linear-gradient(0deg, #F1F8FE 0%, var(--surface-color-background-white, #FFF) 100%)';
 
 /** Capitalize the first letter of a claim value for display (e.g. gender `female` → `Female`). */
 function capitalizeFirst(value: string | undefined): string | undefined {
@@ -106,16 +102,13 @@ function AccountDetails({ user }: { user: AuthUser }) {
     { label: 'Email', value: claims.email },
   ];
   return (
-    <section
-      className="flex flex-col gap-6 border-b-2 border-bcgov-blue p-4"
-      style={{ background: SECTION_GRADIENT }}
-    >
-      <div className="flex flex-col gap-1">
-        <h2 className="section-heading">Account details</h2>
+    // The design-spec gradient (feature 138): blue-10 at the bottom fading to white at the top.
+    <section className="flex flex-col gap-6 border-b-2 border-bcgov-blue bg-linear-to-t from-blue-10 to-white p-4">
+      <SectionHeading title="Account details">
         <p className="text-sm text-muted-foreground">
           This information is fetched from your BC Services Card Account.
         </p>
-      </div>
+      </SectionHeading>
       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] border bg-background">
         {/* Column 1 — photo placeholder, alongside the details on md+. */}
         <div className="flex flex-col gap-2 p-4 pb-6 md:h-full md:items-start md:border-r md:border-border md:pr-6 md:pb-0">
@@ -179,14 +172,12 @@ function SettingsCard({
  */
 export function AccountPage() {
   const { data: user, isPending } = useAuth();
-  const loginUrl = useLoginUrl();
 
   if (isPending) {
     return (
       <CitizenShell>
-        <PageContent gap={3}>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-64 w-full" />
+        <PageContent>
+          <PageLoading variant="settings" />
         </PageContent>
       </CitizenShell>
     );
@@ -195,16 +186,8 @@ export function AccountPage() {
   if (!user) {
     return (
       <CitizenShell>
-        <PageContent gap={0}>
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
-            <p className="text-sm text-muted-foreground">
-              You need to be signed in to view your account.
-            </p>
-            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
-              <Icon path={mdiLogin} aria-hidden={true} />
-              Log in
-            </a>
-          </div>
+        <PageContent>
+          <LoginGate message="You need to be signed in to view your account." />
         </PageContent>
       </CitizenShell>
     );
@@ -212,30 +195,28 @@ export function AccountPage() {
 
   return (
     <CitizenShell>
-      <div className="flex flex-col">
-        <SettingsPageHeader
-          icon={mdiCog}
-          title="Account settings"
-          subtitle="Your Single Digital Gateway account."
-        />
-        <PageContent>
-          <AccountDetails user={user} />
-          <div className="flex flex-col">
-            <SettingsCard
-              to="/account/notifications"
-              icon={mdiBellOutline}
-              title="Notification preferences"
-              description="Choose how you hear about updates to your applications."
-            />
-            <SettingsCard
-              to="/account/service-agreements"
-              icon={mdiFileDocumentCheckOutline}
-              title="Service Agreements"
-              description="Review the agreements you've accepted to use government services."
-            />
-          </div>
-        </PageContent>
-      </div>
+      <SettingsPageHeader
+        icon={mdiCog}
+        title="Account settings"
+        subtitle="Your Single Digital Gateway account."
+      />
+      <PageContent>
+        <AccountDetails user={user} />
+        <div className="flex flex-col">
+          <SettingsCard
+            to="/account/notifications"
+            icon={mdiBellOutline}
+            title="Notification preferences"
+            description="Choose how you hear about updates to your applications."
+          />
+          <SettingsCard
+            to="/account/service-agreements"
+            icon={mdiFileDocumentCheckOutline}
+            title="Service Agreements"
+            description="Review the agreements you've accepted to use government services."
+          />
+        </div>
+      </PageContent>
     </CitizenShell>
   );
 }

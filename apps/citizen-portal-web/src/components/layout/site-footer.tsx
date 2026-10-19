@@ -1,4 +1,5 @@
 import { Logo } from '@repo/ui/logo';
+import { PAGE_COLUMN_CLASS } from '@/components/layout/page-content';
 
 /** A labelled column of footer links. */
 interface FooterColumn {
@@ -21,7 +22,7 @@ export function SiteFooter() {
     <footer className="mt-16 flex flex-col">
       {/* Land acknowledgement band */}
       <div className="bg-gray-110 text-white text-sm border-y-4 border-gold-60">
-        <div className="my-8 mx-auto px-4 md:px-3 w-full max-w-285 flex flex-col gap-9">
+        <div className={`${PAGE_COLUMN_CLASS} my-8 flex flex-col gap-9`}>
           The B.C. Public Service acknowledges the territories of First Nations around B.C. and is
           grateful to carry out our work on these lands. We acknowledge the rights, interests,
           priorities, and concerns of all Indigenous Peoples — First Nations, Métis, and Inuit —
@@ -31,7 +32,7 @@ export function SiteFooter() {
       </div>
 
       {/* Brand + link columns */}
-      <div className="my-6 mx-auto px-4 md:px-3 w-full max-w-285 flex flex-col gap-9">
+      <div className={`${PAGE_COLUMN_CLASS} my-6 flex flex-col gap-9`}>
         <div className="grid gap-8 md:grid-cols-[3fr_repeat(3,1fr)]">
           <div className="flex flex-col gap-6">
             <Logo className="h-14 w-auto self-start" aria-label="Government of British Columbia" />

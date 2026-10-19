@@ -1,28 +1,24 @@
-import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { AvailableServices } from '@/components/landing/available-services';
 import { Hero } from '@/components/landing/hero';
 import { LoginCta } from '@/components/landing/login-cta';
 import { TrackApplications } from '@/components/landing/track-applications';
 import { WhatYouCanDo } from '@/components/landing/what-you-can-do';
+import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageContent } from '@/components/layout/page-content';
-import { PageShell } from '@/components/layout/page-shell';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
+import { PageLoading } from '@/components/layout/page-loading';
 import { firstName, useAuth } from '@/lib/auth';
-import { displayName, logout } from '@/lib/bff';
+import { displayName } from '@/lib/bff';
 import { myApplicationsQueryOptions, servicesQueryOptions } from '@/lib/catalog';
 
-async function handleLogout(): Promise<void> {
-  await logout();
-  window.location.assign('/');
-}
-
-/** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
+/** Greeting band for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col py-6 border-b-2 border-bcgov-gold">
+    <PageHeaderBanner>
       <h1>Hi, {firstName(name)}</h1>
       <p>Welcome to MyBC.</p>
-    </div>
+    </PageHeaderBanner>
   );
 }
 
@@ -36,24 +32,14 @@ export function HomePage() {
   const services = useQuery(servicesQueryOptions());
   const applications = useQuery(myApplicationsQueryOptions());
 
-  const headerUser = user ? { name: displayName(user), email: user.claims.email } : undefined;
-
   return (
-    <PageShell
-      variant={user ? 'authenticated' : 'anonymous'}
-      activeNav="home"
-      user={headerUser}
-      onLogout={() => {
-        void handleLogout();
-      }}
-    >
+    <CitizenShell activeNav="home">
       {isPending ? (
         <PageContent>
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-40 w-full rounded-xl" />
+          <PageLoading />
         </PageContent>
       ) : user ? (
-        <div className="flex flex-col">
+        <>
           <Greeting name={displayName(user)} />
           <PageContent>
             <TrackApplications
@@ -66,9 +52,9 @@ export function HomePage() {
             />
             <WhatYouCanDo />
           </PageContent>
-        </div>
+        </>
       ) : (
-        <div className="flex flex-col">
+        <>
           <Hero />
           <PageContent>
             <WhatYouCanDo />
@@ -78,8 +64,8 @@ export function HomePage() {
             />
             <LoginCta />
           </PageContent>
-        </div>
+        </>
       )}
-    </PageShell>
+    </CitizenShell>
   );
 }
