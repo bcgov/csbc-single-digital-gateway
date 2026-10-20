@@ -1,67 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { type Database, serviceAgreementConsents } from '@repo/database';
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
-
-const createDbMock = () => {
-  const mocks: {
-    queries: Array<{
-      table?: any;
-      action?: 'select' | 'insert' | 'update' | undefined;
-      resolve: any;
-    }>;
-  } = {
-    queries: [],
-  };
-
-  const createBuilder = () => {
-    let activeTable: any = null;
-    let action: 'select' | 'insert' | 'update' = 'select';
-
-    const builder = {
-      select: vi.fn().mockImplementation(() => {
-        action = 'select';
-        return builder;
-      }),
-      from: vi.fn().mockImplementation((table) => {
-        activeTable = table;
-        return builder;
-      }),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      // eslint-disable-next-line unicorn/no-thenable
-      then: (onfulfilled: any) => {
-        const index = mocks.queries.findIndex(
-          (q) =>
-            (q.table === undefined || q.table === activeTable) &&
-            (q.action === undefined || q.action === action),
-        );
-        let result: any = [];
-        if (index !== -1) {
-          const entry = mocks.queries[index];
-          if (entry !== undefined) {
-            result = entry.resolve;
-            mocks.queries.splice(index, 1);
-          }
-        }
-        return Promise.resolve(result).then(onfulfilled);
-      },
-    };
-    return builder;
-  };
-
-  const dbMock = {
-    ...createBuilder(),
-  };
-
-  const mockResponse = (resolve: any, table?: any, action?: 'select' | 'insert' | 'update') => {
-    mocks.queries.push({ table, action, resolve });
-  };
-
-  return { dbMock, mockResponse };
-};
+import { createMockDb } from '../../../../utils/create-mock-db';
 
 describe('ServiceAgreementsService Unit Test Suite', () => {
   let service: ServiceAgreementsService;
@@ -69,14 +10,14 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
   let mockResponse: any;
 
   beforeEach(() => {
-    const mocks = createDbMock();
-    dbMock = mocks.dbMock;
+    const mocks = createMockDb();
+    dbMock = mocks.builderMock;
     mockResponse = mocks.mockResponse;
     service = new ServiceAgreementsService(dbMock as unknown as Database);
   });
 
   describe('listMine', () => {
-    it('should retrieve list of approved agreements newest first and map correctly', async () => {
+    it('Should retrieve list of approved agreements newest first and map correctly', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
       const mockRows = [
         {
@@ -129,13 +70,13 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
   describe('getMine', () => {
     const consentId = '11111111-1111-4111-8111-111111111111';
 
-    it('should throw BadRequestException if consentId is not a valid UUID', async () => {
+    it('Should throw BadRequestException if consentId is not a valid UUID', async () => {
       await expect(service.getMine('user-123', 'invalid-uuid')).rejects.toThrow(
         new BadRequestException('Invalid service agreement id'),
       );
     });
 
-    it('should throw NotFoundException if query returns no rows', async () => {
+    it('Should throw NotFoundException if query returns no rows', async () => {
       mockResponse([], serviceAgreementConsents, 'select');
 
       await expect(service.getMine('user-123', consentId)).rejects.toThrow(
@@ -143,9 +84,9 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
       );
     });
 
-    it('should return service agreement detail when found', async () => {
+    it('Should return service agreement detail when found', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
-      const mockRow = {
+      const mockServiceAgreement = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'approve',
@@ -159,7 +100,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         createdAt,
       };
 
-      mockResponse([mockRow], serviceAgreementConsents, 'select');
+      mockResponse([mockServiceAgreement], serviceAgreementConsents, 'select');
 
       const result = await service.getMine('user-123', consentId);
 
@@ -176,9 +117,9 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
       });
     });
 
-    it('should fallback to null / default labels when fields in JSON data are missing or empty', async () => {
+    it('Should fallback to null / default labels when fields in JSON data are missing or empty', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
-      const mockRow = {
+      const mockUndefinedTitleServiceAgreement = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'reject',
@@ -192,7 +133,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         createdAt,
       };
 
-      mockResponse([mockRow], serviceAgreementConsents, 'select');
+      mockResponse([mockUndefinedTitleServiceAgreement], serviceAgreementConsents, 'select');
 
       const result = await service.getMine('user-123', consentId);
 

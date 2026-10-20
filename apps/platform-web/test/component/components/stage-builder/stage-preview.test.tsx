@@ -17,15 +17,15 @@ vi.mock('@repo/react/form-runner', () => ({
 }));
 
 describe('Stage Preview Component Test Suite', () => {
-  const mockDefinition: MultiStageDefinition = {
+  const multiStageDefinition: MultiStageDefinition = {
     name: 'Multi-stage Intake Process',
     description: 'Process pipeline.',
     stages: [],
     edges: [],
   };
 
-  it('renders FormRunner with multi-stage kind and definition', () => {
-    render(<StagePreview definition={mockDefinition} />);
+  it('Should render FormRunner with multi-stage kind and definition', () => {
+    render(<StagePreview definition={multiStageDefinition} />);
 
     expect(screen.getByTestId('mock-form-runner')).toBeInTheDocument();
     expect(screen.getByText('Kind: multi-stage-form')).toBeInTheDocument();
@@ -33,9 +33,9 @@ describe('Stage Preview Component Test Suite', () => {
     expect(screen.getByText('Data: {}')).toBeInTheDocument();
   });
 
-  it('updates form runner data on onChange triggers', async () => {
+  it('Should update form runner data on onChange triggers for the stage preview component', async () => {
     const user = userEvent.setup();
-    render(<StagePreview definition={mockDefinition} />);
+    render(<StagePreview definition={multiStageDefinition} />);
 
     const updateBtn = screen.getByRole('button', { name: 'Update Data' });
     await user.click(updateBtn);

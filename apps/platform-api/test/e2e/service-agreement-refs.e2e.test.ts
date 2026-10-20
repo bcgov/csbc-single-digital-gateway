@@ -21,14 +21,12 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
 const AGR = `/v1/services/${UUID}/versions/${UUID}/agreements`;
 
-describe('service agreement refs (e2e)', () => {
+describe('Service Agreement Refs E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -62,14 +60,14 @@ describe('service agreement refs (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s agreement-reference endpoints without a session', async () => {
+  it('Should return 401 for agreement-reference endpoints without a session', async () => {
     expect((await http().get(AGR)).status).toBe(401);
     expect((await http().post(AGR).send({ agreementDocumentId: UUID })).status).toBe(401);
     expect((await http().delete(`${AGR}/${UUID}`)).status).toBe(401);
   });
 
-  it('400s an attach with a missing/invalid agreementDocumentId', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 400 for an attach with a missing/invalid agreementDocumentId', async () => {
+    const staff = seedUser(['staff']);
     expect((await http().post(AGR).set('x-test-user', staff).send({})).status).toBe(400);
     expect(
       (await http().post(AGR).set('x-test-user', staff).send({ agreementDocumentId: 'nope' }))

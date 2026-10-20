@@ -10,19 +10,17 @@ import {
   serviceVersionQueryOptions,
 } from '@/lib/catalog';
 import { BFF_ORIGIN } from '@/lib/bff';
+import { createMockSpy } from '../../support/create-mock-spy';
 
-describe('catalog lib', () => {
+describe('Catalog Library Test Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   describe('API functions', () => {
-    it('getServices fetches services from correct endpoint without search term', async () => {
+    it('Should fetch services from correct endpoint without search term in getServices', async () => {
       const mockItems = [{ id: 's1', title: 'Service 1', description: 'Desc 1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getServices();
 
@@ -32,12 +30,9 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockItems);
     });
 
-    it('getServices fetches services with query param when search term is provided', async () => {
+    it('Should fetch services with query param when search term is provided in getServices', async () => {
       const mockItems = [{ id: 's1', title: 'Service 1', description: 'Desc 1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getServices('  passport  ');
 
@@ -47,7 +42,7 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockItems);
     });
 
-    it('getServices throws error when response is not ok', async () => {
+    it('Should throw error when response is not ok in getServices', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 500,
@@ -63,12 +58,9 @@ describe('catalog lib', () => {
       expect(error.message).toBe('GET /v1/services failed: 500');
     });
 
-    it('getMyApplications fetches citizen applications', async () => {
+    it('Should fetch citizen applications in getMyApplications', async () => {
       const mockItems = [{ id: 'app1', reference: 'REF-1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getMyApplications();
 
@@ -78,11 +70,8 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockItems);
     });
 
-    it('getMyApplications returns empty array on 401 Unauthorized', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: false,
-        status: 401,
-      } as Response);
+    it('Should return empty array on 401 Unauthorized in getMyApplications', async () => {
+      const fetchSpy = createMockSpy({}, 401);
 
       const result = await getMyApplications();
 
@@ -92,7 +81,7 @@ describe('catalog lib', () => {
       expect(result).toEqual([]);
     });
 
-    it('getMyApplications throws error on other failure status codes', async () => {
+    it('Should throw error on other failure status codes in getMyApplications', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 400,
@@ -108,12 +97,9 @@ describe('catalog lib', () => {
       expect(error.message).toBe('GET /v1/me/applications failed: 400');
     });
 
-    it('getService fetches a single service details by id', async () => {
+    it('Should fetch a single service details by id in getService', async () => {
       const mockService = { id: 's1', title: 'Service 1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockService,
-      } as Response);
+      const fetchSpy = createMockSpy(mockService);
 
       const result = await getService('s1');
 
@@ -123,7 +109,7 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockService);
     });
 
-    it('getService throws error when response is not ok', async () => {
+    it('Should throw error when response is not ok in getService', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 404,
@@ -139,12 +125,9 @@ describe('catalog lib', () => {
       expect(error.message).toBe('GET /v1/services/invalid failed: 404');
     });
 
-    it('getServiceVersion fetches specific service version details', async () => {
+    it('Should fetch specific service version details in getServiceVersion', async () => {
       const mockVersion = { id: 'v1', version: 2 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockVersion,
-      } as Response);
+      const fetchSpy = createMockSpy(mockVersion);
 
       const result = await getServiceVersion('s1', 'v1');
 
@@ -154,7 +137,7 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockVersion);
     });
 
-    it('getServiceVersion throws error when response is not ok', async () => {
+    it('Should throw error when response is not ok in getServiceVersion', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 404,
@@ -172,12 +155,9 @@ describe('catalog lib', () => {
   });
 
   describe('Query options', () => {
-    it('servicesQueryOptions configuration', async () => {
+    it('Should return correct options in servicesQueryOptions configuration', async () => {
       const mockItems = [{ id: 's1', title: 'Service' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const options = servicesQueryOptions('test');
       expect(options.queryKey).toEqual(['services', 'test']);
@@ -188,17 +168,14 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockItems);
     });
 
-    it('servicesQueryOptions uses empty string default queryKey when q is missing', () => {
+    it('Should use empty string default queryKey when q is missing in servicesQueryOptions', () => {
       const options = servicesQueryOptions();
       expect(options.queryKey).toEqual(['services', '']);
     });
 
-    it('myApplicationsQueryOptions configuration', async () => {
+    it('Should return correct options in myApplicationsQueryOptions configuration', async () => {
       const mockItems = [{ id: 'app1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const options = myApplicationsQueryOptions();
       expect(options.queryKey).toEqual(['me', 'applications']);
@@ -209,12 +186,9 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockItems);
     });
 
-    it('serviceQueryOptions configuration', async () => {
+    it('Should return correct options in serviceQueryOptions configuration', async () => {
       const mockService = { id: 's1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockService,
-      } as Response);
+      const fetchSpy = createMockSpy(mockService);
 
       const options = serviceQueryOptions('s1');
       expect(options.queryKey).toEqual(['services', 'detail', 's1']);
@@ -226,12 +200,9 @@ describe('catalog lib', () => {
       expect(result).toEqual(mockService);
     });
 
-    it('serviceVersionQueryOptions configuration', async () => {
+    it('Should return correct options in serviceVersionQueryOptions configuration', async () => {
       const mockVersion = { id: 'v1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockVersion,
-      } as Response);
+      const fetchSpy = createMockSpy(mockVersion);
 
       const options = serviceVersionQueryOptions('s1', 'v1');
       expect(options.queryKey).toEqual(['services', 's1', 'versions', 'v1']);

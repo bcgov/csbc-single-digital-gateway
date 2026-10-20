@@ -22,7 +22,7 @@ describe('HttpExceptionFilter', () => {
     vi.restoreAllMocks();
   });
 
-  it('should call super.catch when a generic HttpException is caught', () => {
+  it('Should call super.catch when a generic HttpException is caught', () => {
     const exception = new HttpException('Internal Server Error', 500);
     const mockHost = {} as ArgumentsHost;
 
@@ -32,7 +32,7 @@ describe('HttpExceptionFilter', () => {
     expect(loggerErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('should log the error and call super.catch when ZodSerializationException is caught with a ZodError', () => {
+  it('Should log the error and call super.catch when ZodSerializationException is caught with a ZodError', () => {
     const zodError = new ZodError([
       {
         code: 'invalid_type',
@@ -56,7 +56,7 @@ describe('HttpExceptionFilter', () => {
     expect(superCatchSpy).toHaveBeenCalledWith(exception, mockHost);
   });
 
-  it('should call super.catch but not log when ZodSerializationException does not contain a ZodError', () => {
+  it('Should call super.catch but not log when ZodSerializationException does not contain a ZodError', () => {
     const exception = new ZodSerializationException(null);
     const mockHost = {} as ArgumentsHost;
 

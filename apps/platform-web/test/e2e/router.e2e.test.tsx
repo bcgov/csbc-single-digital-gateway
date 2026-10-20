@@ -9,13 +9,13 @@ afterEach(() => {
 });
 
 describe('Platform Web Router Integration Test Suite', () => {
-  it('resolves the landing route at / for anonymous visitors', async () => {
+  it('Should resolve the landing route at / for anonymous visitors', async () => {
     mockAuth(null);
     renderApp('/');
     expect(await screen.findByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
   });
 
-  it('redirects a signed-in visitor from / to the console', async () => {
+  it('Should redirect a signed-in visitor from / to the console', async () => {
     mockAuth(authedUser);
     const { router } = renderApp('/');
 

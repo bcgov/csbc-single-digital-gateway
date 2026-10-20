@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AdminOverview } from '@/components/admin/pages/admin-overview';
 
 describe('AdminOverview', () => {
-  it('renders the placeholder message correctly', () => {
+  it('Should render the placeholder message correctly', () => {
     render(<AdminOverview />);
 
     expect(

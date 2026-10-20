@@ -38,12 +38,12 @@ function expectFullPageLoginNavigation(link: HTMLElement) {
 }
 
 describe('citizen-portal-web login affordances — full-page navigation to the BFF', () => {
-  it('Hero login button navigates the browser (not client-side routing)', () => {
+  it('Should navigate the browser for Hero login button (not client-side routing)', () => {
     render(<Hero />);
     expectFullPageLoginNavigation(screen.getByRole('link', { name: /log in/i }));
   });
 
-  it('LoginCta login button navigates the browser (not client-side routing)', () => {
+  it('Should navigate the browser for LoginCta login button (not client-side routing)', () => {
     render(<LoginCta />);
     expectFullPageLoginNavigation(screen.getByRole('link', { name: /log in/i }));
   });

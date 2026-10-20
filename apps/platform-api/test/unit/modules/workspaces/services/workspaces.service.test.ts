@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { WorkspacesService } from '../../../../../src/modules/workspaces/services/workspaces.service';
 import { workspaces, workspaceMembers } from '@repo/database';
+import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 vi.mock('drizzle-orm', async (importOriginal) => {
   const original = await importOriginal<typeof import('drizzle-orm')>();
@@ -21,18 +23,6 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   };
 });
 
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnValue(qb),
-    innerJoin: vi.fn().mockReturnValue(qb),
-    limit: vi.fn().mockReturnValue(qb),
-    orderBy: vi.fn().mockReturnValue(qb),
-    where: vi.fn().mockReturnValue(qb),
-    offset: vi.fn().mockReturnValue(qb),
-  });
-};
-
 describe('WorkspacesService', () => {
   let service: WorkspacesService;
   let dbMock: any;
@@ -41,38 +31,20 @@ describe('WorkspacesService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = Object.assign(Promise.resolve([]), {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      select: vi.fn().mockImplementation(() => mockQuery([])),
-    });
-
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => mockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     service = new WorkspacesService(dbMock);
   });
 
   describe('list', () => {
-    it('returns sorted and paginated workspaces for a user', async () => {
+    it('Should return sorted and paginated workspaces for a user', async () => {
       dbMock.select = vi
         .fn()
         // 1. rows select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'ws-1',
               slug: 'ws-slug-1',
@@ -84,7 +56,7 @@ describe('WorkspacesService', () => {
           ]),
         )
         // 2. totals count select
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]));
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
 
       const result = await service.list('user-1', {
         sort: 'name',
@@ -98,12 +70,12 @@ describe('WorkspacesService', () => {
       expect(result.items[0]!.id).toBe('ws-1');
     });
 
-    it('returns sorted workspaces falling back to createdAt and desc order', async () => {
+    it('Should return sorted workspaces falling back to createdAt and desc order', async () => {
       dbMock.select = vi
         .fn()
         // 1. rows select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'ws-1',
               slug: 'ws-slug-1',
@@ -115,7 +87,7 @@ describe('WorkspacesService', () => {
           ]),
         )
         // 2. totals count select
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]));
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
 
       const result = await service.list('user-1', {
         sort: 'createdAt',
@@ -127,13 +99,13 @@ describe('WorkspacesService', () => {
       expect(result.items).toHaveLength(1);
     });
 
-    it('returns total as 0 when totals count select is empty', async () => {
+    it('Should return total as 0 when totals count select is empty', async () => {
       dbMock.select = vi
         .fn()
         // 1. rows select
-        .mockReturnValueOnce(mockQuery([]))
+        .mockReturnValueOnce(createMockQuery([]))
         // 2. totals count select (empty)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       const result = await service.list('user-1', {
         limit: 10,
@@ -145,7 +117,7 @@ describe('WorkspacesService', () => {
   });
 
   describe('get', () => {
-    it('retrieves workspace by id', async () => {
+    it('Should retrieve workspace by id', async () => {
       const mockWorkspace = {
         id: 'ws-1',
         slug: 'slug-1',
@@ -153,7 +125,9 @@ describe('WorkspacesService', () => {
         ownerUserId: 'user-1',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]));
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]),
+      );
 
       const result = await service.get('user-1', 'ws-1');
 
@@ -161,23 +135,23 @@ describe('WorkspacesService', () => {
       expect(result.role).toBe('admin');
     });
 
-    it('throws NotFoundException if user is not member of the workspace', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+    it('Should throw NotFoundException if user is not member of the workspace', async () => {
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(service.get('user-1', 'ws-1')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('listMembers', () => {
-    it('lists workspace members', async () => {
+    it('Should list workspace members', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
       dbMock.select = vi
         .fn()
         // 1. requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'member' }]))
         // 2. members select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'member-1',
               userId: 'user-1',
@@ -197,18 +171,118 @@ describe('WorkspacesService', () => {
     });
   });
 
+  describe('listMembersPage', () => {
+    const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
+    const memberRow = {
+      id: 'member-1',
+      userId: 'user-1',
+      role: 'admin',
+      status: 'active',
+      displayName: 'Alice',
+      email: 'alice@example.com',
+      createdAt: new Date('2026-07-12T00:00:00.000Z'),
+    };
+
+    it('Should return paginated members with search and role sort order asc', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(createMockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        q: 'alice',
+        sort: 'role',
+        order: 'asc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.offset).toBe(0);
+      expect(result.items[0]!.userId).toBe('user-1');
+    });
+
+    it('Should handle name sort and order desc when query q is undefined', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(createMockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        sort: 'name',
+        order: 'desc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('Should handle joined sort and empty query string (whitespace)', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(createMockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        q: '   ',
+        sort: 'joined',
+        order: 'asc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('Should fall back to 0 when totals array is empty', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(createMockQuery([]))
+        // 3. totals select (empty)
+        .mockReturnValueOnce(createMockQuery([]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+      } as any);
+
+      expect(result.items).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+  });
+
   describe('listAddableStaff', () => {
-    it('lists eligible staff users not already in the workspace', async () => {
+    it('Should list eligible staff users not already in the workspace', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin -> requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. subquery select
-        .mockReturnValueOnce(mockQuery([{ id: 'user-1' }]))
+        .mockReturnValueOnce(createMockQuery([{ id: 'user-1' }]))
         // 3. staff users select
         .mockReturnValueOnce(
-          mockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
+          createMockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
         );
 
       const result = await service.listAddableStaff('user-1', 'ws-1', { q: 'staff' });
@@ -217,26 +291,28 @@ describe('WorkspacesService', () => {
       expect(result.items[0]!.displayName).toBe('Staff 1');
     });
 
-    it('throws ForbiddenException if caller is not an admin', async () => {
+    it('Should throw ForbiddenException if caller is not an admin when listing addable staff', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'member' }]),
+      );
 
       await expect(service.listAddableStaff('user-1', 'ws-1', {})).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('lists eligible staff users when query string q is undefined', async () => {
+    it('Should list eligible staff users when query string q is undefined', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin -> requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. subquery select
-        .mockReturnValueOnce(mockQuery([{ id: 'user-1' }]))
+        .mockReturnValueOnce(createMockQuery([{ id: 'user-1' }]))
         // 3. staff users select
         .mockReturnValueOnce(
-          mockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
+          createMockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
         );
 
       const result = await service.listAddableStaff('user-1', 'ws-1', {});
@@ -244,17 +320,17 @@ describe('WorkspacesService', () => {
       expect(result.items).toHaveLength(1);
     });
 
-    it('lists eligible staff users but skips search conditions when search expression is falsy', async () => {
+    it('Should list eligible staff users but skips search conditions when search expression is falsy', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin -> requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. subquery select
-        .mockReturnValueOnce(mockQuery([{ id: 'user-1' }]))
+        .mockReturnValueOnce(createMockQuery([{ id: 'user-1' }]))
         // 3. staff users select
         .mockReturnValueOnce(
-          mockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
+          createMockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
         );
 
       (globalThis as any).mockOrUndefined = true;
@@ -268,20 +344,20 @@ describe('WorkspacesService', () => {
   });
 
   describe('addMember', () => {
-    it('successfully adds an eligible staff user to the workspace', async () => {
+    it('Should successfully add an eligible staff user to the workspace', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Staff 2', email: 'staff2@example.com', roles: ['staff'] },
           ]),
         )
         // 3. existing membership check (not found)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       dbMock.returning.mockResolvedValueOnce([
         {
@@ -303,15 +379,15 @@ describe('WorkspacesService', () => {
       expect(result.displayName).toBe('Staff 2');
     });
 
-    it('throws UnprocessableEntityException if target is not a staff member', async () => {
+    it('Should throw UnprocessableEntityException if target is not a staff member', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check (roles don't match)
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Regular', email: 'reg@example.com', roles: ['citizen'] },
           ]),
         );
@@ -321,40 +397,40 @@ describe('WorkspacesService', () => {
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('throws ConflictException if user is already a member', async () => {
+    it('Should throw ConflictException if user is already a member', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Staff 2', email: 'staff2@example.com', roles: ['staff'] },
           ]),
         )
         // 3. existing membership check (found)
-        .mockReturnValueOnce(mockQuery([{ id: 'member-2' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'member-2' }]));
 
       await expect(
         service.addMember('owner-1', 'ws-1', { userId: 'user-2', role: 'member' }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('throws ConflictException if insert fails with Postgres unique violation (code 23505)', async () => {
+    it('Should throw ConflictException if insert fails with Postgres unique violation (code 23505)', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Staff 2', email: 'staff2@example.com', roles: ['staff'] },
           ]),
         )
         // 3. existing membership check (not found)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       dbMock.returning.mockRejectedValueOnce(
         Object.assign(new Error('Unique violation'), { code: '23505' }),
@@ -365,20 +441,20 @@ describe('WorkspacesService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('rethrows error if insert fails with a different error', async () => {
+    it('Should rethrow error if insert fails with a different error', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Staff 2', email: 'staff2@example.com', roles: ['staff'] },
           ]),
         )
         // 3. existing membership check (not found)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       dbMock.returning.mockRejectedValueOnce(new Error('Some DB connection error'));
 
@@ -387,20 +463,20 @@ describe('WorkspacesService', () => {
       ).rejects.toThrow('Some DB connection error');
     });
 
-    it('throws Error if insert returns no row', async () => {
+    it('Should throw Error if insert returns no row', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target staff check
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             { id: 'user-2', displayName: 'Staff 2', email: 'staff2@example.com', roles: ['staff'] },
           ]),
         )
         // 3. existing membership check (not found)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       dbMock.returning.mockResolvedValueOnce([]); // empty returning
 
@@ -411,15 +487,15 @@ describe('WorkspacesService', () => {
   });
 
   describe('updateMember', () => {
-    it('successfully updates role/status of a member', async () => {
+    it('Should successfully update role/status of a member', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-2', userId: 'user-2', role: 'member', status: 'active' }]),
+          createMockQuery([{ id: 'member-2', userId: 'user-2', role: 'member', status: 'active' }]),
         );
 
       await service.updateMember('owner-1', 'ws-1', 'member-2', { role: 'admin' });
@@ -427,15 +503,15 @@ describe('WorkspacesService', () => {
       expect(dbMock.update).toHaveBeenCalledWith(workspaceMembers);
     });
 
-    it('throws ForbiddenException if trying to update the owner', async () => {
+    it('Should throw ForbiddenException if trying to update the owner', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query (is owner)
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-1', userId: 'owner-1', role: 'admin', status: 'active' }]),
+          createMockQuery([{ id: 'member-1', userId: 'owner-1', role: 'admin', status: 'active' }]),
         );
 
       await expect(
@@ -443,51 +519,51 @@ describe('WorkspacesService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws ConflictException if trying to demote the last active admin', async () => {
+    it('Should throw ConflictException if trying to demote the last active admin', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query (is active admin)
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
+          createMockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
         )
         // 3. active admins count (only 1)
-        .mockReturnValueOnce(mockQuery([{ n: 1 }]));
+        .mockReturnValueOnce(createMockQuery([{ n: 1 }]));
 
       await expect(
         service.updateMember('owner-1', 'ws-1', 'member-2', { role: 'member' }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('successfully demotes active admin if other active admins exist', async () => {
+    it('Should successfully demote active admin if other active admins exist', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query (is active admin)
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
+          createMockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
         )
         // 3. active admins count (2 exists)
-        .mockReturnValueOnce(mockQuery([{ n: 2 }]));
+        .mockReturnValueOnce(createMockQuery([{ n: 2 }]));
 
       await service.updateMember('owner-1', 'ws-1', 'member-2', { role: 'member' });
 
       expect(dbMock.update).toHaveBeenCalledWith(workspaceMembers);
     });
 
-    it('successfully updates status and falls back to target role when role is omitted', async () => {
+    it('Should successfully update status and fall back to target role when role is omitted', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-2', userId: 'user-2', role: 'member', status: 'active' }]),
+          createMockQuery([{ id: 'member-2', userId: 'user-2', role: 'member', status: 'active' }]),
         );
 
       await service.updateMember('owner-1', 'ws-1', 'member-2', { status: 'suspended' });
@@ -495,32 +571,32 @@ describe('WorkspacesService', () => {
       expect(dbMock.update).toHaveBeenCalledWith(workspaceMembers);
     });
 
-    it('throws ConflictException if demoting last active admin when counts query returns empty', async () => {
+    it('Should throw ConflictException if demoting last active admin when counts query returns empty', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query (is active admin)
         .mockReturnValueOnce(
-          mockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
+          createMockQuery([{ id: 'member-2', userId: 'admin-2', role: 'admin', status: 'active' }]),
         )
         // 3. active admins count (empty result)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       await expect(
         service.updateMember('owner-1', 'ws-1', 'member-2', { role: 'member' }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('throws NotFoundException if member to update is not found', async () => {
+    it('Should throw NotFoundException if member to update is not found', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireAdmin
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. member query (not found)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       await expect(
         service.updateMember('owner-1', 'ws-1', 'nonexistent-member', { role: 'admin' }),
@@ -529,7 +605,7 @@ describe('WorkspacesService', () => {
   });
 
   describe('getBySlug', () => {
-    it('retrieves workspace by slug', async () => {
+    it('Should retrieve workspace by slug', async () => {
       const mockWorkspace = {
         id: 'ws-1',
         slug: 'my-slug',
@@ -537,22 +613,24 @@ describe('WorkspacesService', () => {
         ownerUserId: 'user-1',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'member' }]),
+      );
 
       const result = await service.getBySlug('user-1', 'my-slug');
 
       expect(result.id).toBe('ws-1');
     });
 
-    it('throws NotFoundException if slug not found or user is not a member', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+    it('Should throw NotFoundException if slug not found or user is not a member', async () => {
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(service.getBySlug('user-1', 'my-slug')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('create', () => {
-    it('creates workspace and creator admin membership in transaction', async () => {
+    it('Should create workspace and creator admin membership in transaction', async () => {
       const mockWorkspace = {
         id: 'ws-1',
         slug: 'slug-1',
@@ -569,7 +647,7 @@ describe('WorkspacesService', () => {
       expect(result.id).toBe('ws-1');
     });
 
-    it('throws Error if workspace insert returns no row', async () => {
+    it('Should throw Error if workspace insert returns no row', async () => {
       txMock.returning.mockResolvedValueOnce([]); // empty returning
 
       await expect(service.create('user-1', { name: 'New WS' })).rejects.toThrow(
@@ -579,7 +657,7 @@ describe('WorkspacesService', () => {
   });
 
   describe('update', () => {
-    it('updates workspace name', async () => {
+    it('Should update workspace name', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
       const updatedWorkspace = {
         id: 'ws-1',
@@ -588,7 +666,9 @@ describe('WorkspacesService', () => {
         ownerUserId: 'user-1',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }])); // requireAdmin
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]),
+      ); // requireAdmin
       dbMock.returning.mockResolvedValueOnce([updatedWorkspace]);
 
       const result = await service.update('user-1', 'ws-1', { name: 'Updated WS' });
@@ -597,9 +677,11 @@ describe('WorkspacesService', () => {
       expect(result.name).toBe('Updated WS');
     });
 
-    it('throws NotFoundException if update returns no row', async () => {
+    it('Should throw NotFoundException if update returns no row', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }])); // requireAdmin
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]),
+      ); // requireAdmin
       dbMock.returning.mockResolvedValueOnce([]); // empty returning
 
       await expect(service.update('user-1', 'ws-1', { name: 'Updated WS' })).rejects.toThrow(
@@ -609,9 +691,11 @@ describe('WorkspacesService', () => {
   });
 
   describe('remove', () => {
-    it('deletes workspace document', async () => {
+    it('Should delete workspace document', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }])); // requireAdmin
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]),
+      ); // requireAdmin
 
       await service.remove('user-1', 'ws-1');
 
@@ -620,14 +704,14 @@ describe('WorkspacesService', () => {
   });
 
   describe('transferOwnership', () => {
-    it('transfers ownership and promotes target user to active admin', async () => {
+    it('Should transfer ownership and promote target user to active admin', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target membership search (is active)
-        .mockReturnValueOnce(mockQuery([{ id: 'member-2', status: 'active' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'member-2', status: 'active' }]));
 
       const updatedWorkspace = {
         id: 'ws-1',
@@ -645,37 +729,39 @@ describe('WorkspacesService', () => {
       expect(result.ownerId).toBe('user-2');
     });
 
-    it('throws ForbiddenException if caller is not the owner', async () => {
+    it('Should throw ForbiddenException if caller is not the owner', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'different-owner' };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]));
+      dbMock.select.mockReturnValueOnce(
+        createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]),
+      );
 
       await expect(
         service.transferOwnership('caller-1', 'ws-1', { userId: 'user-2' }),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws UnprocessableEntityException if target is not active member', async () => {
+    it('Should throw UnprocessableEntityException if target is not active member', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target membership search (is suspended)
-        .mockReturnValueOnce(mockQuery([{ id: 'member-2', status: 'suspended' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'member-2', status: 'suspended' }]));
 
       await expect(
         service.transferOwnership('owner-1', 'ws-1', { userId: 'user-2' }),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('throws Error if workspace update returns no row during transfer', async () => {
+    it('Should throw Error if workspace update returns no row during transfer', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
       dbMock.select = vi
         .fn()
         // 1. requireMembership
-        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
+        .mockReturnValueOnce(createMockQuery([{ workspace: mockWorkspace, role: 'admin' }]))
         // 2. target membership search (is active)
-        .mockReturnValueOnce(mockQuery([{ id: 'member-2', status: 'active' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'member-2', status: 'active' }]));
 
       txMock.returning.mockResolvedValueOnce([]); // empty returning
 

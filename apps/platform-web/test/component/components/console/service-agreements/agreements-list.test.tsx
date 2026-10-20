@@ -2,10 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementsList } from '@/components/console/service-agreements/agreements-list';
-import type { AgreementScope } from '@/components/console/service-agreements/scope';
+import { adminScope, workspaceScope } from '../../../../support/fixtures';
+import { mockNavigate, mockUseSearch } from '../../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
-const mockUseSearch = vi.fn(() => ({}));
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
@@ -43,11 +42,8 @@ afterEach(() => {
   mockUseSearch.mockReturnValue({});
 });
 
-const workspaceScope: AgreementScope = { kind: 'workspace', slug: 'riverton', workspaceId: 'w1' };
-const adminScope: AgreementScope = { kind: 'admin' };
-
 describe('AgreementsList Component Test Suite', () => {
-  it('renders workspace scope empty state and navigates to new agreement page', async () => {
+  it('Should render workspace scope empty state and navigate to new agreement page', async () => {
     mockItems = [];
     render(<AgreementsList scope={workspaceScope} />);
 
@@ -64,7 +60,7 @@ describe('AgreementsList Component Test Suite', () => {
     });
   });
 
-  it('renders admin scope empty state and navigates to admin new agreement page', async () => {
+  it('Should render admin scope empty state and navigate to admin new agreement page', async () => {
     mockItems = [];
     render(<AgreementsList scope={adminScope} />);
 
@@ -76,7 +72,7 @@ describe('AgreementsList Component Test Suite', () => {
     });
   });
 
-  it('renders a list of agreements with correct titles, statuses, and scopes for workspace', () => {
+  it('Should render a list of agreements with correct titles, statuses, and scope for workspace', () => {
     mockItems = [
       {
         id: '1',
@@ -118,7 +114,7 @@ describe('AgreementsList Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders a list of agreements with correct links for admin scope', () => {
+  it('Should render a list of agreements with correct links for admin scope', () => {
     mockItems = [
       {
         id: '1',
@@ -136,7 +132,7 @@ describe('AgreementsList Component Test Suite', () => {
     expect(link).toHaveAttribute('href', '/admin/service-agreements/1');
   });
 
-  it('renders no matches empty state when search term returns no results', () => {
+  it('Should render no matches empty state when search term returns no results for the agreements list component', () => {
     mockItems = [];
     mockUseSearch.mockReturnValue({ q: 'nonexistent' });
     render(<AgreementsList scope={workspaceScope} />);

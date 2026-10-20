@@ -12,7 +12,7 @@ import type { FormModel } from '@/components/form-builder/model';
 
 describe('DND Utility Helpers Component Test Suite', () => {
   describe('ID generators', () => {
-    it('generates correct IDs for groups, controls, display items and containers', () => {
+    it('Should generate correct IDs for groups, controls, display items and containers', () => {
       expect(groupId(2)).toBe('g:2');
       expect(controlId('name')).toBe('f:name');
       expect(displayId('d-1')).toBe('d:d-1');
@@ -21,7 +21,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
   });
 
   describe('buildRecord', () => {
-    it('returns empty root group for empty fields model', () => {
+    it('Should return empty root group for empty fields model', () => {
       const model: FormModel = {
         title: 'Form',
         description: 'Desc',
@@ -32,7 +32,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       });
     });
 
-    it('builds flat record for fields without containers', () => {
+    it('Should build flat record for fields without containers', () => {
       const model: FormModel = {
         title: 'Form',
         description: 'Desc',
@@ -47,7 +47,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       });
     });
 
-    it('builds hierarchical record for models containing containers', () => {
+    it('Should build hierarchical record for models containing containers', () => {
       const model: FormModel = {
         title: 'Form',
         description: 'Desc',
@@ -103,7 +103,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       ],
     };
 
-    it('correctly reorders items in root group', () => {
+    it('Should correctly reorder items in root group', () => {
       const record = {
         [ROOT_GROUP]: ['d:h-1', 'f:first_name', 'c:2'],
         'g:2': ['f:email', 'd:p-1'],
@@ -117,7 +117,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       expect(result.fields[2]).toEqual(originalModel.fields[2]); // container
     });
 
-    it('moves fields in and out of containers', () => {
+    it('Should move fields in and out of containers', () => {
       // Move email out of container to root, and move heading into container
       const record = {
         [ROOT_GROUP]: ['f:first_name', 'f:email', 'c:2'],
@@ -138,7 +138,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       expect(container.children[1].id).toBe('p-1'); // paragraph remains
     });
 
-    it('filters out invalid or missing node IDs safely', () => {
+    it('Should filter out invalid or missing node IDs safely', () => {
       const record = {
         [ROOT_GROUP]: ['f:non_existent_key', 'd:h-1', 'c:999', 'c:2'],
         'g:2': ['f:email', 'f:another_invalid_key'],
@@ -157,7 +157,7 @@ describe('DND Utility Helpers Component Test Suite', () => {
       expect(container.children[0].key).toBe('email');
     });
 
-    it('handles missing root group, non-container indices, invalid prefixes, and missing child groups safely', () => {
+    it('Should handle missing root group, non-container indices, invalid prefixes, and missing child groups safely', () => {
       const invalidRecord = {};
       const resultEmpty = applyRecord(originalModel, invalidRecord);
       expect(resultEmpty.fields).toEqual([]);

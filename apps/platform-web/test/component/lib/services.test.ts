@@ -23,21 +23,19 @@ import {
   detachServiceAgreement,
   createExternalApplication,
   updateExternalApplication,
+  selectServiceVersion,
+  definitionForServiceVersion,
   type ServiceListParams,
+  type ServiceDetail,
+  type ServiceVersion,
 } from '@/lib/services';
+import { mockResponse } from '../../support/mock-response';
+import { mockFetch } from '../../support/vi-fixtures';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
   BFF_ORIGIN: 'http://bff-test',
 }));
-
-const mockResponse = (status: number, data: any, okState = true) => {
-  return {
-    ok: okState,
-    status,
-    json: () => Promise.resolve(data),
-  } as Response;
-};
 
 const runAndCatch = async (fn: () => Promise<unknown>) => {
   try {
@@ -49,14 +47,13 @@ const runAndCatch = async (fn: () => Promise<unknown>) => {
 };
 
 describe('Services Unit Test Suite', () => {
-  const mockFetch = vi.fn();
   globalThis.fetch = mockFetch;
 
   beforeEach(() => {
     mockFetch.mockReset();
   });
 
-  it('queries all services Summaries with query options', async () => {
+  it('Should query all services Summaries with query options', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ id: 'srv-1', title: 'Service A' }] }),
     );
@@ -82,7 +79,7 @@ describe('Services Unit Test Suite', () => {
     expect(items.items[0].title).toBe('Service A');
   });
 
-  it('queries a single service details by id', async () => {
+  it('Should query a single service details by id', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { service: { id: 'srv-1', title: 'Service A' }, versions: [] }),
     );
@@ -97,7 +94,7 @@ describe('Services Unit Test Suite', () => {
     expect(details.service.title).toBe('Service A');
   });
 
-  it('queries service definitions schema details', async () => {
+  it('Should query service definitions schema details', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { schema: { type: 'object' }, uischema: {} }));
 
     const options = serviceDefinitionQueryOptions();
@@ -110,7 +107,7 @@ describe('Services Unit Test Suite', () => {
     expect(definition.schema).toBeDefined();
   });
 
-  it('queries published form types filtered by kind basic-form and multi-stage-form', async () => {
+  it('Should query published form types filtered by kind basic-form and multi-stage-form', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, {
         items: [
@@ -133,7 +130,7 @@ describe('Services Unit Test Suite', () => {
     expect(types[1]).toEqual({ typeId: 'ft-2', name: 'Form Two', kind: 'multi-stage-form' });
   });
 
-  it('queries forms catalog entries with query options', async () => {
+  it('Should query forms catalog entries with query options', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ documentId: 'doc-1', title: 'Doc Form' }] }),
     );
@@ -148,7 +145,7 @@ describe('Services Unit Test Suite', () => {
     expect(catalog).toHaveLength(1);
   });
 
-  it('queries service references for a specific service version', async () => {
+  it('Should query service references for a specific service version', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ id: 'ref-1', relation: 'application_form' }] }),
     );
@@ -164,7 +161,7 @@ describe('Services Unit Test Suite', () => {
     expect(references).toHaveLength(1);
   });
 
-  it('handles detailed API error message array structures', async () => {
+  it('Should handle detailed API error message array structures', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(
         422,
@@ -179,7 +176,7 @@ describe('Services Unit Test Suite', () => {
     );
   });
 
-  it('creates service with a POST request', async () => {
+  it('Should create service with a POST request', async () => {
     mockFetch.mockResolvedValue(mockResponse(201, { service: { id: 'srv-1' }, versions: [] }));
 
     const input = {
@@ -199,7 +196,7 @@ describe('Services Unit Test Suite', () => {
     expect(res.service.id).toBe('srv-1');
   });
 
-  it('saves draft service version data with a PATCH request', async () => {
+  it('Should save draft service version data with a PATCH request', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', data: { updated: true } }));
 
     const input = { data: { updated: true } };
@@ -213,7 +210,7 @@ describe('Services Unit Test Suite', () => {
     expect(res.data).toEqual({ updated: true });
   });
 
-  it('handles simple publish, archive, and add version triggers', async () => {
+  it('Should handle simple publish, archive, and add version triggers', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'published' }));
 
     const pub = await publishVersion('srv-1', 'ver-1');
@@ -246,7 +243,7 @@ describe('Services Unit Test Suite', () => {
     expect(addVer.id).toBe('ver-2');
   });
 
-  it('sends DELETE requests for deleteService and discardServiceVersion', async () => {
+  it('Should send DELETE requests for deleteService and discardServiceVersion', async () => {
     mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await deleteService('srv-1');
@@ -262,7 +259,7 @@ describe('Services Unit Test Suite', () => {
     });
   });
 
-  it('sends POST requests for archiveService and reactivateService', async () => {
+  it('Should send POST requests for archiveService and reactivateService', async () => {
     mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await archiveService('srv-1');
@@ -278,7 +275,7 @@ describe('Services Unit Test Suite', () => {
     });
   });
 
-  it('manages form reference creation, delete, and archive', async () => {
+  it('Should manage form reference creation, delete, and archive', async () => {
     mockFetch.mockResolvedValue(mockResponse(201, { id: 'ref-1' }));
 
     const input = { typeId: 'ft-1', title: 'New Form' };
@@ -317,7 +314,7 @@ describe('Services Unit Test Suite', () => {
   });
 
   describe('API error handling boundaries', () => {
-    it('handles non-JSON error body gracefully', async () => {
+    it('Should handle non-JSON error body gracefully', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -335,7 +332,7 @@ describe('Services Unit Test Suite', () => {
       expect(thrown?.message).toContain('Request failed: 500');
     });
 
-    it('handles JSON error body with errors array but no message', async () => {
+    it('Should handle JSON error body with errors array but no message', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -353,7 +350,7 @@ describe('Services Unit Test Suite', () => {
       expect(thrown?.message).toBe('Request failed: 400: Direct Error Description');
     });
 
-    it('handles JSON error body with message but no errors array', async () => {
+    it('Should handle JSON error body with message but no errors array', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -371,7 +368,7 @@ describe('Services Unit Test Suite', () => {
       expect(thrown?.message).toBe('Only Message');
     });
 
-    it('handles deletion, archive, reactivation, and reference failures gracefully', async () => {
+    it('Should handle deletion, archive, reactivation, and reference failures gracefully', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 409,
@@ -396,7 +393,7 @@ describe('Services Unit Test Suite', () => {
       expect(err6?.message).toBe('Request failed: 409');
     });
 
-    it('queries service agreements attached to a service version', async () => {
+    it('Should query service agreements attached to a service version', async () => {
       mockFetch.mockResolvedValue(
         mockResponse(200, {
           items: [{ id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }],
@@ -415,7 +412,7 @@ describe('Services Unit Test Suite', () => {
       expect(agreements[0].title).toBe('Terms');
     });
 
-    it('attaches a service agreement', async () => {
+    it('Should attach a service agreement', async () => {
       mockFetch.mockResolvedValue(
         mockResponse(200, { id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }),
       );
@@ -431,7 +428,7 @@ describe('Services Unit Test Suite', () => {
       expect(res.title).toBe('Terms');
     });
 
-    it('detaches a service agreement successfully or throws error on failure', async () => {
+    it('Should detach a service agreement successfully or throws error on failure', async () => {
       mockFetch.mockResolvedValue(mockResponse(204, null, true));
 
       await detachServiceAgreement('srv-1', 'ver-1', 'ref-1');
@@ -457,7 +454,7 @@ describe('Services Unit Test Suite', () => {
       expect(thrown?.message).toBe('Request failed: 400');
     });
 
-    it('creates an external application method', async () => {
+    it('Should create an external application method', async () => {
       mockFetch.mockResolvedValue(
         mockResponse(200, {
           id: 'ref-1',
@@ -480,7 +477,7 @@ describe('Services Unit Test Suite', () => {
       expect(res.targetTitle).toBe('Go link');
     });
 
-    it('updates an external application method', async () => {
+    it('Should update an external application method', async () => {
       mockFetch.mockResolvedValue(
         mockResponse(200, {
           id: 'ref-1',
@@ -501,6 +498,149 @@ describe('Services Unit Test Suite', () => {
         }),
       );
       expect(res.targetTitle).toBe('Updated Go Link');
+    });
+  });
+
+  describe('servicesQueryOptions search query handling', () => {
+    it('Should append search parameter q when non-empty', async () => {
+      mockFetch.mockResolvedValue(
+        mockResponse(200, { items: [{ id: 'srv-2', title: 'Service B' }] }),
+      );
+
+      const params: ServiceListParams = {
+        q: 'license renewal',
+        sort: 'title',
+        order: 'asc',
+        limit: 25,
+        offset: 10,
+      };
+      const options = servicesQueryOptions('ws-2', params);
+      const items = await (options.queryFn as any)();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://bff-test/v1/services?workspaceId=ws-2&sort=title&order=asc&limit=25&offset=10&q=license+renewal',
+        { credentials: 'include' },
+      );
+      expect(items.items).toHaveLength(1);
+    });
+  });
+
+  describe('selectServiceVersion', () => {
+    const v1: ServiceVersion = {
+      id: 'v1',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-1',
+      version: 1,
+      status: 'archived',
+      data: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      publishedAt: null,
+      archivedAt: '2026-01-02T00:00:00Z',
+    };
+    const v2: ServiceVersion = {
+      id: 'v2',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-2',
+      version: 2,
+      status: 'published',
+      data: {},
+      createdAt: '2026-01-03T00:00:00Z',
+      publishedAt: '2026-01-03T00:00:00Z',
+      archivedAt: null,
+    };
+    const v3: ServiceVersion = {
+      id: 'v3',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-3',
+      version: 3,
+      status: 'draft',
+      data: {},
+      createdAt: '2026-01-04T00:00:00Z',
+      publishedAt: null,
+      archivedAt: null,
+    };
+
+    it('Should return the requested version when versionId is provided and exists', () => {
+      expect(selectServiceVersion([v1, v2, v3], 'v1')).toEqual(v1);
+      expect(selectServiceVersion([v1, v2, v3], 'v3')).toEqual(v3);
+    });
+
+    it('Should return undefined when versionId is provided but not found', () => {
+      expect(selectServiceVersion([v1, v2, v3], 'v-unknown')).toBeUndefined();
+    });
+
+    it('Should return the published version when versionId is omitted', () => {
+      expect(selectServiceVersion([v1, v2, v3])).toEqual(v2);
+    });
+
+    it('Should fall back to the latest version when no version is published and versionId is omitted', () => {
+      expect(selectServiceVersion([v1, v3])).toEqual(v3);
+    });
+
+    it('Should return undefined when versions array is empty and versionId is omitted', () => {
+      expect(selectServiceVersion([])).toBeUndefined();
+    });
+  });
+
+  describe('definitionForServiceVersion', () => {
+    const v1: ServiceVersion = {
+      id: 'v1',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-1',
+      version: 1,
+      status: 'published',
+      data: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      publishedAt: '2026-01-01T00:00:00Z',
+      archivedAt: null,
+    };
+    const v2: ServiceVersion = {
+      id: 'v2',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-missing-def',
+      version: 2,
+      status: 'draft',
+      data: {},
+      createdAt: '2026-01-02T00:00:00Z',
+      publishedAt: null,
+      archivedAt: null,
+    };
+
+    const def1 = { schema: { title: 'Def 1' }, uischema: { type: 'Control' } };
+    const defaultDef = { schema: { title: 'Default Def' }, uischema: { type: 'VerticalLayout' } };
+
+    const mockDetail: ServiceDetail = {
+      service: {
+        id: 'srv-1',
+        workspaceId: 'ws-1',
+        title: 'Service 1',
+        description: 'Test Service',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      versions: [v1, v2],
+      definition: defaultDef,
+      definitions: {
+        'tv-1': def1,
+      },
+      hasSubmissions: false,
+    };
+
+    it('Should return undefined when detail is undefined', () => {
+      expect(definitionForServiceVersion(undefined)).toBeUndefined();
+    });
+
+    it('Should return undefined when version cannot be selected', () => {
+      expect(definitionForServiceVersion({ ...mockDetail, versions: [] })).toBeUndefined();
+      expect(definitionForServiceVersion(mockDetail, 'non-existent-version')).toBeUndefined();
+    });
+
+    it('Should return definition matching the version typeVersionId when present in definitions record', () => {
+      expect(definitionForServiceVersion(mockDetail, 'v1')).toEqual(def1);
+    });
+
+    it('Should fall back to detail.definition when typeVersionId is not in definitions record', () => {
+      expect(definitionForServiceVersion(mockDetail, 'v2')).toEqual(defaultDef);
     });
   });
 });

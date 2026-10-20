@@ -6,7 +6,7 @@ import { OutboxRelayService } from '../../../src/notifications/outbox-relay.serv
 import { InjectDatabase } from '@repo/nestjs/database';
 
 describe('OutboxRelayModule', () => {
-  it('should compile successfully', async () => {
+  it('Should compile successfully for OutboxRelayModule', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [OutboxRelayModule],
     })

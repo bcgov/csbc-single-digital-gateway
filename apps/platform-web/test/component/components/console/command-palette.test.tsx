@@ -1,10 +1,9 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from '@/components/console/command-palette';
 import { authedUser, mockAuth, renderApp } from '../../../support/render-app';
-
-const mockNavigate = vi.fn();
+import { handleOpenChange, mockNavigate } from '../../../support/vi-fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
@@ -19,7 +18,7 @@ afterEach(() => {
 });
 
 describe('CommandPalette Component Test Suite', () => {
-  it('opens from the header search button and lists the console destinations', async () => {
+  it('Should open from the header search button and list the console destinations', async () => {
     mockAuth(authedUser, {
       workspaces: [
         {
@@ -42,14 +41,14 @@ describe('CommandPalette Component Test Suite', () => {
     expect(within(dialog).getByText('Account')).toBeInTheDocument();
   });
 
-  it('renders nothing when open is false', () => {
+  it('Should render nothing when open is false for the command palette component', () => {
     render(<CommandPalette open={false} onOpenChange={vi.fn()} slug="riverton" />);
 
     // Check that elements from the dialog are not in the document
     expect(screen.queryByPlaceholderText('Search or jump to…')).not.toBeInTheDocument();
   });
 
-  it('renders search input and destinations when open is true', () => {
+  it('Should render search input and destinations when open is true', () => {
     render(<CommandPalette open={true} onOpenChange={vi.fn()} slug="riverton" />);
 
     // Search input
@@ -66,8 +65,7 @@ describe('CommandPalette Component Test Suite', () => {
     expect(screen.getByText('Account')).toBeInTheDocument();
   });
 
-  it('calls onOpenChange on pressing Cmd+K or Ctrl+K key combination', () => {
-    const handleOpenChange = vi.fn();
+  it('Should call onOpenChange on pressing Cmd+K or Ctrl+K key combination', () => {
     render(<CommandPalette open={false} onOpenChange={handleOpenChange} slug="riverton" />);
 
     // Press Ctrl+k
@@ -95,9 +93,8 @@ describe('CommandPalette Component Test Suite', () => {
     expect(handleOpenChange).toHaveBeenCalledTimes(3);
   });
 
-  it('navigates to workspace-scoped route and closes on item select', async () => {
+  it('Should navigate to workspace-scoped route and close on item select', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
     render(<CommandPalette open={true} onOpenChange={handleOpenChange} slug="riverton" />);
 
     const servicesItem = screen.getByText('Services');
@@ -110,9 +107,8 @@ describe('CommandPalette Component Test Suite', () => {
     });
   });
 
-  it('navigates to non-scoped route and closes on item select', async () => {
+  it('Should navigate to non-scoped route and close on item select', async () => {
     const user = userEvent.setup();
-    const handleOpenChange = vi.fn();
     render(<CommandPalette open={true} onOpenChange={handleOpenChange} slug="riverton" />);
 
     const accountItem = screen.getByText('Account');

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../../support/render-app';
 import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import type { ServiceAgreementConsent } from '@/lib/applications';
 
@@ -40,13 +41,6 @@ const approvedRequired: ServiceAgreementConsent = {
   decision: 'approve',
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function renderGate(
   agreements: ServiceAgreementConsent[],
   onContinue = vi.fn(),
@@ -67,7 +61,7 @@ afterEach(() => {
 });
 
 describe('consentPending', () => {
-  it('is true when undecided, true when a required agreement is rejected, false once satisfied', () => {
+  it('Should is true when undecided, true when a required agreement is rejected, false once satisfied', () => {
     expect(consentPending([required])).toBe(true);
     expect(consentPending([{ ...required, decision: 'reject' }])).toBe(true);
     expect(consentPending([{ ...required, decision: 'approve' }])).toBe(false);
@@ -78,7 +72,7 @@ describe('consentPending', () => {
 });
 
 describe('ConsentGate', () => {
-  it('does not POST on radio change; records only when Continue is pressed', async () => {
+  it('Should not POST on radio change; records only when Continue is pressed', async () => {
     const user = userEvent.setup();
     const { fetchMock, onContinue } = renderGate([required]);
 
@@ -113,7 +107,7 @@ describe('ConsentGate', () => {
     await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
   });
 
-  it('presents only agreements still needing a decision, and records only those on Continue', async () => {
+  it('Should presents only agreements still needing a decision, and records only those on Continue', async () => {
     const user = userEvent.setup();
     // A mix: one already approved on its current version + one still undecided.
     const { fetchMock, onContinue } = renderGate([approvedRequired, required]);
@@ -140,7 +134,7 @@ describe('ConsentGate', () => {
     expect(posts).toHaveLength(1);
   });
 
-  it('lets an optional agreement be rejected and still continue', async () => {
+  it('Should let an optional agreement be rejected and still continue', async () => {
     const user = userEvent.setup();
     const { onContinue } = renderGate([optional]);
 
@@ -151,7 +145,7 @@ describe('ConsentGate', () => {
     await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
   });
 
-  it('handles submission errors and clears error on selection change', async () => {
+  it('Should handle submission errors and clears error on selection change', async () => {
     const user = userEvent.setup();
     const errorFetch = vi.fn(async () => jsonResponse(null, 500));
     renderGate([required], vi.fn(), errorFetch);
@@ -178,7 +172,7 @@ describe('ConsentGate', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders default titles/labels, optional content/description, and handles multiple agreements text', async () => {
+  it('Should render default titles/labels, optional content/description, and handles multiple agreements text', async () => {
     const defaultLabelsAgreement: ServiceAgreementConsent = {
       agreementVersionId: 'av-def',
       agreementDocumentId: 'ad-def',
@@ -243,7 +237,7 @@ describe('ConsentGate', () => {
     expect(screen.getByText('Rich text content here')).toBeInTheDocument();
   });
 
-  it('seeds local decisions from server decisions', async () => {
+  it('Should seeds local decisions from server decisions', async () => {
     const preRejected: ServiceAgreementConsent = {
       ...required,
       agreementVersionId: 'av-pre-rej',

@@ -17,7 +17,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 describe('LoginCta Component', () => {
-  it('renders CTA elements and the BC Services Card log in button', () => {
+  it('Should render CTA elements and the BC Services Card log in button', () => {
     render(<LoginCta />);
 
     // Assert main header is present

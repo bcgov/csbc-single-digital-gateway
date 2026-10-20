@@ -14,7 +14,7 @@ describe('StatusBanner Component', () => {
     'withdrawn',
   ];
 
-  it.each(statuses)('renders correct details for status: %s', (status) => {
+  it.each(statuses)('Should render correct details for status: %s', (status) => {
     render(<StatusBanner status={status} />);
 
     // Basic config title matching
@@ -31,7 +31,7 @@ describe('StatusBanner Component', () => {
     expect(screen.getByText(expectedTitles[status], { selector: 'p' })).toBeInTheDocument();
   });
 
-  it('renders review reason when status is needs_changes and reviewReason is provided', () => {
+  it('Should render review reason when status is needs_changes and reviewReason is provided', () => {
     render(
       <StatusBanner
         status="needs_changes"
@@ -44,19 +44,19 @@ describe('StatusBanner Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders review reason when status is rejected and reviewReason is provided', () => {
+  it('Should render review reason when status is rejected and reviewReason is provided', () => {
     render(<StatusBanner status="rejected" reviewReason="Information is incorrect." />);
 
     expect(screen.getByText('“Information is incorrect.”')).toBeInTheDocument();
   });
 
-  it('does not render review reason for other statuses even if provided', () => {
+  it('Should not render review reason for other statuses even if provided', () => {
     render(<StatusBanner status="approved" reviewReason="Looks great!" />);
 
     expect(screen.queryByText(/Looks great!/)).not.toBeInTheDocument();
   });
 
-  it('renders action element when provided', () => {
+  it('Should render action element when provided', () => {
     render(
       <StatusBanner
         status="draft"

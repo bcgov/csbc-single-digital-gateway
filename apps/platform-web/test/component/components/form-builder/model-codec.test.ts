@@ -8,7 +8,7 @@ import type {
 } from '@/components/form-builder/model';
 
 describe('Model Codec Component Test Suite', () => {
-  it('successfully round-trips form title, description and basic control nodes', () => {
+  it('Should successfully round-trip form title, description and basic control nodes', () => {
     const original: FormModel = {
       title: 'Sign Up',
       description: 'Create your account.',
@@ -48,7 +48,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('round-trips display fields (heading, paragraph, richtext) with correct alignments & metadata', () => {
+  it('Should round-trip display fields (heading, paragraph, richtext) with correct alignments & metadata', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -108,7 +108,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('round-trips layouts (group & horizontal containers) with nested children', () => {
+  it('Should round-trip layouts (group & horizontal containers) with nested children', () => {
     const original: FormModel = {
       title: 'Survey',
       description: '',
@@ -166,7 +166,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('round-trips a grid container with its column count (feature 169)', () => {
+  it('Should round-trip a grid container with its column count (feature 169)', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -200,7 +200,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('clamps an out-of-range or missing GridLayout columns to 2–6 on parse (feature 169)', () => {
+  it('Should clamp an out-of-range or missing GridLayout columns to 2–6 on parse (feature 169)', () => {
     const tooMany = parseModel({
       schema: { type: 'object', properties: {} },
       uischema: {
@@ -229,7 +229,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((missing.fields[0] as any).columns).toBe(2);
   });
 
-  it('round-trips the choice family (select single/multi, radio, checkbox group) — feature 156 Step 2', () => {
+  it('Should round-trip the choice family (select single/multi, radio, checkbox group) — feature 156 Step 2', () => {
     const original: FormModel = {
       title: 'Selection Form',
       description: '',
@@ -346,7 +346,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[1] as any).combobox).toBe(false);
   });
 
-  it('round-trips slider control fields with ranges', () => {
+  it('Should round-trip slider control fields with ranges', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -376,7 +376,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('handles parsing safely when UI schemas and scopes contain invalid references', () => {
+  it('Should handle parsing safely when UI schemas and scope contain invalid references', () => {
     // Missing properties schema, invalid element types, invalid scopes
     const brokenDefinition = {
       schema: {
@@ -402,7 +402,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[0] as any).fieldType).toBe('text');
   });
 
-  it('round-trips boolean (as checkbox and as toggle), date, multiline text and richtext control nodes', () => {
+  it('Should round-trip boolean (as checkbox and as toggle), date, multiline text and richtext control nodes', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -469,7 +469,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('round-trips a date range field (feature 157) — object start/end + options.format:daterange', () => {
+  it('Should round-trip a date range field (feature 157) — object start/end + options.format:daterange', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -497,7 +497,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parseModel(definition)).toEqual(original);
   });
 
-  it('round-trips a time field (feature 157) — string pattern + options.format:time', () => {
+  it('Should round-trip a time field (feature 157) — string pattern + options.format:time', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -523,7 +523,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parseModel(definition)).toEqual(original);
   });
 
-  it('round-trips a datetime field (feature 157) — string pattern + options.format:datetime', () => {
+  it('Should round-trip a datetime field (feature 157) — string pattern + options.format:datetime', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -549,7 +549,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parseModel(definition)).toEqual(original);
   });
 
-  it('round-trips a text field with placeholder, maxLength and multiline (feature 158)', () => {
+  it('Should round-trip a text field with placeholder, maxLength and multiline (feature 158)', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -577,7 +577,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parseModel(definition)).toEqual(original);
   });
 
-  it('round-trips a single-line text mask; multiline drops it (feature 158)', () => {
+  it('Should round-trip a single-line text mask; multiline drops it (feature 158)', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -639,7 +639,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parseModel(definition).fields[0] as any).label).toBe('');
   });
 
-  it('handles default values and fallbacks during serialization', () => {
+  it('Should handle default values and fallbacks during serialization', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -682,7 +682,7 @@ describe('Model Codec Component Test Suite', () => {
     });
   });
 
-  it('handles defaults and fallbacks during parsing', () => {
+  it('Should handle defaults and fallbacks during parsing', () => {
     const customDefWithSlider = {
       schema: {
         type: 'object',
@@ -759,7 +759,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[4] as any).align).toBeUndefined();
   });
 
-  it('round-trips control nodes with description', () => {
+  it('Should round-trip control nodes with description', () => {
     const original: FormModel = {
       title: 'Sign Up',
       description: 'Create your account.',
@@ -786,7 +786,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('covers all remaining edge cases and branches during serialization and parsing', () => {
+  it('Should cover all remaining edge cases and branches during serialization and parsing', () => {
     const model: FormModel = {
       title: '',
       description: 'Some description',
@@ -849,7 +849,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed.fields[0]!.kind).toBe('control');
   });
 
-  it('covers parsing branches for integer, boolean without toggle, a choice control, missing schema/uischema fields, and HorizontalLayout', () => {
+  it('Should cover parsing branches for integer, boolean without toggle, a choice control, missing schema/uischema fields, and HorizontalLayout', () => {
     const customDef = {
       uischema: {
         type: 'VerticalLayout',
@@ -910,7 +910,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[3] as any).label).toBe('Horizontal Section');
   });
 
-  it('covers prop description, choice controls with no authored options, and container without elements', () => {
+  it('Should cover prop description, choice controls with no authored options, and container without elements', () => {
     const customDef = {
       schema: {
         type: 'object',
@@ -960,7 +960,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[3] as any).children).toEqual([]);
   });
 
-  it('covers slider null min/max fallbacks, missing properties schema, and HorizontalLayout without elements', () => {
+  it('Should cover slider null min/max fallbacks, missing properties schema, and HorizontalLayout without elements', () => {
     const customDef = {
       schema: {
         type: 'object',
@@ -1002,14 +1002,14 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[2] as any).children).toEqual([]);
   });
 
-  it('covers completely empty definition input', () => {
+  it('Should cover completely empty definition input', () => {
     const parsed = parseModel({} as any);
     expect(parsed.title).toBe('');
     expect(parsed.description).toBe('');
     expect(parsed.fields).toEqual([]);
   });
 
-  it('covers propertySchema slider/choice enum fallbacks, malformed choices, and missing schema properties', () => {
+  it('Should cover propertySchema slider/choice enum fallbacks, malformed choices, and missing schema properties', () => {
     const modelWithNulls: FormModel = {
       title: '',
       description: '',
@@ -1103,7 +1103,7 @@ describe('Model Codec Component Test Suite', () => {
 
   // ── Feature 155: number type (integer/decimal) + min/max bounds ────────────────────────────────
 
-  it('serializes a decimal number field with min and max (no options.slider)', () => {
+  it('Should serialize a decimal number field with min and max (no options.slider)', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -1131,7 +1131,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((def.uischema as any).elements[0].options).toBeUndefined();
   });
 
-  it('serializes an integer number field as type integer', () => {
+  it('Should serialize an integer number field as type integer', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -1156,7 +1156,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(prop.maximum).toBeUndefined();
   });
 
-  it('round-trips a number field with numberType and min/max', () => {
+  it('Should round-trip a number field with numberType and min/max', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -1179,7 +1179,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('parses a numeric control as number (not slider) when options.slider is absent, even with min+max', () => {
+  it('Should parse a numeric control as number (not slider) when options.slider is absent, even with min+max', () => {
     const def = {
       schema: {
         type: 'object',
@@ -1201,7 +1201,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(node.max).toBe(25);
   });
 
-  it('serializes a slider with options.slider = true and parses it back as a slider', () => {
+  it('Should serialize a slider with options.slider = true and parse it back as a slider', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -1229,7 +1229,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[0] as any).options).toEqual({});
   });
 
-  it('defaults numberType to decimal when the schema type is number without a slider marker', () => {
+  it('Should default numberType to decimal when the schema type is number without a slider marker', () => {
     const def = {
       schema: { type: 'object', properties: { plain: { type: 'number' } } },
       uischema: {
@@ -1247,7 +1247,7 @@ describe('Model Codec Component Test Suite', () => {
 
   // ── Feature 155: decimal-places limit ──────────────────────────────────────────────────────────
 
-  it('serializes options.decimals for a decimal number field', () => {
+  it('Should serialize options.decimals for a decimal number field', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -1270,7 +1270,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((def.schema.properties as any).price.multipleOf).toBeUndefined();
   });
 
-  it('does not serialize options.decimals for an integer number field', () => {
+  it('Should not serialize options.decimals for an integer number field', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -1291,7 +1291,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((def.uischema as any).elements[0].options).toBeUndefined();
   });
 
-  it('round-trips a decimal number field with decimalPlaces', () => {
+  it('Should round-trip a decimal number field with decimalPlaces', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -1312,7 +1312,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parseModel(serializeModel(original))).toEqual(original);
   });
 
-  it('leaves decimalPlaces unset for a decimal number with no decimals option (unbounded precision)', () => {
+  it('Should leave decimalPlaces unset for a decimal number with no decimals option (unbounded precision)', () => {
     const def = {
       schema: { type: 'object', properties: { x: { type: 'number' } } },
       uischema: {
@@ -1326,9 +1326,7 @@ describe('Model Codec Component Test Suite', () => {
   });
 });
 
-// ── Feature 171: accordion group field ──────────────────────────────────────────────────────────
-
-const accordionNode = (overrides: Partial<ControlNode> = {}): ControlNode => ({
+const accordionNodeControl = (overrides: Partial<ControlNode> = {}): ControlNode => ({
   kind: 'control',
   fieldType: 'accordiongroup',
   key: 'faq',
@@ -1359,8 +1357,8 @@ const optionsOf = (definition: FormDefinition): Record<string, unknown> =>
   (elementOf(definition).options ?? {}) as Record<string, unknown>;
 
 describe('Accordion group codec (feature 171)', () => {
-  it('serializes an array property whose items carry id, title and an object description', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode())));
+  it('Should serialize an array property whose items carry id, title and an object description', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl())));
     expect(prop.type).toBe('array');
     expect(prop.items).toEqual({
       type: 'object',
@@ -1373,11 +1371,11 @@ describe('Accordion group codec (feature 171)', () => {
     });
   });
 
-  it('emits per-item completeness even when the field itself is optional', () => {
+  it('Should emit per-item completeness even when the field itself is optional', () => {
     // Rule 13: "required" on the FIELD governs how many items; items.required governs what an item
     // must contain. An optional group may be empty, but any item in it must be filled in.
-    const optional = propOf(serializeModel(modelWith(accordionNode({ required: false }))));
-    const required = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    const optional = propOf(serializeModel(modelWith(accordionNodeControl({ required: false }))));
+    const required = propOf(serializeModel(modelWith(accordionNodeControl({ required: true }))));
     for (const prop of [optional, required]) {
       expect((prop.items as Record<string, unknown>).required).toEqual(['title', 'description']);
     }
@@ -1385,9 +1383,9 @@ describe('Accordion group codec (feature 171)', () => {
     expect(required.minItems).toBe(1);
   });
 
-  it('requires a non-whitespace character in the item title', () => {
+  it('Should require a non-whitespace character in the item title', () => {
     // `required` alone passes on the '' the control writes on add; minLength: 1 would pass ' '.
-    const items = propOf(serializeModel(modelWith(accordionNode()))).items as Record<
+    const items = propOf(serializeModel(modelWith(accordionNodeControl()))).items as Record<
       string,
       unknown
     >;
@@ -1396,42 +1394,48 @@ describe('Accordion group codec (feature 171)', () => {
   });
 
   it('emits options.format = "accordion-group" on the uischema element', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).format).toBe('accordion-group');
+    expect(optionsOf(serializeModel(modelWith(accordionNodeControl()))).format).toBe(
+      'accordion-group',
+    );
   });
 
-  it('emits options.itemLabel only when the author set a noun', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).itemLabel).toBeUndefined();
+  it('Should emit options.itemLabel only when the author set a noun', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNodeControl()))).itemLabel).toBeUndefined();
     expect(
-      optionsOf(serializeModel(modelWith(accordionNode({ itemLabel: 'question' })))).itemLabel,
+      optionsOf(serializeModel(modelWith(accordionNodeControl({ itemLabel: 'question' }))))
+        .itemLabel,
     ).toBe('question');
   });
 
   it('emits options.defaultOpen only when it is not "none"', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).defaultOpen).toBeUndefined();
     expect(
-      optionsOf(serializeModel(modelWith(accordionNode({ defaultOpen: 'first' })))).defaultOpen,
+      optionsOf(serializeModel(modelWith(accordionNodeControl()))).defaultOpen,
+    ).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNodeControl({ defaultOpen: 'first' }))))
+        .defaultOpen,
     ).toBe('first');
   });
 
-  it('emits minItems: 1 when the field is required', () => {
-    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+  it('Should emit minItems: 1 when the field is required', () => {
+    const definition = serializeModel(modelWith(accordionNodeControl({ required: true })));
     expect(propOf(definition).minItems).toBe(1);
     expect(definition.schema.required).toContain('faq');
   });
 
-  it('omits minItems when the field is not required', () => {
-    expect(propOf(serializeModel(modelWith(accordionNode()))).minItems).toBeUndefined();
+  it('Should omit minItems when the field is not required', () => {
+    expect(propOf(serializeModel(modelWith(accordionNodeControl()))).minItems).toBeUndefined();
   });
 
-  it('does not read minItems back into the model on parse (it is derived from required)', () => {
-    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+  it('Should not read minItems back into the model on parse (it is derived from required)', () => {
+    const definition = serializeModel(modelWith(accordionNodeControl({ required: true })));
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.required).toBe(true);
     expect(node.options).toEqual({});
     expect(node.options).not.toHaveProperty('minItems');
   });
 
-  it('infers the accordiongroup field type from options.format, not the schema shape', () => {
+  it('Should infer the accordiongroup field type from options.format, not the schema shape', () => {
     // The branch must sit EARLY (beside richtext/daterange) — an array otherwise falls through
     // isChoiceProp and lands on `text`.
     const definition = {
@@ -1451,11 +1455,11 @@ describe('Accordion group codec (feature 171)', () => {
     expect(node.fieldType).toBe('accordiongroup');
   });
 
-  it('drops itemLabel and defaultOpen from the parsed node.options', () => {
+  it('Should drop itemLabel and defaultOpen from the parsed node.options', () => {
     // parseControl's drop-list runs for ALL field types (memory `address-readonly-locks`) —
     // a synthesized option left in leaks into node.options and breaks the round-trip.
     const definition = serializeModel(
-      modelWith(accordionNode({ itemLabel: 'question', defaultOpen: 'all' })),
+      modelWith(accordionNodeControl({ itemLabel: 'question', defaultOpen: 'all' })),
     );
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.options).toEqual({});
@@ -1463,47 +1467,49 @@ describe('Accordion group codec (feature 171)', () => {
     expect(node.defaultOpen).toBe('all');
   });
 
-  it('defaults itemLabel and defaultOpen to definite values when the options are absent', () => {
-    const definition = serializeModel(modelWith(accordionNode()));
+  it('Should default itemLabel and defaultOpen to definite values when the options are absent', () => {
+    const definition = serializeModel(modelWith(accordionNodeControl()));
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.itemLabel).toBe('item');
     expect(node.defaultOpen).toBe('none');
   });
 
-  it('emits an author-set minimum in place of the required default', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true, minItems: 3 }))));
+  it('Should emit an author-set minimum in place of the required default', () => {
+    const prop = propOf(
+      serializeModel(modelWith(accordionNodeControl({ required: true, minItems: 3 }))),
+    );
     expect(prop.minItems).toBe(3);
   });
 
-  it('emits an author-set maximum', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ maxItems: 4 }))));
+  it('Should emit an author-set maximum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl({ maxItems: 4 }))));
     expect(prop.maxItems).toBe(4);
   });
 
-  it('falls back to minItems 1 for a required field with no authored minimum', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+  it('Should fall back to minItems 1 for a required field with no authored minimum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl({ required: true }))));
     expect(prop.minItems).toBe(1);
   });
 
-  it('emits neither bound when the field is optional and unbounded', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode())));
+  it('Should emit neither bound when the field is optional and unbounded', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl())));
     expect(prop.minItems).toBeUndefined();
     expect(prop.maxItems).toBeUndefined();
   });
 
-  it('round-trips the authored bounds', () => {
-    const original = accordionNode({ required: true, minItems: 2, maxItems: 5 });
+  it('Should round-trip the authored bounds', () => {
+    const original = accordionNodeControl({ required: true, minItems: 2, maxItems: 5 });
     const parsed = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
     expect(parsed.minItems).toBe(2);
     expect(parsed.maxItems).toBe(5);
     expect(parsed.required).toBe(true);
   });
 
-  it('round-trips an accordion group node, normalising required to an explicit minimum', () => {
+  it('Should round-trip an accordion group node, normalising required to an explicit minimum', () => {
     // A required field emits minItems: 1, which reads back as an explicit minimum. No information
     // is lost or invented: a minimum of 1 and "required" mean the same thing (invariant 1), so the
     // parsed node is equivalent, and a second round trip is a fixed point.
-    const original = accordionNode({
+    const original = accordionNodeControl({
       required: true,
       itemLabel: 'question',
       defaultOpen: 'first',
@@ -1516,8 +1522,8 @@ describe('Accordion group codec (feature 171)', () => {
     expect(again).toEqual(node);
   });
 
-  it('round-trips an optional, unbounded node exactly', () => {
-    const original = accordionNode({ itemLabel: 'question', defaultOpen: 'first' });
+  it('Should round-trip an optional, unbounded node exactly', () => {
+    const original = accordionNodeControl({ itemLabel: 'question', defaultOpen: 'first' });
     const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
     expect(node).toEqual(original);
   });
@@ -1547,29 +1553,29 @@ describe('Section layout codec (feature 172)', () => {
     expect(firstElement(definition).type).toBe('Section');
   });
 
-  it('emits the label on the element (the future <legend>)', () => {
+  it('Should emit the label on the element (the future <legend>)', () => {
     const definition = serializeModel(withFields([sectionNode({ label: 'Applicant details' })]));
     expect(firstElement(definition).label).toBe('Applicant details');
   });
 
-  it('omits the label when it is blank', () => {
+  it('Should omit the label when it is blank', () => {
     const definition = serializeModel(withFields([sectionNode({ label: '' })]));
     expect(firstElement(definition)).not.toHaveProperty('label');
   });
 
-  it('emits options.description when the author set one', () => {
+  it('Should emit options.description when the author set one', () => {
     const definition = serializeModel(
       withFields([sectionNode({ label: 'A', description: 'Tell us who you are.' })]),
     );
     expect(firstElement(definition).options).toEqual({ description: 'Tell us who you are.' });
   });
 
-  it('omits options entirely when there is no description', () => {
+  it('Should omit options entirely when there is no description', () => {
     const definition = serializeModel(withFields([sectionNode({ label: 'A' })]));
     expect(firstElement(definition)).not.toHaveProperty('options');
   });
 
-  it('does NOT emit options.description for a group container', () => {
+  it('Should not emit options.description for a group container', () => {
     // Group's renderer reads options.description, but wiring its serialization is separate
     // in-flight work — Group's output must stay byte-identical (doc 172, rule 10).
     const definition = serializeModel(
@@ -1589,7 +1595,7 @@ describe('Section layout codec (feature 172)', () => {
     expect(node.label).toBe('A');
   });
 
-  it('recovers the description from options on parse', () => {
+  it('Should recover the description from options on parse', () => {
     const definition = serializeModel(
       withFields([sectionNode({ label: 'A', description: 'Sub-heading' })]),
     );
@@ -1597,7 +1603,7 @@ describe('Section layout codec (feature 172)', () => {
     expect(node.description).toBe('Sub-heading');
   });
 
-  it('round-trips a section container with children unchanged', () => {
+  it('Should round-trip a section container with children unchanged', () => {
     const original = sectionNode({
       label: 'Applicant details',
       description: 'Tell us who you are.',
@@ -1616,7 +1622,7 @@ describe('Section layout codec (feature 172)', () => {
     expect(node).toEqual(original);
   });
 
-  it('serializes controls nested in a section into schema.properties', () => {
+  it('Should serialize controls nested in a section into schema.properties', () => {
     // A container contributes no schema of its own, but its children still must.
     const definition = serializeModel(
       withFields([
@@ -1636,5 +1642,368 @@ describe('Section layout codec (feature 172)', () => {
     );
     expect(definition.schema.properties).toHaveProperty('first_name');
     expect(definition.schema.required).toContain('first_name');
+  });
+
+  it('Should serialize required checkboxes field with minItems: 1', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'checkboxes',
+          key: 'interests',
+          label: 'Interests',
+          required: true,
+          options: {},
+          enumOptions: [{ value: 'sports', label: 'Sports' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    expect(properties.interests).toHaveProperty('minItems', 1);
+  });
+
+  it('Should handle non-array oneOf in choicesFromSchema defensively', () => {
+    let calledFirst = true;
+    const schema = {
+      type: 'object',
+      properties: {
+        pref: {
+          get type() {
+            return 'string';
+          },
+          get oneOf() {
+            if (calledFirst) {
+              calledFirst = false;
+              return [{ const: 'yes', title: 'Yes' }];
+            }
+            return null; // non-array on second access
+          },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [{ type: 'Control', scope: '#/properties/pref' }],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.enumOptions).toEqual([]);
+  });
+
+  it('Should infer address field when format is address even if type is not object', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        address_field: { type: 'string' },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/address_field',
+          options: { format: 'address' },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.fieldType).toBe('address');
+  });
+
+  it('Should parse address defaults and readOnly locks for country and province', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        user_addr: {
+          type: 'object',
+          default: { country: 'CA', province: 'BC' },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/user_addr',
+          options: {
+            format: 'address',
+            fields: {
+              country: { readOnly: true },
+              province: { readOnly: true },
+            },
+          },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.defaultCountry).toBe('CA');
+    expect(field.defaultProvince).toBe('BC');
+    expect(field.readOnlyCountry).toBe(true);
+    expect(field.readOnlyProvince).toBe(true);
+  });
+
+  it('Should parse address with empty defaults and missing lock bags as false/undefined', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        user_addr: {
+          type: 'object',
+          default: { country: '', province: '' },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/user_addr',
+          options: {
+            format: 'address',
+            fields: {
+              country: { readOnly: false },
+            },
+          },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.defaultCountry).toBeUndefined();
+    expect(field.defaultProvince).toBeUndefined();
+    expect(field.readOnlyCountry).toBe(false);
+    expect(field.readOnlyProvince).toBe(false);
+  });
+
+  it('Should serialize address field with required subfields, defaults, and read-only locks', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'address',
+          key: 'home_addr',
+          label: 'Home Address',
+          required: true,
+          options: {},
+          defaultCountry: 'CA',
+          defaultProvince: 'BC',
+          readOnlyCountry: true,
+          readOnlyProvince: true,
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.home_addr;
+    expect(prop.type).toBe('object');
+    expect(prop.required).toEqual(['country', 'address_one', 'city', 'province', 'postal_code']);
+    expect(prop.properties.country).toEqual({ type: 'string', minLength: 1 });
+    expect(prop.properties.address_two).toEqual({ type: 'string' });
+    expect(prop.default).toEqual({ country: 'CA', province: 'BC' });
+
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options.format).toBe('address');
+    expect(elem.options.fields).toEqual({
+      country: { readOnly: true },
+      province: { readOnly: true },
+    });
+  });
+
+  it('Should serialize optional address field without defaults or locks', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'address',
+          key: 'shipping_addr',
+          label: 'Shipping Address',
+          required: false,
+          options: {},
+          defaultCountry: '',
+          defaultProvince: '',
+          readOnlyCountry: false,
+          readOnlyProvince: false,
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.shipping_addr;
+    expect(prop.type).toBe('object');
+    expect(prop.required).toBeUndefined();
+    expect(prop.properties.country).toEqual({ type: 'string' });
+    expect(prop.default).toBeUndefined();
+
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options.format).toBe('address');
+    expect(elem.options.fields).toBeUndefined();
+  });
+
+  it('Should serialize optional daterange field without required array', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'daterange',
+          key: 'optional_trip',
+          label: 'Trip Dates',
+          required: false,
+          options: {},
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.optional_trip;
+    expect(prop.required).toBeUndefined();
+  });
+
+  it('Should serialize optional multi-select field without minItems', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'optional_categories',
+          label: 'Categories',
+          multiple: true,
+          required: false,
+          options: {},
+          enumOptions: [{ value: 'cat1', label: 'Category 1' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.optional_categories;
+    expect(prop.minItems).toBeUndefined();
+  });
+
+  it('Should serialize required daterange field with start and end in required array', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'daterange',
+          key: 'trip_dates',
+          label: 'Trip Dates',
+          required: true,
+          options: {},
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.trip_dates;
+    expect(prop.required).toEqual(['start', 'end']);
+  });
+
+  it('Should serialize required multi-select field with minItems: 1', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'category_ids',
+          label: 'Categories',
+          multiple: true,
+          required: true,
+          options: {},
+          enumOptions: [{ value: 'cat1', label: 'Category 1' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.category_ids;
+    expect(prop.minItems).toBe(1);
+  });
+
+  it('Should serialize grid layout container with undefined columns defaulting to 2', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'container',
+          layout: 'grid',
+          children: [],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options).toEqual({ columns: 2 });
+  });
+
+  it('Should handle array prop without items in schema parsing', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        raw_list: {
+          type: 'array',
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/raw_list',
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.fieldType).toBe('text');
+  });
+
+  it('Should handle choice oneOf entries with missing const and empty title', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        choice_field: {
+          type: 'string',
+          oneOf: [{ title: 'No Const Option' }, { const: 'c2', title: '' }],
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/choice_field',
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.enumOptions).toEqual([
+      { value: '', label: 'No Const Option' },
+      { value: 'c2', label: 'c2' },
+    ]);
   });
 });

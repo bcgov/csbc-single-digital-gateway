@@ -15,16 +15,16 @@ describe('ApplicationFormsV1Controller Unit Test Suite', () => {
     );
   });
 
-  it('should call getApplicationForm on ApplicationsService with the correct arguments', async () => {
+  it('Should call getApplicationForm on ApplicationsService with the correct arguments', async () => {
     const id = 'test-id';
     const formId = 'test-form-id';
-    const expectedResult = { id: 'test-form-id', schema: {}, layout: {} };
+    const mockResult = { id: 'test-form-id', schema: {}, layout: {} };
 
-    applicationsServiceMock.getApplicationForm.mockResolvedValue(expectedResult);
+    applicationsServiceMock.getApplicationForm.mockResolvedValue(mockResult);
 
     const result = await controller.getForm(id, formId);
 
     expect(applicationsServiceMock.getApplicationForm).toHaveBeenCalledWith(id, formId);
-    expect(result).toEqual(expectedResult);
+    expect(result).toEqual(mockResult);
   });
 });

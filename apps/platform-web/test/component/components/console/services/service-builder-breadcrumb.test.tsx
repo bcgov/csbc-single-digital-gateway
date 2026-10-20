@@ -20,7 +20,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
 }));
 
 describe('ServiceBuilderBreadcrumb Component Test Suite', () => {
-  it('renders services, active service, and current label breadcrumbs correctly', () => {
+  it('Should render services, active service, and current label breadcrumbs correctly', () => {
     render(
       <ServiceBuilderBreadcrumb
         slug="victoria"

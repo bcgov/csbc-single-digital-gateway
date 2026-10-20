@@ -7,29 +7,11 @@ import {
   controlId,
   groupId,
 } from '@/components/form-builder/dnd';
-import {
-  createField,
-  type ContainerNode,
-  type ControlNode,
-  type FormModel,
-} from '@/components/form-builder/model';
-
-const ctrl = (key: string): ControlNode => ({ ...createField('text'), key, label: key });
-const container = (children: ControlNode[] = []): ContainerNode => ({
-  kind: 'container',
-  layout: 'group',
-  children,
-});
-const rootKeys = (m: FormModel) => m.fields.map((f) => (f.kind === 'control' ? f.key : 'GROUP'));
-const childKeys = (m: FormModel, i: number) => {
-  const f = m.fields[i];
-  return f && f.kind === 'container'
-    ? f.children.map((c) => (c.kind === 'control' ? c.key : ''))
-    : [];
-};
+import { type FormModel } from '@/components/form-builder/model';
+import { ctrl, container, rootKeys, childKeys } from '../support/testHelpers';
 
 describe('Form Builder Dnd Integration Test Suite', () => {
-  it('buildRecord maps root controls + container children into groups', () => {
+  it('Should map root controls + container children into groups in buildRecord', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -41,7 +23,7 @@ describe('Form Builder Dnd Integration Test Suite', () => {
     });
   });
 
-  it('applyRecord(buildRecord) is a round-trip', () => {
+  it('Should round-trip with applyRecord(buildRecord)', () => {
     const model: FormModel = {
       title: 'T',
       description: 'D',
@@ -50,7 +32,7 @@ describe('Form Builder Dnd Integration Test Suite', () => {
     expect(applyRecord(model, buildRecord(model))).toEqual(model);
   });
 
-  it('applyRecord reorders root from a moved record', () => {
+  it('Should reorder root from a moved record in applyRecord', () => {
     const model: FormModel = {
       title: '',
       description: '',
@@ -60,7 +42,7 @@ describe('Form Builder Dnd Integration Test Suite', () => {
     expect(rootKeys(applyRecord(model, moved))).toEqual(['b', 'a', 'c']);
   });
 
-  it('applyRecord moves a control into a container group', () => {
+  it('Should move a control into a container group in applyRecord', () => {
     const model: FormModel = { title: '', description: '', fields: [ctrl('a'), container([])] };
     // 'a' removed from root, placed into the container's group.
     const moved = { [ROOT_GROUP]: [containerId(1)], [groupId(1)]: [controlId('a')] };

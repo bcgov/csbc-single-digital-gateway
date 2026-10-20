@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServiceDetail, ServiceVersion } from '@/lib/services';
 
-const { navigateMock, paramsRef, queryRef } = vi.hoisted(() => ({
+const { locationRef, navigateMock, paramsRef, queryRef } = vi.hoisted(() => ({
+  locationRef: { current: { hash: '' } },
   navigateMock: vi.fn(),
   paramsRef: {
     current: { slug: 'riverton', id: 'svc-1' } as {
@@ -31,7 +32,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
   useLocation: (options?: { select?: (l: { hash: string }) => unknown }) => {
-    const location = { hash: '' };
+    const location = locationRef.current;
     return options?.select ? options.select(location) : location;
   },
 }));
@@ -63,9 +64,9 @@ vi.mock('@repo/react/jsonforms', () => ({
 vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
 
 import { ServiceDetailsPage } from '@/components/console/services/service-details-page';
+import { group } from '../../../../support/testHelpers';
 
 const control = (scope: string) => ({ type: 'Control', scope });
-const group = (label: string, elements: unknown[] = []) => ({ type: 'Group', label, elements });
 
 const UISCHEMA = {
   type: 'VerticalLayout',
@@ -119,7 +120,10 @@ beforeEach(() => {
   arrange(detail());
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  locationRef.current = { hash: '' };
+});
 
 /**
  * Feature 174. The Service details page renders the service read-only from `definition.schema` /
@@ -128,7 +132,7 @@ afterEach(cleanup);
  */
 describe('ServiceDetailsPage', () => {
   describe('section rendering', () => {
-    it('should render one section per top-level Group, with the Group label as its heading', () => {
+    it('Should render one section per top-level Group, with the Group label as its heading', () => {
       const { container } = render(<ServiceDetailsPage />);
 
       // 3 derived Groups + the always-on Configuration section.
@@ -138,7 +142,7 @@ describe('ServiceDetailsPage', () => {
       expect(screen.getByRole('heading', { name: 'Data & privacy' })).toBeInTheDocument();
     });
 
-    it('should give each section an id matching the derived anchor', () => {
+    it('Should give each section an id matching the derived anchor', () => {
       const { container } = render(<ServiceDetailsPage />);
 
       expect(sections(container).map((section) => section.id)).toEqual([
@@ -149,7 +153,7 @@ describe('ServiceDetailsPage', () => {
       ]);
     });
 
-    it('should not render a duplicate heading (GroupLayoutRenderer already emits the h2)', () => {
+    it('Should not render a duplicate heading (GroupLayoutRenderer already emits the h2)', () => {
       render(<ServiceDetailsPage />);
 
       // Exactly one heading per section — the page must not add its own SectionHeading on top.
@@ -157,7 +161,7 @@ describe('ServiceDetailsPage', () => {
       expect(screen.getAllByRole('heading', { name: 'Eligibility criteria' })).toHaveLength(1);
     });
 
-    it('should render an empty Group as a headed, anchored section with no fields', () => {
+    it('Should render an empty Group as a headed, anchored section with no fields', () => {
       const { container } = render(<ServiceDetailsPage />);
 
       const empty = container.querySelector('#eligibility-criteria');
@@ -169,7 +173,7 @@ describe('ServiceDetailsPage', () => {
       expect(within(empty as HTMLElement).queryByTestId('element')?.dataset.type).toBe('Group');
     });
 
-    it('should render the authored values from the selected version data', () => {
+    it('Should render the authored values from the selected version data', () => {
       arrange(
         detail({
           versions: [version({ data: { title: 'X', service_description: { about: {} } } })],
@@ -186,7 +190,7 @@ describe('ServiceDetailsPage', () => {
   });
 
   describe('always-on sections', () => {
-    it('should always render the Configuration section, whatever the definition says', () => {
+    it('Should always render the Configuration section, whatever the definition says', () => {
       arrange(
         detail({
           definition: { schema: {}, uischema: { type: 'VerticalLayout', elements: [] } },
@@ -202,13 +206,13 @@ describe('ServiceDetailsPage', () => {
       expect(container.querySelector('#configuration')).not.toBeNull();
     });
 
-    it('should render always-on sections last, after the derived ones', () => {
+    it('Should render always-on sections last, after the derived ones', () => {
       const { container } = render(<ServiceDetailsPage />);
 
       expect(sections(container).at(-1)?.id).toBe('configuration');
     });
 
-    it('should suffix the anchor when the definition authors a clashing Group', () => {
+    it('Should suffix the anchor when the definition authors a clashing Group', () => {
       arrange(
         detail({
           definition: {
@@ -236,7 +240,7 @@ describe('ServiceDetailsPage', () => {
   });
 
   describe('page chrome', () => {
-    it('should omit title and description from the body (they are in the page header)', () => {
+    it('Should omit title and description from the body (they are in the page header)', () => {
       render(<ServiceDetailsPage />);
 
       const scopes = screen
@@ -247,7 +251,7 @@ describe('ServiceDetailsPage', () => {
       expect(scopes).not.toContain('#/properties/description');
     });
 
-    it('should render the version picker in the header extra slot', () => {
+    it('Should render the version picker in the header extra slot', () => {
       render(<ServiceDetailsPage />);
 
       expect(screen.getByRole('button', { name: /Version v1/ })).toBeInTheDocument();
@@ -255,7 +259,7 @@ describe('ServiceDetailsPage', () => {
   });
 
   describe('version selection', () => {
-    it('should show the latest published version on the bare details route', () => {
+    it('Should show the latest published version on the bare details route', () => {
       arrange(
         detail({
           versions: [
@@ -271,7 +275,7 @@ describe('ServiceDetailsPage', () => {
       expect(screen.getByRole('button', { name: /Version v1/ })).toBeInTheDocument();
     });
 
-    it('should navigate to …/versions/$versionId/detailss when another version is picked', async () => {
+    it('Should navigate to …/versions/$versionId/detailss when another version is picked', async () => {
       const user = userEvent.setup();
       arrange(
         detail({
@@ -292,7 +296,7 @@ describe('ServiceDetailsPage', () => {
       });
     });
 
-    it('should navigate back to the bare details route when the published version is picked', async () => {
+    it('Should navigate back to the bare details route when the published version is picked', async () => {
       const user = userEvent.setup();
       paramsRef.current = { slug: 'riverton', id: 'svc-1', versionId: 'v-2' };
       arrange(
@@ -314,7 +318,7 @@ describe('ServiceDetailsPage', () => {
       });
     });
 
-    it('should render the version named in the path on the versions detail route', () => {
+    it('Should render the version named in the path on the versions detail route', () => {
       paramsRef.current = { slug: 'riverton', id: 'svc-1', versionId: 'v-2' };
       arrange(
         detail({
@@ -339,7 +343,7 @@ describe('ServiceDetailsPage', () => {
       );
     });
 
-    it('should render a version against its OWN template, not the current one', () => {
+    it('Should render a version against its OWN template, not the current one', () => {
       // v-2 is pinned to an older type version whose uischema has a single, differently-named Group.
       paramsRef.current = { slug: 'riverton', id: 'svc-1', versionId: 'v-2' };
       const legacyUischema = { type: 'VerticalLayout', elements: [group('Legacy overview')] };
@@ -373,7 +377,7 @@ describe('ServiceDetailsPage', () => {
   });
 
   describe('empty and error states', () => {
-    it('should fall back to the latest version when nothing is published (feature 175)', () => {
+    it('Should fall back to the latest version when nothing is published (feature 175)', () => {
       arrange(detail({ versions: [version({ status: 'draft', publishedAt: null })] }));
 
       const { container } = render(<ServiceDetailsPage />);
@@ -383,7 +387,7 @@ describe('ServiceDetailsPage', () => {
       expect(sections(container).length).toBeGreaterThan(0);
     });
 
-    it('should render the no-versions empty state for a service with no versions at all', () => {
+    it('Should render the no-versions empty state for a service with no versions at all', () => {
       arrange(detail({ versions: [] }));
 
       const { container } = render(<ServiceDetailsPage />);
@@ -393,7 +397,7 @@ describe('ServiceDetailsPage', () => {
       expect(sections(container)).toHaveLength(0);
     });
 
-    it('should render an unknown-version message when the path version does not exist', () => {
+    it('Should render an unknown-version message when the path version does not exist', () => {
       paramsRef.current = { slug: 'riverton', id: 'svc-1', versionId: 'nope' };
       arrange(detail());
 
@@ -402,7 +406,7 @@ describe('ServiceDetailsPage', () => {
       expect(screen.getByText(/doesn’t exist/)).toBeInTheDocument();
     });
 
-    it('should render nothing but the header when the definition resolves empty', () => {
+    it('Should render nothing but the header when the definition resolves empty', () => {
       arrange(
         detail({
           definition: { schema: {}, uischema: {} },
@@ -417,12 +421,52 @@ describe('ServiceDetailsPage', () => {
       expect(sections(container).map((section) => section.id)).toEqual(['configuration']);
     });
 
-    it('should render an error message when the service query fails', () => {
+    it('Should render an error message when the service query fails', () => {
       arrange(undefined, { isError: true });
 
       render(<ServiceDetailsPage />);
 
       expect(screen.getByText(/couldn’t be loaded/)).toBeInTheDocument();
+    });
+
+    it('Should render an error message when detail is undefined without query error', () => {
+      arrange(undefined, { isError: false, isPending: false });
+
+      render(<ServiceDetailsPage />);
+
+      expect(screen.getByText(/couldn’t be loaded/)).toBeInTheDocument();
+    });
+
+    it('Should render loading skeleton while service query is pending', () => {
+      arrange(undefined, { isPending: true });
+
+      const { container } = render(<ServiceDetailsPage />);
+
+      expect(container.querySelector('div[aria-hidden]')).not.toBeNull();
+    });
+  });
+
+  describe('useHashScroll and props override', () => {
+    it('Should scroll the matching section into view when hash is provided and definition is ready', () => {
+      const scrollIntoViewMock = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoViewMock;
+      locationRef.current = { hash: 'service-description' };
+
+      render(<ServiceDetailsPage />);
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    });
+
+    it('Should safely handle non-existent element for hash', () => {
+      locationRef.current = { hash: 'non-existent-hash' };
+
+      expect(() => render(<ServiceDetailsPage />)).not.toThrow();
+    });
+
+    it('Should use versionId passed as a prop override', () => {
+      render(<ServiceDetailsPage versionId="v-1" />);
+
+      expect(screen.getByRole('button', { name: /Version v1/ })).toBeInTheDocument();
     });
   });
 });

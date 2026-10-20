@@ -5,7 +5,7 @@ import { DisplayInspector } from '@/components/form-builder/display-inspector';
 import type { DisplayNode } from '@/components/form-builder/model';
 
 describe('DisplayInspector Component Test Suite', () => {
-  it('renders heading config buttons and responds to edits', async () => {
+  it('Should render heading config buttons and respond to edits', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const node: DisplayNode = {
@@ -36,7 +36,7 @@ describe('DisplayInspector Component Test Suite', () => {
     expect(screen.getByText('Edit the heading content on the canvas.')).toBeInTheDocument();
   });
 
-  it('renders paragraph alignment buttons and responds to alignment changes', async () => {
+  it('Should render paragraph alignment buttons and respond to alignment changes', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const node: DisplayNode = {
@@ -70,7 +70,7 @@ describe('DisplayInspector Component Test Suite', () => {
     expect(screen.getByText('Edit the paragraph content on the canvas.')).toBeInTheDocument();
   });
 
-  it('renders only rich text help tip when displayType is richtext', () => {
+  it('Should render only rich text help tip when displayType is richtext', () => {
     const node: DisplayNode = {
       kind: 'display',
       id: 'r-1',
@@ -88,7 +88,7 @@ describe('DisplayInspector Component Test Suite', () => {
     expect(screen.getByText('Edit the rich text content on the canvas.')).toBeInTheDocument();
   });
 
-  it('defaults to level 2 heading active when level is undefined', () => {
+  it('Should default to level 2 heading active when level is undefined', () => {
     const node: DisplayNode = {
       kind: 'display',
       id: 'h-2',
@@ -102,7 +102,7 @@ describe('DisplayInspector Component Test Suite', () => {
     expect(headingBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('defaults to left alignment active when align is undefined', () => {
+  it('Should default to left alignment active when align is undefined', () => {
     const node: DisplayNode = {
       kind: 'display',
       id: 'p-2',

@@ -6,31 +6,31 @@ import {
 
 describe('catalog format utils', () => {
   describe('serviceDataString', () => {
-    it('should return the custom value from data record if it is a valid non-empty string', () => {
+    it('Should return the custom value from data record if it is a valid non-empty string', () => {
       const data = { title: 'Custom Title', description: 'Custom Description' };
       expect(serviceDataString(data, 'title', 'Fallback')).toBe('Custom Title');
       expect(serviceDataString(data, 'description', 'Fallback')).toBe('Custom Description');
     });
 
-    it('should return the fallback if the key is missing in the data record', () => {
+    it('Should return the fallback if the key is missing in the data record', () => {
       const data = { otherKey: 'value' };
       expect(serviceDataString(data, 'title', 'Fallback Title')).toBe('Fallback Title');
     });
 
-    it('should return the fallback if the value in data record is not a string', () => {
+    it('Should return the fallback if the value in data record is not a string', () => {
       const data = { title: 123, description: true, tags: ['health'] };
       expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
       expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
       expect(serviceDataString(data, 'tags', 'Fallback')).toBe('Fallback');
     });
 
-    it('should return the fallback if the value in data record is null or undefined', () => {
+    it('Should return the fallback if the value in data record is null or undefined', () => {
       const data = { title: null, description: undefined };
       expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
       expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
     });
 
-    it('should return the fallback if the value is empty or only whitespace', () => {
+    it('Should return the fallback if the value is empty or only whitespace', () => {
       const data = { title: '', description: '   ' };
       expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
       expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
@@ -38,12 +38,12 @@ describe('catalog format utils', () => {
   });
 
   describe('definitionSchemas', () => {
-    it('should return empty schema and uischema if definition is undefined or null', () => {
+    it('Should return empty schema and uischema if definition is undefined or null', () => {
       expect(definitionSchemas(undefined)).toEqual({ schema: {}, uischema: {} });
       expect(definitionSchemas(null)).toEqual({ schema: {}, uischema: {} });
     });
 
-    it('should return schema and uischema from definition if both are present', () => {
+    it('Should return schema and uischema from definition if both are present', () => {
       const definition = {
         schema: { type: 'object', properties: { name: { type: 'string' } } },
         uischema: { type: 'VerticalLayout', elements: [] },
@@ -54,7 +54,7 @@ describe('catalog format utils', () => {
       });
     });
 
-    it('should fall back to empty objects if schema or uischema are missing in definition', () => {
+    it('Should fall back to empty objects if schema or uischema are missing in definition', () => {
       const definitionOnlySchema = {
         schema: { type: 'object' },
       };

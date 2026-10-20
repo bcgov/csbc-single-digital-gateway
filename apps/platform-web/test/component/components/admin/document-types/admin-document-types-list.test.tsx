@@ -1,17 +1,12 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
+import { ISO } from '../../../../support/fixtures';
+import { mockDocumentTypesBff } from '../../../../support/mock-document-types-bff';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-const adminUser = {
-  id: 'u1',
-  roles: ['admin'],
-  claims: { sub: 'u1', name: 'Maya Reyes', email: 'maya.reyes@riverton.gov' },
-};
 
 interface Version {
   id: string;
@@ -29,31 +24,9 @@ interface Entry {
   versions: Version[];
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi(items: Entry[]): ReturnType<typeof vi.fn> {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes('/auth/me')) {
-      return json(adminUser);
-    }
-    if (url.includes('/v1/admin/document-types')) {
-      return json({ items });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('AdminDocumentTypesList', () => {
-  it('renders empty state when there are no document types', async () => {
-    mockApi([]);
+  it('Should render empty state when there are no document types', async () => {
+    mockDocumentTypesBff({ items: [] });
     renderApp('/admin/document-types');
 
     expect(
@@ -66,7 +39,7 @@ describe('AdminDocumentTypesList', () => {
     expect(await screen.findByText('No document types yet.')).toBeInTheDocument();
   });
 
-  it('renders a list of document types with correct metadata, status summary, and versions count', async () => {
+  it('Should render a list of document types with correct metadata, status summary, and versions count', async () => {
     const entries: Entry[] = [
       {
         type: {
@@ -143,7 +116,7 @@ describe('AdminDocumentTypesList', () => {
       },
     ];
 
-    mockApi(entries);
+    mockDocumentTypesBff({ items: entries });
     renderApp('/admin/document-types');
 
     // 1. Verify list elements render

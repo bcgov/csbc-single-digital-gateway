@@ -14,19 +14,12 @@ import {
   isHttpsUrl,
 } from '@/components/console/services/external-application-form';
 import type { ServiceReference } from '@/lib/services';
+import { ISO } from '../support/fixtures';
+import { jsonResponse } from '../support/render-app';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-07-14T00:00:00.000Z';
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 const externalRef: ServiceReference = {
   id: 'ref-ext',
@@ -89,9 +82,10 @@ function renderMethods(
     </QueryClientProvider>,
   );
 }
+
 describe('External Application Method Integration Test Suite', () => {
   describe('isHttpsUrl', () => {
-    it('accepts absolute https and rejects everything else', () => {
+    it('Should accept absolute https and reject everything else', () => {
       expect(isHttpsUrl('https://gov.uk/apply')).toBe(true);
       expect(isHttpsUrl('http://gov.uk')).toBe(false);
       expect(isHttpsUrl('javascript:alert(1)')).toBe(false);
@@ -101,7 +95,7 @@ describe('External Application Method Integration Test Suite', () => {
   });
 
   describe('ExternalApplicationForm', () => {
-    it('gates submit on a label + a valid https url and emits trimmed values', async () => {
+    it('Should gate submit on a label + a valid https url and emit trimmed values', async () => {
       const onSubmit = vi.fn();
       render(
         <ExternalApplicationForm
@@ -135,7 +129,7 @@ describe('External Application Method Integration Test Suite', () => {
   });
 
   describe('ApplicationMethods — external method row', () => {
-    it('renders an external method with its url and no builder link', async () => {
+    it('Should render an external method with its url and no builder link', async () => {
       renderMethods([externalRef]);
       expect(await screen.findByText('Apply on GOV.UK')).toBeInTheDocument();
       expect(screen.getByText('https://gov.uk/apply')).toBeInTheDocument();
@@ -145,8 +139,10 @@ describe('External Application Method Integration Test Suite', () => {
       expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
     });
 
-    it('edits an external method via the dialog (prefilled) and PATCHes external-applications', async () => {
-      const fetchMock = vi.fn(async () => json({ ...externalRef, url: 'https://gov.uk/new' }));
+    it('Should edit an external method via the dialog (prefilled) and PATCHes external-applications', async () => {
+      const fetchMock = vi.fn(async () =>
+        jsonResponse({ ...externalRef, url: 'https://gov.uk/new' }),
+      );
       globalThis.fetch = fetchMock as unknown as typeof fetch;
       renderMethods([externalRef]);
       await screen.findByText('Apply on GOV.UK');
@@ -170,14 +166,14 @@ describe('External Application Method Integration Test Suite', () => {
   });
 
   describe('ApplicationMethods — reordering (feature 132)', () => {
-    it('shows a reorder grip per method when editable', async () => {
+    it('Should show a reorder grip per method when editable', async () => {
       renderMethods([formRef, externalRef], { onReorder: () => {} });
       expect(await screen.findByText('Application form')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Reorder Application form' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Reorder Apply on GOV.UK' })).toBeInTheDocument();
     });
 
-    it('shows no reorder grips on a read-only (published) version', async () => {
+    it('Should show no reorder grips on a read-only (published) version', async () => {
       renderMethods([formRef, externalRef], { readonly: true, onReorder: () => {} });
       expect(await screen.findByText('Application form')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^Reorder / })).not.toBeInTheDocument();
@@ -185,7 +181,7 @@ describe('External Application Method Integration Test Suite', () => {
       expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
     });
 
-    it('renders methods in the order given (parent-controlled)', async () => {
+    it('Should render methods in the order given (parent-controlled)', async () => {
       renderMethods([externalRef, formRef], { onReorder: () => {} });
       await screen.findByText('Application form');
       const titles = screen

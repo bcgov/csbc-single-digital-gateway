@@ -2,8 +2,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../../support/render-app';
 import { ReviseForm } from '@/components/application/revise-form';
 import type { ApplicationDetail } from '@/lib/applications';
+import { createMockBff } from '../../../support/create-mock-bff';
 
 vi.mock('@repo/react/form-runner', () => ({
   FormRunner: ({ data, onChange, onSubmit, submitLabel, submitting }: any) => (
@@ -52,13 +54,6 @@ const mockApplication: ApplicationDetail = {
   submittedAt: null,
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
@@ -101,26 +96,24 @@ describe('ReviseForm Component', () => {
     };
   };
 
-  it('renders initial form data correctly', () => {
+  it('Should render initial form data correctly', () => {
     renderComponent();
     expect(screen.getByLabelText('Name')).toHaveValue('Initial Name');
     expect(screen.getByRole('button', { name: 'Resubmit application' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
-  it('calls onCancel when Cancel button is clicked', async () => {
+  it('Should call onCancel when Cancel button is clicked', async () => {
     const onCancel = vi.fn();
     renderComponent({ onCancel });
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('performs debounced autosave when name is modified', async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ ...mockApplication, data: { name: 'Updated' } }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
+  it('Should performs debounced autosave when name is modified', async () => {
+    const fetchMock = createMockBff({
+      application: jsonResponse({ ...mockApplication, data: { name: 'updated' } }),
+    });
     renderComponent();
 
     const input = screen.getByLabelText('Name');
@@ -142,10 +135,11 @@ describe('ReviseForm Component', () => {
     });
   }, 10000);
 
-  it('submits application successfully and calls onSubmitted', async () => {
+  it('Should submits application successfully and calls onSubmitted', async () => {
     const onSubmitted = vi.fn();
-    const fetchMock = vi.fn(async () => jsonResponse({ ...mockApplication, status: 'pending' }));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const fetchMock = createMockBff({
+      application: jsonResponse({ ...mockApplication, status: 'pending' }),
+    });
 
     renderComponent({ onSubmitted });
 
@@ -164,7 +158,7 @@ describe('ReviseForm Component', () => {
     expect(onSubmitted).toHaveBeenCalledTimes(1);
   });
 
-  it('shows error message if submit fails', async () => {
+  it('Should show error message if submit fails', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 400 }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
@@ -177,17 +171,16 @@ describe('ReviseForm Component', () => {
     });
   });
 
-  it('handles undefined initial data gracefully', () => {
+  it('Should handle undefined initial data gracefully', () => {
     const mockAppNoData = { ...mockApplication, data: undefined };
     renderComponent({ application: mockAppNoData as any });
     expect(screen.getByLabelText('Name')).toHaveValue('');
   });
 
-  it('performs debounced autosave with multiple changes, clearing previous timers', async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ ...mockApplication, data: { name: 'Updated name' } }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should performs debounced autosave with multiple changes, clearing previous timers', async () => {
+    const fetchMock = createMockBff({
+      application: jsonResponse({ ...mockApplication, data: { name: 'Updated name' } }),
+    });
 
     renderComponent();
 
@@ -222,7 +215,7 @@ describe('ReviseForm Component', () => {
     );
   });
 
-  it('shows saving indicator when autosave is pending', async () => {
+  it('Should show saving indicator when autosave is pending', async () => {
     let resolvePatch: (value: Response) => void;
     const patchPromise = new Promise<Response>((resolve) => {
       resolvePatch = resolve;
@@ -245,9 +238,10 @@ describe('ReviseForm Component', () => {
     expect(await screen.findByText('Draft saved')).toBeInTheDocument();
   });
 
-  it('cancels pending autosave timer on submit', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ ...mockApplication, status: 'pending' }));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should cancel pending autosave timer when submitting a revise form', async () => {
+    const fetchMock = createMockBff({
+      application: jsonResponse({ ...mockApplication, status: 'pending' }),
+    });
 
     renderComponent();
 

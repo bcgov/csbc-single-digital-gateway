@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementEditor } from '@/components/console/service-agreements/agreement-editor';
 import { JsonForms } from '@repo/react/jsonforms';
+import { serviceAgreementDefinition } from '../../../../support/fixtures';
 
 vi.mock('@repo/react/jsonforms', () => ({
   JsonForms: vi.fn(({ onChange, data }: any) => (
@@ -21,25 +22,25 @@ afterEach(() => {
 });
 
 describe('AgreementEditor Component Test Suite', () => {
-  const definition = {
-    schema: { type: 'object', properties: { title: { type: 'string' } } },
-    uischema: { type: 'VerticalLayout', elements: [] },
-  };
-
-  it('renders JsonForms with correct props and allows changes when not readonly', () => {
+  it('Should render JsonForms with correct props and allow changes when not readonly', () => {
     const onChange = vi.fn();
     const data = { title: 'Old Title' };
 
     render(
-      <AgreementEditor definition={definition} data={data} onChange={onChange} readonly={false} />,
+      <AgreementEditor
+        definition={serviceAgreementDefinition}
+        data={data}
+        onChange={onChange}
+        readonly={false}
+      />,
     );
 
     // Verify JsonForms was rendered with the correct props
     const call1 = vi.mocked(JsonForms).mock.calls[0];
     expect(call1 ? call1[0] : null).toEqual(
       expect.objectContaining({
-        schema: definition.schema,
-        uischema: definition.uischema,
+        schema: serviceAgreementDefinition.schema,
+        uischema: serviceAgreementDefinition.uischema,
         data: data,
         readonly: false,
       }),
@@ -52,12 +53,17 @@ describe('AgreementEditor Component Test Suite', () => {
     expect(onChange).toHaveBeenCalledWith({ title: 'Updated Title' });
   });
 
-  it('does not trigger onChange when readonly is true', () => {
+  it('Should not trigger onChange when readonly is true', () => {
     const onChange = vi.fn();
     const data = { title: 'Old Title' };
 
     render(
-      <AgreementEditor definition={definition} data={data} onChange={onChange} readonly={true} />,
+      <AgreementEditor
+        definition={serviceAgreementDefinition}
+        data={data}
+        onChange={onChange}
+        readonly={true}
+      />,
     );
 
     const call2 = vi.mocked(JsonForms).mock.calls[0];

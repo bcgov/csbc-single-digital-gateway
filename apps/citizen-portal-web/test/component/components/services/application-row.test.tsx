@@ -60,7 +60,7 @@ describe('ApplicationRow Component', () => {
     lastUpdated: '2026-07-08T12:00:00.000Z',
   };
 
-  it('renders application details correctly in card elements', () => {
+  it('Should render application details correctly in card elements', () => {
     render(<ApplicationRow application={mockApplication} />);
 
     // Assert card and card-header are in the document

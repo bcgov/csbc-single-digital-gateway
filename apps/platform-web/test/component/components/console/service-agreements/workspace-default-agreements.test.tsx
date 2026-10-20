@@ -1,89 +1,37 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkspaceDefaultAgreements } from '@/components/console/service-agreements/workspace-default-agreements';
+import { defaultAgreement, ISO } from '../../../../support/fixtures';
+import { mockWorkspacesDefaultAgreementsBff } from '../../../../support/mock-workspaces-default-agreements-bff';
+import { jsonResponse } from '../../../../support/render-app';
 
-const ISO = '2026-07-09T00:00:00.000Z';
+let capturedOnOpenChange: ((open: boolean) => void) | undefined;
+vi.mock('@repo/ui/dialog', () => ({
+  Dialog: vi.fn(({ open, onOpenChange, children }: any) => {
+    capturedOnOpenChange = onOpenChange;
+    if (!open) return null;
+    return (
+      <div data-testid="mock-dialog" data-open={open}>
+        {children}
+      </div>
+    );
+  }),
+  DialogContent: vi.fn(({ children }: any) => (
+    <div role="dialog" aria-label="Add a default agreement">
+      <button type="button" aria-label="Close" onClick={() => capturedOnOpenChange?.(false)}>
+        Close
+      </button>
+      {children}
+    </div>
+  )),
+  DialogHeader: vi.fn(({ children }: any) => <div>{children}</div>),
+  DialogTitle: vi.fn(({ children }: any) => <h2>{children}</h2>),
+  DialogDescription: vi.fn(({ children }: any) => <p>{children}</p>),
+}));
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-const theDefault = {
-  id: 'd1',
-  agreementDocumentId: 'a1',
-  title: 'Terms of service',
-  isOptional: false,
-  isGlobal: false,
-  createdAt: ISO,
-};
-
-function mockFetch(role: 'admin' | 'member', mockErrors = false, agreementsList: any[] = []) {
-  const defaultAgreements = [
-    { id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' },
-    { id: 'a2', workspaceId: null, title: 'Privacy policy', status: 'published' },
-    { id: 'a3', workspaceId: 'w1', title: 'Workspace Custom TOS', status: 'published' },
-  ];
-
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/v1/workspaces/by-slug/')) {
-      return json({
-        id: 'w1',
-        slug: 'riverton',
-        name: 'Riverton',
-        role,
-        ownerId: 'u1',
-        createdAt: ISO,
-      });
-    }
-
-    if (url.includes('/v1/workspaces/w1/default-agreements')) {
-      if (method === 'POST') {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        if (mockErrors) {
-          return json({ message: 'Failed to add default agreement' }, 400);
-        }
-        return json({
-          id: 'd2',
-          agreementDocumentId: 'a2',
-          title: 'Privacy policy',
-          isOptional: true,
-          isGlobal: true,
-          createdAt: ISO,
-        });
-      }
-
-      if (method === 'DELETE') {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        if (mockErrors) {
-          return json({ message: 'Failed to remove default agreement' }, 400);
-        }
-        return new Response(null, { status: 204 });
-      }
-
-      return json({ items: [theDefault] });
-    }
-
-    if (url.includes('/v1/service-agreements')) {
-      return json({
-        items: agreementsList.length > 0 ? agreementsList : defaultAgreements,
-      });
-    }
-
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
-function renderPanel() {
+function renderWorkspaceDefaultAgreements() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -93,13 +41,17 @@ function renderPanel() {
 }
 
 afterEach(() => {
+  capturedOnOpenChange = undefined;
   vi.restoreAllMocks();
 });
 
 describe('workspace default agreements panel', () => {
-  it('lets a workspace ADMIN see, add, and remove defaults; the picker excludes already-default', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should let a workspace ADMIN see, add, and remove defaults; the picker excludes already-default', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
 
@@ -111,17 +63,23 @@ describe('workspace default agreements panel', () => {
     expect(dialog).toBeInTheDocument();
   });
 
-  it('shows the list read-only for a non-admin member (no add/remove)', async () => {
-    mockFetch('member');
-    renderPanel();
+  it('Should show the list read-only for a non-admin member (no add/remove)', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'member',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /add default/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument();
   });
 
-  it('allows adding a default agreement successfully', async () => {
-    const fetchMock = mockFetch('admin');
-    renderPanel();
+  it('Should allow adding a default agreement successfully', async () => {
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -142,9 +100,13 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('renders API error warning when adding default fails', async () => {
-    mockFetch('admin', true);
-    renderPanel();
+  it('Should render API error warning when adding default fails', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      mockErrors: true,
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -157,9 +119,12 @@ describe('workspace default agreements panel', () => {
     expect(alert).toHaveTextContent('Failed to add default agreement');
   });
 
-  it('allows removing a default agreement successfully', async () => {
-    const fetchMock = mockFetch('admin');
-    renderPanel();
+  it('Should allow removing a default agreement successfully', async () => {
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     const removeBtn = screen.getByRole('button', { name: /remove/i });
@@ -172,9 +137,13 @@ describe('workspace default agreements panel', () => {
     );
   });
 
-  it('renders API error warning when removing default fails', async () => {
-    mockFetch('admin', true);
-    renderPanel();
+  it('Should render API error warning when removing default fails', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      mockErrors: true,
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     const removeBtn = screen.getByRole('button', { name: /remove/i });
@@ -184,7 +153,7 @@ describe('workspace default agreements panel', () => {
     expect(alert).toHaveTextContent('Remove default failed: 400');
   });
 
-  it('displays correct badges for Optional, Required and Global properties', async () => {
+  it('Should display correct badges for Optional, Required and Global properties', async () => {
     const customDefault = {
       id: 'd1',
       agreementDocumentId: 'a1',
@@ -193,38 +162,26 @@ describe('workspace default agreements panel', () => {
       isGlobal: true,
       createdAt: ISO,
     };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/v1/workspaces/by-slug/')) {
-        return json({
-          id: 'w1',
-          slug: 'riverton',
-          name: 'Riverton',
-          role: 'admin',
-          ownerId: 'u1',
-          createdAt: ISO,
-        });
-      }
-      if (url.includes('/v1/workspaces/w1/default-agreements')) {
-        return json({ items: [customDefault] });
-      }
-      return new Response(null, { status: 404 });
+    mockWorkspacesDefaultAgreementsBff(customDefault, {
+      role: 'admin',
+      defaults: [customDefault],
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    renderPanel();
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('TOS')).toBeInTheDocument();
     expect(screen.getByText('Optional')).toBeInTheDocument();
     expect(screen.getByText('Global')).toBeInTheDocument();
   });
 
-  it('shows no published agreements fallback in the picker when all are defaulted', async () => {
+  it('Should show no published agreements fallback in the picker when all are defaulted', async () => {
     // Only 'Terms of service' is published, and it's already a default document
-    mockFetch('admin', false, [
-      { id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' },
-    ]);
-    renderPanel();
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      agreements: [{ id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' }],
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -235,9 +192,12 @@ describe('workspace default agreements panel', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes picker dialog when cancel close button is clicked', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should close picker dialog when cancel close button is clicked', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -252,9 +212,12 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('disables the add button in the picker when the mutation is pending', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should disable the add button in the picker when the mutation is pending', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -274,9 +237,12 @@ describe('workspace default agreements panel', () => {
     });
   });
 
-  it('disables the remove button when the delete mutation is pending', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should disable the remove button when the delete mutation is pending', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     const removeBtn = screen.getByRole('button', { name: /remove/i });
@@ -291,9 +257,34 @@ describe('workspace default agreements panel', () => {
     await screen.findByText('Terms of service');
   });
 
-  it('prevents dialog dismiss when Escape key is pressed while add is pending', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should prevent dialog dismiss when onOpenChange(false) is called while add is pending, and handle onOpenChange(true)', async () => {
+    let resolvePost!: () => void;
+    const postPromise = new Promise<void>((resolve) => {
+      resolvePost = resolve;
+    });
+
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/workspaces/w1/default-agreements') && method === 'POST') {
+        await postPromise;
+        return jsonResponse({
+          id: 'd2',
+          agreementDocumentId: 'a2',
+          title: 'Privacy policy',
+          isOptional: true,
+          isGlobal: true,
+          createdAt: ISO,
+        });
+      }
+      return fetchMock(input, init);
+    }) as any;
+
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));
@@ -305,24 +296,32 @@ describe('workspace default agreements panel', () => {
     );
     const privacyBtn = within(dialog).getByRole('button', { name: /privacy policy/i });
 
-    // Trigger mutation
-    await userEvent.click(privacyBtn);
-
-    // Press Escape immediately while pending
-    fireEvent.keyDown(dialog, { key: 'Escape', code: 'Escape' });
-
-    // Dialog should NOT close because add.isPending is true
+    // 1. Trigger open=true (next=true branch where !next is false)
+    capturedOnOpenChange?.(true);
     expect(dialog).toBeInTheDocument();
 
-    // Wait for dialog to dismiss on success after pending resolves
+    // 2. Trigger mutation (so add.isPending becomes true)
+    await userEvent.click(privacyBtn);
+
+    // 3. Attempt to close while add.isPending is true (!next is true, but !add.isPending is false)
+    capturedOnOpenChange?.(false);
+    expect(dialog).toBeInTheDocument();
+
+    // 4. Resolve the post mutation to let it finish
+    resolvePost();
+
+    // Dialog should close on success
     await waitFor(() => {
       expect(dialog).not.toBeInTheDocument();
     });
   });
 
-  it('renders workspace-scoped selectable agreements without a Global badge in the picker', async () => {
-    mockFetch('admin');
-    renderPanel();
+  it('Should render workspace-scoped selectable agreements without a Global badge in the picker', async () => {
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
+    renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /add default/i }));

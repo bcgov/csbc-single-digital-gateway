@@ -9,7 +9,7 @@ afterEach(() => {
 // The /app console layout is fail-closed: an anonymous visit (GET /auth/me → 401) must consult the
 // session and redirect to the BFF login URL before any console UI renders.
 describe('Auth Guard Integration Test Suite', () => {
-  it('consults /auth/me and renders no console content when there is no session', async () => {
+  it('Should consult /auth/me and render no console content when there is no session', async () => {
     const fetchMock = mockAuth(null);
     // The guard throws redirect({ href: loginUrl }); jsdom logs an unimplemented-navigation notice
     // for the external href, which is harmless — what matters is that no console content renders.

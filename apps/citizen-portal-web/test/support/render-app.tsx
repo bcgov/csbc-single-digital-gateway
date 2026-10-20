@@ -4,9 +4,14 @@ import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 
-function jsonResponse(body: unknown): Response {
+/**
+ * Returns a JSON response with the given body and status.
+ * @param body The body of the response.
+ * @returns A JSON response.
+ */
+export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { 'content-type': 'application/json' },
   });
 }

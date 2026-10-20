@@ -10,16 +10,18 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ServiceAgreementMethods } from '@/components/console/services/service-agreement-methods';
 import { AlertDialog } from '@repo/ui/alert-dialog';
+import { ISO, serviceAgreement } from '../../../../support/fixtures';
+import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
 
 export let capturedActionOnClick: (() => void) | undefined;
-export let mockAlwaysOpen = false;
+export let mockOpenDialog = false;
 
 vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
     AlertDialog: vi.fn((props: any) => {
-      return <actual.AlertDialog {...props} open={mockAlwaysOpen || props.open} />;
+      return <actual.AlertDialog {...props} open={mockOpenDialog || props.open} />;
     }),
     AlertDialogAction: (props: any) => {
       capturedActionOnClick = props.onClick;
@@ -32,15 +34,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-07-08T00:00:00.000Z';
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 const attachedRef = {
   id: 'ref1',
   agreementDocumentId: 'a-attached',
@@ -51,55 +44,7 @@ const attachedRef = {
   createdAt: ISO,
 };
 
-/** Mock the attached-agreements read + the picker source (published + draft + already-attached). */
-function mockFetch(defaults: unknown[] = [], detachStatus = 200) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (method === 'DELETE' && url.includes('/versions/sv1/agreements/ref1')) {
-      if (detachStatus >= 400) {
-        return json({ message: 'Delete failed' }, detachStatus);
-      }
-      return new Response(null, { status: 204 });
-    }
-    if (url.includes('/default-agreements')) {
-      return json({ items: defaults });
-    }
-    if (url.includes('/versions/sv1/agreements')) {
-      return json({ items: [attachedRef] });
-    }
-    if (url.includes('/v1/service-agreements')) {
-      return json({
-        items: [
-          { ...attachedRef, id: 'a-attached', status: 'published' }, // already attached → excluded
-          {
-            id: 'a-available',
-            workspaceId: null,
-            title: 'Privacy policy',
-            kind: 'service-agreement',
-            createdAt: ISO,
-            status: 'published',
-            isGlobal: true,
-          },
-          {
-            id: 'a-draft',
-            workspaceId: 'w1',
-            title: 'Draft notice',
-            kind: 'service-agreement',
-            createdAt: ISO,
-            status: 'draft',
-            isGlobal: false,
-          },
-        ],
-      });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
-function renderPanel(readonly = false) {
+function renderServiceAgreementMethods(readonly = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   // A minimal router provides the context the panel's useNavigate needs.
   const rootRoute = createRootRoute({
@@ -125,9 +70,13 @@ function renderPanel(readonly = false) {
 }
 
 describe('Service Agreement Methods Component Test Suite', () => {
-  it('lists attached agreements: title links to the standalone console editor, with Required + Remove', async () => {
-    mockFetch();
-    renderPanel();
+  it('Should list attached agreements: title links to the standalone console editor, with Required + Remove', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     const link = await screen.findByRole('link', { name: 'Terms of service' });
     // Agreements are edited in the standalone Service Agreements console (by document id), not
     // under the service version (initiative shared-service-agreements).
@@ -138,9 +87,13 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();
   });
 
-  it('the Add modal is attach-only and lists only published, not-attached agreements', async () => {
-    mockFetch();
-    renderPanel();
+  it('Should the Add modal is attach-only and list only published, not-attached agreements', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
     await userEvent.click(screen.getByRole('button', { name: /add service agreement/i }));
     const dialog = await screen.findByRole('dialog', { name: /add a service agreement/i });
@@ -154,27 +107,31 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(within(dialog).queryByText('Terms of service')).not.toBeInTheDocument();
   });
 
-  it('shows workspace defaults that also apply (read-only), deduped against attached', async () => {
-    mockFetch([
-      {
-        id: 'wd1',
-        agreementDocumentId: 'a-default',
-        title: 'Privacy policy (default)',
-        isOptional: true,
-        isGlobal: true,
-        createdAt: ISO,
-      },
-      // Also explicitly attached (a-attached) → deduped out of the defaults section.
-      {
-        id: 'wd2',
-        agreementDocumentId: 'a-attached',
-        title: 'Terms of service',
-        isOptional: false,
-        isGlobal: false,
-        createdAt: ISO,
-      },
-    ]);
-    renderPanel();
+  it('Should show workspace defaults that also apply (read-only), deduped against attached', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [
+        {
+          id: 'wd1',
+          agreementDocumentId: 'a-default',
+          title: 'Privacy policy (default)',
+          isOptional: true,
+          isGlobal: true,
+          createdAt: ISO,
+        },
+        // Also explicitly attached (a-attached) → deduped out of the defaults section.
+        {
+          id: 'wd2',
+          agreementDocumentId: 'a-attached',
+          title: 'Terms of service',
+          isOptional: false,
+          isGlobal: false,
+          createdAt: ISO,
+        },
+      ],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     expect(await screen.findByText('Also applied from workspace defaults')).toBeInTheDocument();
     expect(screen.getByText('Privacy policy (default)')).toBeInTheDocument();
     expect(screen.getByText('Workspace default')).toBeInTheDocument();
@@ -182,19 +139,23 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.getAllByText('Terms of service')).toHaveLength(1);
   });
 
-  it('the Add picker excludes agreements already applied as workspace defaults', async () => {
+  it('Should the Add picker excludes agreements already applied as workspace defaults', async () => {
     // 'a-available' (Privacy policy) is both a picker candidate AND a workspace default.
-    mockFetch([
-      {
-        id: 'wd1',
-        agreementDocumentId: 'a-available',
-        title: 'Privacy policy',
-        isOptional: false,
-        isGlobal: true,
-        createdAt: ISO,
-      },
-    ]);
-    renderPanel();
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [
+        {
+          id: 'wd1',
+          agreementDocumentId: 'a-available',
+          title: 'Privacy policy',
+          isOptional: false,
+          isGlobal: true,
+          createdAt: ISO,
+        },
+      ],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
     await userEvent.click(screen.getByRole('button', { name: /add service agreement/i }));
     const dialog = await screen.findByRole('dialog', { name: /add a service agreement/i });
@@ -202,9 +163,13 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(within(dialog).queryByText('Privacy policy')).not.toBeInTheDocument();
   });
 
-  it('hides the Add and detach affordances when readonly', async () => {
-    mockFetch();
-    renderPanel(true);
+  it('Should hide the Add and detach affordances when readonly', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods(true);
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /add service agreement/i }),
@@ -212,9 +177,13 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument();
   });
 
-  it('triggers delete mutation and invalidates query when confirmed in dialog', async () => {
-    const fetchMock = mockFetch();
-    renderPanel();
+  it('Should trigger delete mutation and invalidate query when confirmed in dialog', async () => {
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
 
     // Open remove alert dialog
@@ -240,9 +209,13 @@ describe('Service Agreement Methods Component Test Suite', () => {
     });
   });
 
-  it('clears confirmation state when dialog is dismissed/cancelled', async () => {
-    mockFetch();
-    renderPanel();
+  it('Should clear confirmation state when dialog is dismissed/cancelled', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
 
     // Open remove alert dialog
@@ -260,9 +233,14 @@ describe('Service Agreement Methods Component Test Suite', () => {
     });
   });
 
-  it('shows error message if detach service agreement fails', async () => {
-    mockFetch([], 500);
-    renderPanel();
+  it('Should show error message if detach service agreement fails', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      detachStatus: 500,
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
 
     // Open remove alert dialog
@@ -278,82 +256,70 @@ describe('Service Agreement Methods Component Test Suite', () => {
     expect(alert).toHaveTextContent('Request failed: 500');
   });
 
-  it('renders optional and global badges correctly', async () => {
+  it('Should render optional and global badges correctly', async () => {
     const optionalAttachedRef = {
       ...attachedRef,
       isOptional: true,
       isGlobal: true,
     };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/default-agreements')) {
-        return json({
-          items: [
-            {
-              id: 'wd1',
-              agreementDocumentId: 'a-default-opt',
-              title: 'Privacy policy (default-opt)',
-              isOptional: true,
-              isGlobal: true,
-              createdAt: ISO,
-            },
-            {
-              id: 'wd2',
-              agreementDocumentId: 'a-default-req-local',
-              title: 'Terms (default-req-local)',
-              isOptional: false,
-              isGlobal: false,
-              createdAt: ISO,
-            },
-          ],
-        });
-      }
-      if (url.includes('/versions/sv1/agreements')) {
-        return json({ items: [optionalAttachedRef] });
-      }
-      return json({ items: [] });
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [
+        {
+          id: 'wd1',
+          agreementDocumentId: 'a-default-opt',
+          title: 'Privacy policy (default-opt)',
+          isOptional: true,
+          isGlobal: true,
+          createdAt: ISO,
+        },
+        {
+          id: 'wd2',
+          agreementDocumentId: 'a-default-req-local',
+          title: 'Terms (default-req-local)',
+          isOptional: false,
+          isGlobal: false,
+          createdAt: ISO,
+        },
+      ],
+      attachedRef: optionalAttachedRef,
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    renderPanel();
+    renderServiceAgreementMethods();
 
     await screen.findByText('Terms of service');
     expect(screen.getAllByText('Optional').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Global').length).toBeGreaterThan(0);
   });
 
-  it('shows workspace defaults warning text when there are no explicitly attached agreements but defaults exist', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/default-agreements')) {
-        return json({
-          items: [
-            {
-              id: 'wd1',
-              agreementDocumentId: 'a-default',
-              title: 'Privacy policy',
-              isOptional: false,
-              isGlobal: false,
-              createdAt: ISO,
-            },
-          ],
-        });
-      }
-      if (url.includes('/versions/sv1/agreements')) {
-        return json({ items: [] });
-      }
-      return json({ items: [] });
+  it('Should show workspace defaults warning text when there are no explicitly attached agreements but defaults exist', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [
+        {
+          id: 'wd1',
+          agreementDocumentId: 'a-default',
+          title: 'Privacy policy',
+          isOptional: false,
+          isGlobal: false,
+          createdAt: ISO,
+        },
+      ],
+      attachedRef: [],
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    renderPanel();
+    renderServiceAgreementMethods();
 
     expect(await screen.findByText(/workspace defaults still apply/i)).toBeInTheDocument();
   });
 
-  it('covers onOpenChange(true) branch in AlertDialog', async () => {
-    mockFetch();
-    renderPanel();
+  it('Should cover onOpenChange(true) branch in AlertDialog', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    renderServiceAgreementMethods();
     await screen.findByText('Terms of service');
 
     // Open remove alert dialog
@@ -368,11 +334,15 @@ describe('Service Agreement Methods Component Test Suite', () => {
     }
   });
 
-  it('covers AlertDialogAction onClick when confirmId is null', async () => {
-    mockFetch();
-    mockAlwaysOpen = true;
+  it('Should cover AlertDialogAction onClick when confirmId is null', async () => {
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'service-agreement-methods.test',
+      defaults: [],
+      attachedRef,
+    });
+    mockOpenDialog = true;
     try {
-      renderPanel();
+      renderServiceAgreementMethods();
       await screen.findByText('Terms of service');
 
       // Trigger capturedActionOnClick directly (confirmId is null by default)
@@ -380,7 +350,7 @@ describe('Service Agreement Methods Component Test Suite', () => {
         capturedActionOnClick?.();
       });
     } finally {
-      mockAlwaysOpen = false;
+      mockOpenDialog = false;
     }
   });
 });

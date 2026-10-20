@@ -23,7 +23,7 @@ describe('Canvas Component Test Suite', () => {
     fields: [],
   };
 
-  it('renders title and description from form model', () => {
+  it('Should render title and description from form model', () => {
     render(
       <Canvas
         model={defaultModel}
@@ -43,7 +43,7 @@ describe('Canvas Component Test Suite', () => {
     expect(descTextarea).toHaveValue('Please answer these questions honestly.');
   });
 
-  it('flags an empty form title as required', () => {
+  it('Should flag an empty form title as required for the canvas component', () => {
     render(
       <Canvas
         model={{ title: '', description: '', fields: [] }}
@@ -59,7 +59,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('triggers onChangeForm when typing in title or description', async () => {
+  it('Should trigger onChangeForm when typing in title or description', async () => {
     const user = userEvent.setup();
     const handleChangeForm = vi.fn();
 
@@ -86,7 +86,7 @@ describe('Canvas Component Test Suite', () => {
     });
   });
 
-  it('renders EmptyDropZone when fields array is empty', () => {
+  it('Should render EmptyDropZone when fields array is empty', () => {
     render(
       <Canvas
         model={defaultModel}
@@ -103,7 +103,7 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.queryByTestId('mock-end-zone')).not.toBeInTheDocument();
   });
 
-  it('renders FieldRow and ContainerRow components and EndZone when fields exist', () => {
+  it('Should render FieldRow and ContainerRow components and EndZone when fields exist', () => {
     const modelWithFields: FormModel = {
       title: 'Survey',
       description: 'Desc',
@@ -135,7 +135,56 @@ describe('Canvas Component Test Suite', () => {
     expect(screen.queryByTestId('mock-empty-dropzone')).not.toBeInTheDocument();
   });
 
-  it('calls onSelect(null) when clicking outer canvas container or focusing input', async () => {
+  it('Should trigger onClear to reset title to empty string', async () => {
+    const user = userEvent.setup();
+    const handleChangeForm = vi.fn();
+
+    render(
+      <Canvas
+        model={defaultModel}
+        selectedPath={null}
+        paletteDragType={null}
+        onSelect={vi.fn()}
+        onDelete={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={handleChangeForm}
+      />,
+    );
+
+    const clearButton = screen.getByRole('button', { name: 'Clear' });
+    await user.click(clearButton);
+    expect(handleChangeForm).toHaveBeenCalledWith({ title: '' });
+  });
+
+  it('Should render FieldRow for display nodes and control nodes with and without keys', () => {
+    const modelWithFields: FormModel = {
+      title: 'Survey',
+      description: 'Desc',
+      fields: [
+        { kind: 'control', id: 'f-1', key: 'age', label: 'Age', options: {} } as any,
+        { kind: 'control', id: 'f-2', key: '', label: 'NoKey', options: {} } as any,
+        { kind: 'display', id: 'd-1', displayType: 'heading', text: 'Section Header' } as any,
+      ],
+    };
+
+    render(
+      <Canvas
+        model={modelWithFields}
+        selectedPath={null}
+        paletteDragType={null}
+        onSelect={vi.fn()}
+        onDelete={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('mock-field-row-0')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-field-row-1')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-field-row-2')).toBeInTheDocument();
+  });
+
+  it('Should call onSelect(null) when clicking outer canvas container or focusing input/textarea and ignore clicks on children', async () => {
     const handleSelect = vi.fn();
 
     render(
@@ -150,14 +199,26 @@ describe('Canvas Component Test Suite', () => {
       />,
     );
 
+    // Click child element directly - should not call onSelect(null) from outer section handler
+    const titleLabel = screen.getByText('Title');
+    fireEvent.click(titleLabel);
+    expect(handleSelect).not.toHaveBeenCalled();
+
     // Click canvas container
     const section = screen.getByRole('region', { name: 'Canvas' });
     fireEvent.click(section);
     expect(handleSelect).toHaveBeenCalledWith(null);
+    handleSelect.mockClear();
 
-    // Focus input
+    // Focus title input
     const titleInput = screen.getByLabelText('Title');
     fireEvent.focus(titleInput);
+    expect(handleSelect).toHaveBeenCalledWith(null);
+    handleSelect.mockClear();
+
+    // Focus description textarea
+    const descTextarea = screen.getByLabelText('Description');
+    fireEvent.focus(descTextarea);
     expect(handleSelect).toHaveBeenCalledWith(null);
   });
 });

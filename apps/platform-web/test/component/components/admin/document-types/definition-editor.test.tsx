@@ -30,7 +30,7 @@ vi.mock('@monaco-editor/react', () => ({
 }));
 
 describe('DefinitionEditor', () => {
-  it('renders the editor with the initial value and options', () => {
+  it('Should render the editor with the initial value and options', () => {
     render(<DefinitionEditor value='{"key": "value"}' readOnly={true} />);
 
     const textarea = screen.getByLabelText('definition-textarea');
@@ -46,12 +46,12 @@ describe('DefinitionEditor', () => {
     });
   });
 
-  it('defaults readOnly to false if not provided', () => {
+  it('Should default readOnly to false if not provided', () => {
     render(<DefinitionEditor value="" />);
     expect(mockedOptions.readOnly).toBe(false);
   });
 
-  it('triggers onChange when value is changed', () => {
+  it('Should trigger onChange when value is changed', () => {
     const handleChange = vi.fn();
     render(<DefinitionEditor value="" onChange={handleChange} readOnly={false} />);
 
@@ -63,7 +63,7 @@ describe('DefinitionEditor', () => {
     expect(handleChange).toHaveBeenCalledWith('{"new": "value"}');
   });
 
-  it('handles next being undefined in onChange', () => {
+  it('Should handle next being undefined in onChange', () => {
     const handleChange = vi.fn();
     render(<DefinitionEditor value="" onChange={handleChange} />);
 
@@ -71,7 +71,7 @@ describe('DefinitionEditor', () => {
     expect(handleChange).toHaveBeenCalledWith('');
   });
 
-  it('does not crash if onChange is undefined', () => {
+  it('Should not crash if onChange is undefined', () => {
     render(<DefinitionEditor value="" />);
     expect(() => mockedOnChange('some-value')).not.toThrow();
   });

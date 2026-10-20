@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -102,7 +102,7 @@ vi.mock('@/lib/catalog', () => ({
 }));
 
 describe('OnThisPageLayout', () => {
-  it('renders a navigation element with the correct links', () => {
+  it('Should render a navigation element with the correct links', () => {
     render(
       <OnThisPageLayout items={DETAIL_SECTIONS}>
         <div>content</div>
@@ -119,7 +119,7 @@ describe('OnThisPageLayout', () => {
     expect(screen.getByText('content')).toBeInTheDocument();
   });
 
-  it('renders only children, with no nav, when there are no items', () => {
+  it('Should render only children, with no nav, when there are no items', () => {
     render(
       <OnThisPageLayout items={[]}>
         <div>content</div>
@@ -128,10 +128,79 @@ describe('OnThisPageLayout', () => {
     expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
     expect(screen.getByText('content')).toBeInTheDocument();
   });
+
+  it('Should render only children when items is undefined', () => {
+    render(
+      <OnThisPageLayout items={undefined}>
+        <div>undefined items content</div>
+      </OnThisPageLayout>,
+    );
+    expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
+    expect(screen.getByText('undefined items content')).toBeInTheDocument();
+  });
+
+  it('Should track and updates active section when elements intersect or exit the viewport', () => {
+    let callback: IntersectionObserverCallback | null = null;
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        callback = cb;
+      }
+      observe = observeMock;
+      unobserve = vi.fn();
+      disconnect = disconnectMock;
+    }
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+
+    const targetElement = document.createElement('div');
+    targetElement.id = DETAIL_SECTIONS[0].id;
+    document.body.appendChild(targetElement);
+
+    const { unmount } = render(
+      <OnThisPageLayout items={DETAIL_SECTIONS}>
+        <div>content</div>
+      </OnThisPageLayout>,
+    );
+
+    expect(observeMock).toHaveBeenCalledWith(targetElement);
+
+    const link = screen.getByRole('link', { name: DETAIL_SECTIONS[0].label });
+    expect(link).not.toHaveAttribute('aria-current');
+
+    // Trigger non-intersecting entry (branch: entry.isIntersecting === false)
+    act(() => {
+      callback?.(
+        [{ isIntersecting: false, target: targetElement } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(screen.getByRole('link', { name: DETAIL_SECTIONS[0].label })).not.toHaveAttribute(
+      'aria-current',
+    );
+
+    // Trigger intersecting entry (branch: entry.isIntersecting === true)
+    act(() => {
+      callback?.(
+        [{ isIntersecting: true, target: targetElement } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(screen.getByRole('link', { name: DETAIL_SECTIONS[0].label })).toHaveAttribute(
+      'aria-current',
+      'location',
+    );
+
+    unmount();
+    expect(disconnectMock).toHaveBeenCalled();
+    targetElement.remove();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('Section Component', () => {
-  it('renders a section with a heading and children', () => {
+  it('Should render a section with a heading and children', () => {
     render(
       <Section id="test-sec" title="Test Section Title">
         <p>Test Child Content</p>
@@ -144,7 +213,7 @@ describe('Section Component', () => {
 });
 
 describe('InAGlance Component', () => {
-  it('renders the overview info cards', () => {
+  it('Should render the overview info cards', () => {
     render(<InAGlance />);
     expect(screen.getByText('Cost')).toBeInTheDocument();
     expect(screen.getByText('Free')).toBeInTheDocument();
@@ -156,7 +225,7 @@ describe('InAGlance Component', () => {
 });
 
 describe('EligibilityCriteria Component', () => {
-  it('renders eligibility accordion with age, income, and residency', () => {
+  it('Should render eligibility accordion with age, income, and residency', () => {
     render(<EligibilityCriteria />);
     expect(screen.getByText('Age')).toBeInTheDocument();
     expect(screen.getByText('Income')).toBeInTheDocument();
@@ -165,14 +234,14 @@ describe('EligibilityCriteria Component', () => {
 });
 
 describe('HowToApply Component', () => {
-  it('renders fallback copy when there are no applications', () => {
+  it('Should render fallback copy when there are no applications', () => {
     render(<HowToApply serviceId="svc-1" applications={[]} />);
     expect(
       screen.getByText(/This service isn’t available to apply for online yet/i),
     ).toBeInTheDocument();
   });
 
-  it('renders application buttons with custom or default labels', () => {
+  it('Should render application buttons with custom or default labels', () => {
     const apps = [
       { id: '1', label: 'Apply Now', title: 'Income Assistance', formId: 'f-1' },
       { id: '2', label: null, title: 'Disability Assistance', formId: 'f-2' },
@@ -194,7 +263,7 @@ describe('HowToApply Component', () => {
     expect(link2[1]).toHaveAttribute('href', '/services/svc-1/apply/f-3');
   });
 
-  it('renders external applications correctly and handles falsy external URLs', () => {
+  it('Should render external applications correctly and handles falsy external URLs', () => {
     let accessCount = 0;
     const apps = [
       {
@@ -247,13 +316,13 @@ describe('HowToApply Component', () => {
 });
 
 describe('YourActivity Component', () => {
-  it('renders fallback when the user has no activity for the service or data is undefined', () => {
+  it('Should render fallback when the user has no activity for the service or data is undefined', () => {
     vi.mocked(useQuery).mockReturnValue({ data: undefined } as any);
     render(<YourActivity serviceId="svc-1" />);
     expect(screen.getByText('No applications yet')).toBeInTheDocument();
   });
 
-  it('renders application rows when the user has applications for this service', () => {
+  it('Should render application rows when the user has applications for this service', () => {
     const mockApps = [
       { id: 'app-1', serviceId: 'svc-1', formTitle: 'Form 1' },
       { id: 'app-2', serviceId: 'svc-2', formTitle: 'Form 2' },
@@ -269,7 +338,7 @@ describe('YourActivity Component', () => {
 });
 
 describe('HelpAndInformation Component', () => {
-  it('renders help sections', () => {
+  it('Should render help sections', () => {
     render(<HelpAndInformation />);
     expect(screen.getByText('Guides and resources')).toBeInTheDocument();
     expect(screen.getByText('Policy and legislation')).toBeInTheDocument();
@@ -277,12 +346,12 @@ describe('HelpAndInformation Component', () => {
 });
 
 describe('ContactSection Component', () => {
-  it('renders empty state when there are no contact methods', () => {
+  it('Should render empty state when there are no contact methods', () => {
     render(<ContactSection value={undefined} />);
     expect(screen.getByText('No contact information for this service yet.')).toBeInTheDocument();
   });
 
-  it('renders ContactMethodsView when contact methods exist', () => {
+  it('Should render ContactMethodsView when contact methods exist', () => {
     const mockValue = { type: 'phone', value: '1-800-000-0000' };
     render(<ContactSection value={mockValue} />);
     expect(screen.getByTestId('contact-methods-view')).toBeInTheDocument();
@@ -291,7 +360,7 @@ describe('ContactSection Component', () => {
 });
 
 describe('ServiceSections Component', () => {
-  it('renders all sections and subsections', () => {
+  it('Should render all sections and subsections', () => {
     vi.mocked(useQuery).mockReturnValue({ data: [] } as any);
 
     const mockSchema = { type: 'object' };
@@ -333,17 +402,17 @@ describe('ServiceSections Component', () => {
 describe('readContactMethods — contact methods path tolerance (feature 174)', () => {
   const methods = [{ type: 'email', value: 'help@riverton.gov' }];
 
-  it('should read contact methods from the flat legacy path', () => {
+  it('Should read contact methods from the flat legacy path', () => {
     expect(readContactMethods({ contact_methods: methods })).toEqual(methods);
   });
 
-  it('should read contact methods from the nested service_description path', () => {
+  it('Should read contact methods from the nested service_description path', () => {
     expect(readContactMethods({ service_description: { contact_methods: methods } })).toEqual(
       methods,
     );
   });
 
-  it('should prefer the nested path when both are present', () => {
+  it('Should prefer the nested path when both are present', () => {
     const nested = [{ type: 'phone', value: '250-555-0100' }];
     expect(
       readContactMethods({
@@ -353,13 +422,13 @@ describe('readContactMethods — contact methods path tolerance (feature 174)', 
     ).toEqual(nested);
   });
 
-  it('should fall back to the flat path when the group exists without the key', () => {
+  it('Should fall back to the flat path when the group exists without the key', () => {
     expect(readContactMethods({ contact_methods: methods, service_description: {} })).toEqual(
       methods,
     );
   });
 
-  it('should return undefined when neither path has a value', () => {
+  it('Should return undefined when neither path has a value', () => {
     expect(readContactMethods({})).toBeUndefined();
     expect(readContactMethods({ service_description: null })).toBeUndefined();
   });

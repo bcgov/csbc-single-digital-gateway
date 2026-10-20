@@ -3,7 +3,10 @@ import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/rea
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../support/render-app';
 import { routeTree } from '@/routeTree.gen';
+import { createMockBff } from '../../support/create-mock-bff';
+import { form, draft } from '../../support/fixtures';
 
 vi.mock('@repo/react/form-runner', () => ({
   FormRunner: ({ data, onChange, onSubmit, submitLabel, submitting }: any) => (
@@ -21,61 +24,6 @@ vi.mock('@repo/react/form-runner', () => ({
     </div>
   ),
 }));
-
-const authedUser = { id: 'c1', roles: ['citizen'], claims: { sub: 'c1', name: 'Amina Ali' } };
-
-const form = {
-  serviceId: 'svc-1',
-  formId: 'f1',
-  formVersionId: 'fv1',
-  kind: 'basic-form',
-  title: 'Your Profile',
-  structure: {
-    schema: { type: 'object', properties: { name: { type: 'string', title: 'Name' } } },
-    uischema: {
-      type: 'VerticalLayout',
-      elements: [{ type: 'Control', scope: '#/properties/name' }],
-    },
-  },
-};
-
-const draft = {
-  id: 'sub1',
-  formId: 'f1',
-  formVersionId: 'fv1',
-  status: 'draft',
-  data: {},
-  reference: '20260630-0001',
-  createdAt: '2026-06-30T00:00:00.000Z',
-  updatedAt: '2026-06-30T00:00:00.000Z',
-  submittedAt: null,
-};
-
-const submitted = { ...draft, status: 'pending', submittedAt: '2026-06-30T00:00:00.000Z' };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockBff({ me = jsonResponse(authedUser), agreements = jsonResponse({ items: [] }) } = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = init?.method ?? 'GET';
-    if (url.includes('/auth/me')) return me;
-    if (url.includes('/v1/services/') && url.includes('/applications/')) return jsonResponse(form);
-    if (url.includes('/v1/me/services/') && url.includes('/agreements')) return agreements;
-    if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
-      return jsonResponse(submitted);
-    if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-    if (method === 'PATCH') return jsonResponse(draft);
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
 
 async function renderApply() {
   const router = createRouter({
@@ -96,9 +44,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('citizen application page', () => {
-  it('lets an authenticated citizen fill and submit, then confirms', async () => {
-    const fetchMock = mockBff();
+describe('Citizen Application Page', () => {
+  it('Should let an authenticated citizen fill and submit, then confirms', async () => {
+    const fetchMock = createMockBff();
     const user = userEvent.setup();
     await renderApply();
 
@@ -118,8 +66,8 @@ describe('citizen application page', () => {
     );
   });
 
-  it('prompts anonymous visitors to log in', async () => {
-    mockBff({ me: new Response(null, { status: 401 }) });
+  it('Should prompt anonymous visitors to log in', async () => {
+    createMockBff({ me: new Response(null, { status: 401 }) });
     await renderApply();
     expect(
       await screen.findByText('You need to be signed in to apply.', {}, { timeout: 32000 }),
@@ -128,13 +76,8 @@ describe('citizen application page', () => {
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
-  it('renders unavailable state when form fetch fails', async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      return new Response(null, { status: 404 });
-    }) as unknown as typeof fetch;
-
+  it('Should render unavailable state when form fetch fails', async () => {
+    createMockBff({ servicesOptions: { formNotFound: true } });
     await renderApply();
 
     expect(
@@ -145,20 +88,8 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders unavailable state when draft fetch fails', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications'))
-        return new Response(null, { status: 500 });
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should render unavailable state when draft fetch fails', async () => {
+    createMockBff({ applicationsOptions: { failedResponse: true } });
     await renderApply();
 
     expect(
@@ -166,21 +97,8 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles draft response with missing data property', async () => {
-    const draftNoData = { ...draft, data: undefined };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications'))
-        return jsonResponse(draftNoData);
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should handle draft response with missing data property', async () => {
+    createMockBff({ applicationsOptions: { hasNoData: true } });
     await renderApply();
 
     expect(
@@ -188,21 +106,8 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows an error message if submission fails', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
-        return new Response(null, { status: 500 });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should show an error message if submission fails', async () => {
+    createMockBff({ applicationsOptions: { submissionFailed: true } });
     const user = userEvent.setup();
     await renderApply();
 
@@ -215,25 +120,12 @@ describe('citizen application page', () => {
     expect(await screen.findByText('Could not submit — please try again.')).toBeInTheDocument();
   });
 
-  it('autosaves input changes after debounce and shows saving/saved states', async () => {
+  it('Should autosave input changes after debounce and shows saving/saved states', async () => {
     let resolvePatch: ((value: Response) => void) | undefined;
     const patchPromise = new Promise<Response>((resolve) => {
       resolvePatch = resolve;
     });
-
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-      if (method === 'PATCH') return patchPromise;
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    createMockBff({ patchResponse: patchPromise });
 
     await renderApply();
     expect(
@@ -258,25 +150,12 @@ describe('citizen application page', () => {
     expect(await screen.findByText('Draft saved', {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
-  it('clears active timer on unmount, and handles submit when timer is null', async () => {
+  it('Should clear active timer on unmount, and handles submit when timer is null', async () => {
     let resolvePost!: (value: Response) => void;
     const postPromise = new Promise<Response>((resolve) => {
       resolvePost = resolve;
     });
-
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-      if (method === 'POST' && url.includes('/submit')) return postPromise;
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    createMockBff({ submitResponse: postPromise });
 
     const { unmount } = await renderApply();
     expect(
@@ -314,25 +193,12 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('cancels pending autosave timer on submit', async () => {
+  it('Should cancel pending autosave timer when submitting an application', async () => {
     let resolvePost!: (value: Response) => void;
     const postPromise = new Promise<Response>((resolve) => {
       resolvePost = resolve;
     });
-
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-      if (method === 'POST' && url.includes('/submit')) return postPromise;
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    createMockBff({ submitResponse: postPromise });
 
     await renderApply();
     expect(
@@ -358,17 +224,12 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders loading skeleton when form fetch is pending', async () => {
+  it('Should render loading skeleton when form fetch is pending', async () => {
     let resolveForm!: (value: Response) => void;
     const formPromise = new Promise<Response>((resolve) => {
       resolveForm = resolve;
     });
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/')) return formPromise;
-      return new Response(null, { status: 404 });
-    }) as unknown as typeof fetch;
+    createMockBff({ form: formPromise });
 
     await renderApply();
     expect(
@@ -379,22 +240,12 @@ describe('citizen application page', () => {
     });
   });
 
-  it('renders loading skeleton when draft or agreements are pending', async () => {
+  it('Should render loading skeleton when draft or agreements are pending', async () => {
     let resolveDraft!: (value: Response) => void;
     const draftPromise = new Promise<Response>((resolve) => {
       resolveDraft = resolve;
     });
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return draftPromise;
-      return new Response(null, { status: 404 });
-    }) as unknown as typeof fetch;
+    createMockBff({ draft: draftPromise });
 
     await renderApply();
     await act(async () => {
@@ -402,32 +253,33 @@ describe('citizen application page', () => {
     });
   });
 
-  it('renders unavailable state when agreements fetch fails', async () => {
-    mockBff({ agreements: new Response(null, { status: 500 }) });
+  it('Should render unavailable state when agreements fetch fails', async () => {
+    createMockBff({ agreements: new Response(null, { status: 500 }) });
     await renderApply();
     expect(
       await screen.findByRole('heading', { name: 'Application unavailable' }),
     ).toBeInTheDocument();
   });
 
-  it('renders consent gate when agreements are pending, lets user continue after accept', async () => {
-    mockBff({
+  it('Should render consent gate when agreements are pending, lets user continue after accept', async () => {
+    const agreements = [
+      {
+        agreementVersionId: 'av-req',
+        agreementDocumentId: 'ad-req',
+        data: {
+          title: 'Terms of Service',
+          description: 'Please read carefully.',
+          content: null,
+          isOptional: false,
+          approveLabel: 'I accept the terms',
+          rejectLabel: 'I decline',
+        },
+        decision: null,
+      },
+    ];
+    createMockBff({
       agreements: jsonResponse({
-        items: [
-          {
-            agreementVersionId: 'av-req',
-            agreementDocumentId: 'ad-req',
-            data: {
-              title: 'Terms of Service',
-              description: 'Please read carefully.',
-              content: null,
-              isOptional: false,
-              approveLabel: 'I accept the terms',
-              rejectLabel: 'I decline',
-            },
-            decision: null,
-          },
-        ],
+        items: agreements,
       }),
     });
 
@@ -456,7 +308,7 @@ describe('citizen application page', () => {
           ],
         });
       }
-      return mockBff()(input);
+      return createMockBff({})(input);
     }) as unknown as typeof fetch;
 
     const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
@@ -467,22 +319,10 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles 422 submission error and triggers consent gate refetch', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = init?.method ?? 'GET';
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/v1/services/') && url.includes('/applications/'))
-        return jsonResponse(form);
-      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
-        return jsonResponse({ items: [] });
-      if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
-        return new Response(null, { status: 422 });
-      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
-      if (method === 'PATCH') return jsonResponse(draft);
-      return new Response(null, { status: 404 });
+  it('Should handle 422 submission error, autosaves answers, and triggers consent gate refetch', async () => {
+    const fetchMock = createMockBff({
+      applicationsOptions: { submissionUnprocessed: true },
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
     const user = userEvent.setup();
     await renderApply();
 
@@ -492,6 +332,13 @@ describe('citizen application page', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Submit application' }));
 
+    // Verify PATCH was called to save the answers upon 422
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/me/applications/sub1'),
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+
+    // Verify /agreements was re-fetched
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/agreements'),
       expect.any(Object),

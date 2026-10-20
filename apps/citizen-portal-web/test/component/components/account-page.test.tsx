@@ -5,25 +5,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 import { InfoCell } from '@/components/account-page';
-
-const authedUser = {
-  id: 'c1',
-  roles: ['citizen'],
-  claims: {
-    sub: 'subject-1',
-    display_name: 'Amina Ali',
-    given_name: 'Amina',
-    family_name: 'Ali',
-    email: 'amina@example.com',
-  },
-};
-
-function jsonResponse(body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
+import { jsonResponse } from '../../support/render-app';
+import { authedUser } from '../../support/fixtures';
+import { createMockBff } from '../../support/create-mock-bff';
+import { createMockAssign } from '../../support/create-mock-assign';
 
 async function renderAccount(me: Response | Promise<Response>) {
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
@@ -52,7 +37,7 @@ afterEach(() => {
 });
 
 describe('citizen-portal-web /account page', () => {
-  it('shows the signed-in user’s name and email', async () => {
+  it('Should show the signed-in user’s name and email', async () => {
     await renderAccount(jsonResponse(authedUser));
     expect(
       await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
@@ -63,7 +48,7 @@ describe('citizen-portal-web /account page', () => {
     expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
   });
 
-  it('prompts an anonymous visitor to log in', async () => {
+  it('Should prompt an anonymous visitor to log in', async () => {
     await renderAccount(new Response(null, { status: 401 }));
     expect(
       await screen.findByText(
@@ -77,14 +62,14 @@ describe('citizen-portal-web /account page', () => {
     expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
-  it('renders a loading skeleton when authorization state is pending', async () => {
+  it('Should render a loading skeleton when authorization state is pending', async () => {
     const pendingPromise = new Promise<Response>(() => {});
     await renderAccount(pendingPromise);
     expect(document.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Account settings' })).toBeNull();
   });
 
-  it('does not display email field if user email claim is missing', async () => {
+  it('Should not display email field if user email claim is missing', async () => {
     const userNoEmail = {
       id: 'c1',
       roles: ['citizen'],
@@ -104,22 +89,10 @@ describe('citizen-portal-web /account page', () => {
     expect(screen.queryByText('amina@example.com')).toBeNull();
   });
 
-  it('logs out and redirects to homepage when log out button is clicked', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/auth/logout')) return new Response(null, { status: 204 });
-      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
-      if (url.includes('/v1/me/applications')) return new Response(null, { status: 401 });
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('Should log out and redirects to homepage when log out button is clicked', async () => {
+    const fetchMock = createMockBff();
 
-    const assign = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign },
-    });
+    const assign = createMockAssign();
 
     const user = userEvent.setup();
     const router = createRouter({
@@ -149,7 +122,7 @@ describe('citizen-portal-web /account page', () => {
     expect(assign).toHaveBeenCalledWith('/');
   });
 
-  it('renders full address, gender, and capitalizeFirst helper correctly', async () => {
+  it('Should render full address, gender, and capitalizeFirst helper correctly', async () => {
     const userWithAddressAndGender = {
       id: 'c1',
       roles: ['citizen'],
@@ -182,7 +155,7 @@ describe('citizen-portal-web /account page', () => {
     expect(screen.getByText('Victoria, BC V8W 2Y2')).toBeInTheDocument();
   });
 
-  it('handles empty and partial address details correctly', async () => {
+  it('Should handle empty and partial address details correctly', async () => {
     const userWithEmptyAddress = {
       id: 'c1',
       roles: ['citizen'],
@@ -241,7 +214,7 @@ describe('citizen-portal-web /account page', () => {
     expect(await screen.findByText('BC V6B 1A1')).toBeInTheDocument();
   });
 
-  it('renders InfoCell with default className when none is provided', () => {
+  it('Should render InfoCell with default className when none is provided', () => {
     const { container } = render(<InfoCell label="Username" value="Amina" />);
     const cellElement = container.firstChild;
     expect(cellElement).toHaveClass('flex', 'flex-col', 'gap-1', 'p-4');

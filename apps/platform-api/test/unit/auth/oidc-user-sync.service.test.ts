@@ -2,34 +2,19 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { mapClaims, OidcUserSyncService } from '../../../src/auth/oidc-user-sync.service';
 import { users, identities } from '@repo/database';
 import type { OidcClaims } from '@repo/nestjs/auth';
+import { createMockDb } from '../../utils/create-db-mock';
 
 describe('OidcUserSyncService', () => {
-  let dbMock: any;
   let txMock: any;
+  let dbMock: any;
   let configMock: any;
   let service: OidcUserSyncService;
 
   beforeEach(() => {
     // Reset all mock structures before each test run
-    txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
-
-    dbMock = {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-    };
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     configMock = {
       getOrThrow: vi.fn().mockReturnValue('citizen'),
@@ -47,7 +32,7 @@ describe('OidcUserSyncService', () => {
     family_name: 'Doe',
   };
 
-  it('creates a new user and identity on first login', async () => {
+  it('Should create a new user and identity on first login', async () => {
     // 1. First select for existing identity should return empty (not found)
     txMock.limit.mockResolvedValueOnce([]);
 
@@ -93,7 +78,7 @@ describe('OidcUserSyncService', () => {
     });
   });
 
-  it('updates profile and log-in timestamp for an existing user/identity on subsequent login', async () => {
+  it('Should update profile and log-in timestamp for an existing user/identity on subsequent login', async () => {
     // 1. First select for existing identity should find the existing user ID
     txMock.limit.mockResolvedValueOnce([{ userId: 'existing-user-id' }]);
 
@@ -121,7 +106,7 @@ describe('OidcUserSyncService', () => {
     });
   });
 
-  it('throws an error if user insertion fails to return a new user', async () => {
+  it('Should throw an error if user insertion fails to return a new user', async () => {
     // 1. First select for existing identity returns empty
     txMock.limit.mockResolvedValueOnce([]);
 
@@ -131,7 +116,7 @@ describe('OidcUserSyncService', () => {
     await expect(service.onSignIn(dummyClaims)).rejects.toThrow('auth sync: failed to create user');
   });
 
-  it('throws an error if user is not found in database after successful upsert', async () => {
+  it('Should throw an error if user is not found in database after successful upsert', async () => {
     // 1. First select for existing identity returns empty
     txMock.limit.mockResolvedValueOnce([]);
 
@@ -146,7 +131,7 @@ describe('OidcUserSyncService', () => {
     );
   });
 
-  it('maps a full set of claims', () => {
+  it('Should map a full set of claims', () => {
     expect(
       mapClaims({
         sub: 's-1',
@@ -166,26 +151,26 @@ describe('OidcUserSyncService', () => {
     });
   });
 
-  it('falls back to empty strings for missing given/family names', () => {
+  it('Should fall back to empty strings for missing given/family names', () => {
     const m = mapClaims({ sub: 's', iss: 'i', preferred_username: 'puser' });
     expect(m.givenName).toBe('');
     expect(m.familyName).toBe('');
     expect(m.email).toBeUndefined();
   });
 
-  it('derives displayName: name → preferred_username → email → sub', () => {
+  it('Should derive displayName: name → preferred_username → email → sub', () => {
     expect(mapClaims({ sub: 'x', iss: 'i', name: 'N' }).displayName).toBe('N');
     expect(mapClaims({ sub: 'x', iss: 'i', preferred_username: 'p' }).displayName).toBe('p');
     expect(mapClaims({ sub: 'x', iss: 'i', email: 'e@x' }).displayName).toBe('e@x');
     expect(mapClaims({ sub: 'x', iss: 'i' }).displayName).toBe('x');
   });
 
-  it('falls back to empty string for missing issuer', () => {
+  it('Should fall back to empty string for missing issuer', () => {
     const m = mapClaims({ sub: 's', name: 'N' });
     expect(m.issuer).toBe('');
   });
 
-  it('updates profile with null email if claims do not have an email during subsequent sign in', async () => {
+  it('Should update profile with null email if claims do not have an email during subsequent sign in', async () => {
     txMock.limit.mockResolvedValueOnce([{ userId: 'existing-user-id' }]);
     dbMock.limit.mockResolvedValueOnce([{ id: 'existing-user-id', roles: ['citizen'] }]);
 

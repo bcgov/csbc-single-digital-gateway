@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 describe('IndexRoute', () => {
-  it('registers HomePage as its component correctly', async () => {
+  it('Should register HomePage as its component correctly', async () => {
     const Component = Route.options.component;
     expect(Component).toBeDefined();
 

@@ -5,12 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SubmissionDetail } from '@/components/console/submissions/submission-detail';
 import { reviewSubmission } from '@/lib/submissions';
 import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions';
-
-const mockParams = { slug: 'riverton', id: 'sub-123' };
+import { mockBasicSubmission } from '../../../../support/fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
-  useParams: () => mockParams,
+  useParams: () => ({ slug: 'riverton', id: 'sub-123' }),
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {
@@ -62,28 +61,6 @@ vi.mock('@/lib/submissions', async (importOriginal) => {
     }),
   };
 });
-
-const mockBasicSubmission: SubmissionDetailData = {
-  id: 'sub-123',
-  serviceId: 'srv-123',
-  serviceTitle: 'Parking Permits',
-  formId: 'form-123',
-  formTitle: 'Application Form',
-  applicantName: 'Test User',
-  applicantEmail: 'test@example.com',
-  status: 'pending',
-  statusLabel: 'Pending Review',
-  reference: 'REF-0001',
-  submittedAt: '2026-07-15T00:00:00Z',
-  updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'basic-form',
-  structure: {
-    schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
-    uischema: { type: 'VerticalLayout', elements: [] },
-  },
-  data: { parkingType: 'Residential' },
-  reviews: [],
-};
 
 const mockMultiStageSubmission: SubmissionDetailData = {
   id: 'sub-456',
@@ -160,14 +137,14 @@ describe('SubmissionDetail Component Test Suite', () => {
     queryClient.clear();
   });
 
-  it('renders loading skeletons when query is pending', () => {
+  it('Should render loading skeletons when query is pending', () => {
     mockSubmissionLoading = true;
     renderSubmissionDetail(queryClient);
 
     expect(screen.getAllByTestId('skeleton')).toHaveLength(2);
   });
 
-  it('renders error state when query fails', async () => {
+  it('Should render error state when query fails', async () => {
     mockSubmissionError = new Error('Failed to fetch');
     renderSubmissionDetail(queryClient);
 
@@ -178,7 +155,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(backBtn.getAttribute('href')).toBe('/app/riverton/submissions');
   });
 
-  it('renders loaded state for basic form submission with reviewable status', async () => {
+  it('Should render loaded state for basic form submission with reviewable status', async () => {
     mockSubmissionData = mockBasicSubmission;
     renderSubmissionDetail(queryClient);
 
@@ -206,7 +183,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.queryByRole('heading', { name: 'History' })).not.toBeInTheDocument();
   });
 
-  it('renders loaded state for multi-stage form submission with actioned status and history', async () => {
+  it('Should render loaded state for multi-stage form submission with actioned status and history', async () => {
     mockSubmissionData = mockMultiStageSubmission;
     renderSubmissionDetail(queryClient);
 
@@ -231,7 +208,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.getByText(/Admin Staff/)).toBeInTheDocument();
   });
 
-  it('performs review submission successfully and invalidates queries', async () => {
+  it('Should perform review submission successfully and invalidate queries', async () => {
     const user = userEvent.setup();
     mockSubmissionData = mockBasicSubmission;
 
@@ -264,7 +241,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(noteInput).toHaveValue(''); // Resets textarea after success
   });
 
-  it('shows error message if review submission fails', async () => {
+  it('Should show error message if review submission fails', async () => {
     const user = userEvent.setup();
     mockSubmissionData = mockBasicSubmission;
 
@@ -280,7 +257,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles null submittedAt, empty page names, and reviews without reason in multi-stage form', async () => {
+  it('Should handle null submittedAt, empty page names, and review without reason in multi-stage form', async () => {
     const mockCustomSubmission: SubmissionDetailData = {
       id: 'sub-custom',
       serviceId: 'srv-123',
@@ -333,7 +310,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.queryByText('Looks great!')).not.toBeInTheDocument();
   });
 
-  it('handles basic form submission with empty/missing schema', async () => {
+  it('Should handle basic form submission with empty/missing schema', async () => {
     const mockEmptyBasicSubmission: SubmissionDetailData = {
       id: 'sub-empty',
       serviceId: 'srv-123',
@@ -360,7 +337,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
   });
 
-  it('covers multi-stage form structure fallbacks', async () => {
+  it('Should cover multi-stage form structure fallbacks', async () => {
     const mockFallbackSubmission: SubmissionDetailData = {
       id: 'sub-fallback',
       serviceId: 'srv-123',
@@ -386,7 +363,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(await screen.findByText('REF-0004')).toBeInTheDocument();
   });
 
-  it('covers stage pages and page id fallback', async () => {
+  it('Should cover stage pages and page id fallback', async () => {
     const mockPageFallbackSubmission: SubmissionDetailData = {
       id: 'sub-page-fallback',
       serviceId: 'srv-123',

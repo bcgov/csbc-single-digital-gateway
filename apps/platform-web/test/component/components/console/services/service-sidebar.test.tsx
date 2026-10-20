@@ -55,8 +55,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
 }));
 
 import { ServiceSidebar } from '@/components/console/services/service-sidebar';
-
-const group = (label: string) => ({ type: 'Group', label, elements: [] });
+import { group } from '../../../../support/testHelpers';
 
 const UISCHEMA = {
   type: 'VerticalLayout',
@@ -86,7 +85,7 @@ afterEach(() => {
 queryRef.current = { data: definition(), isPending: false };
 
 describe('ServiceSidebar', () => {
-  it('renders the service name and all five section links', () => {
+  it('Should render the service name and all five section links', () => {
     render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
 
     expect(screen.getByText('Business licence')).toBeInTheDocument();
@@ -111,7 +110,7 @@ describe('ServiceSidebar', () => {
     );
   });
 
-  it('toggles the collapsed state via the collapse trigger', async () => {
+  it('Should toggle the collapsed state via the collapse trigger', async () => {
     const user = userEvent.setup();
     const { container } = render(
       <ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />,
@@ -132,7 +131,7 @@ describe('ServiceSidebar', () => {
     expect(aside).toHaveAttribute('data-collapsed', 'false');
   });
 
-  it('shows the submenu only on the details route, with section-anchor links', () => {
+  it('Should show the submenu only on the details route, with section-anchor links', () => {
     // Off the details route: no submenu.
     const { unmount } = render(
       <ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />,
@@ -164,7 +163,7 @@ describe('ServiceSidebar', () => {
  * the service query is pending it shows skeleton rows.
  */
 describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
-  it('should derive the submenu anchors from the uischema Groups, not the static constant', () => {
+  it('Should derive the submenu anchors from the uischema Groups, not the static constant', () => {
     onDetailsRoute();
     queryRef.current = {
       data: definition({
@@ -190,7 +189,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     expect(screen.getByRole('link', { name: 'Configuration' })).toBeInTheDocument();
   });
 
-  it('should render skeleton rows while the service query is pending', () => {
+  it('Should render skeleton rows while the service query is pending', () => {
     onDetailsRoute();
     queryRef.current = { data: undefined, isPending: true };
 
@@ -201,7 +200,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
   });
 
-  it('should never render the stale static section list while pending', () => {
+  it('Should never render the stale static section list while pending', () => {
     onDetailsRoute();
     queryRef.current = { data: undefined, isPending: true };
 
@@ -213,7 +212,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     }
   });
 
-  it('should mark the pending skeleton rows aria-hidden', () => {
+  it('Should mark the pending skeleton rows aria-hidden', () => {
     onDetailsRoute();
     queryRef.current = { data: undefined, isPending: true };
 
@@ -226,7 +225,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     expect(list?.querySelectorAll('[data-slot="skeleton"]').length).toBe(5);
   });
 
-  it('should render an empty submenu (no skeletons) when the derivation yields no sections', () => {
+  it('Should render an empty submenu (no skeletons) when the derivation yields no sections', () => {
     onDetailsRoute();
     queryRef.current = {
       data: definition({ type: 'VerticalLayout', elements: [] }),
@@ -243,7 +242,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     expect(screen.queryByRole('link', { name: 'Service description' })).not.toBeInTheDocument();
   });
 
-  it('should link each anchor to …/details#<anchor>', () => {
+  it('Should link each anchor to …/details#<anchor>', () => {
     onDetailsRoute();
 
     render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
@@ -254,7 +253,7 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
     );
   });
 
-  it('should keep the submenu on the version permalink route, linking to that version', () => {
+  it('Should keep the submenu on the version permalink route, linking to that version', () => {
     // Regression: matching only `…/details` made the submenu vanish as soon as a non-published
     // version was picked from the header.
     locationRef.current = {
@@ -272,5 +271,31 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
       'href',
       '/app/riverton/services/svc-1/versions/v-9/details#configuration',
     );
+  });
+
+  it('Should highlight the active submenu link when hash matches the section anchor', () => {
+    locationRef.current = {
+      pathname: '/app/riverton/services/svc-1/details',
+      hash: 'service-description',
+    };
+
+    render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
+
+    const activeLink = screen.getByRole('link', { name: 'Service description' });
+    const inactiveLink = screen.getByRole('link', { name: 'Eligibility criteria' });
+
+    expect(activeLink.className).toContain('!text-bcgov-blue');
+    expect(inactiveLink.className).not.toContain('!text-bcgov-blue');
+  });
+
+  it('Should show submenu on nested subpath of details route', () => {
+    locationRef.current = {
+      pathname: '/app/riverton/services/svc-1/details/edit',
+      hash: '',
+    };
+
+    render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
+
+    expect(screen.getByRole('link', { name: 'Service description' })).toBeInTheDocument();
   });
 });

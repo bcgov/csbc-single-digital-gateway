@@ -6,12 +6,10 @@ import {
   parseModel,
   serializeModel,
   type ContainerNode,
-  type ControlNode,
   type DisplayNode,
   type FormModel,
 } from '@/components/form-builder/model';
-
-const ctrl = (key: string): ControlNode => ({ ...createField('text'), key, label: key });
+import { ctrl } from '../support/testHelpers';
 
 const model = (fields: FormModel['fields']): FormModel => ({
   title: '',
@@ -21,7 +19,7 @@ const model = (fields: FormModel['fields']): FormModel => ({
 
 describe('Form Builder Display Fields Integration Test Suite', () => {
   describe('createField', () => {
-    it('creates a heading display node with a stable id and default level 2', () => {
+    it('Should create a heading display node with a stable id and default level 2', () => {
       const node = createField('heading') as DisplayNode;
       expect(node.kind).toBe('display');
       expect(node.displayType).toBe('heading');
@@ -30,7 +28,7 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
       expect(node.id.length).toBeGreaterThan(0);
     });
 
-    it('creates paragraph and richtext display nodes (no schema key, no required)', () => {
+    it('Should create paragraph and richtext display nodes (no schema key, no required)', () => {
       const para = createField('paragraph') as DisplayNode;
       const rich = createField('richtextdisplay') as DisplayNode;
       expect(para.kind).toBe('display');
@@ -41,7 +39,7 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
       expect((para as unknown as { key?: string }).key).toBeUndefined();
     });
 
-    it('gives each created display node a distinct id', () => {
+    it('Should give each created display node a distinct id', () => {
       const a = createField('heading') as DisplayNode;
       const b = createField('heading') as DisplayNode;
       expect(a.id).not.toBe(b.id);
@@ -49,7 +47,7 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
   });
 
   describe('serializeModel', () => {
-    it('emits a Label element for a heading and adds NO schema property', () => {
+    it('Should emit a Label element for a heading and add NO schema property', () => {
       const node: DisplayNode = {
         kind: 'display',
         displayType: 'heading',
@@ -69,7 +67,7 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
       expect(def.schema.required).toEqual([]);
     });
 
-    it('emits a Label with format=richtext carrying the Lexical content, empty text', () => {
+    it('Should emit a Label with format=richtext carrying the Lexical content, empty text', () => {
       const content = { root: { children: [] } };
       const node: DisplayNode = {
         kind: 'display',
@@ -84,14 +82,14 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
   });
 
   describe('allKeys', () => {
-    it('skips display nodes (they have no key)', () => {
+    it('Should skip display nodes (they have no key)', () => {
       const m = model([ctrl('name'), createField('heading'), ctrl('email')]);
       expect(allKeys(m).toSorted()).toEqual(['email', 'name']);
     });
   });
 
   describe('round-trip (parseModel ∘ serializeModel)', () => {
-    it('round-trips a mixed model with a display node inside a container', () => {
+    it('Should round-trip a mixed model with a display node inside a container', () => {
       const heading: DisplayNode = {
         kind: 'display',
         displayType: 'heading',
@@ -118,7 +116,7 @@ describe('Form Builder Display Fields Integration Test Suite', () => {
   });
 
   describe('dnd record (buildRecord / applyRecord)', () => {
-    it('addresses display nodes by displayId and round-trips them', () => {
+    it('Should address display nodes by displayId and round-trips them', () => {
       const heading = createField('heading') as DisplayNode;
       const m = model([heading, ctrl('name')]);
       const record = buildRecord(m);

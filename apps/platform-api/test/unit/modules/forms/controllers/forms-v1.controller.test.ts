@@ -1,24 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { FormsV1Controller } from '../../../../../src/modules/forms/controllers/forms-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateFormDto,
   UpdateFormSchemaDto,
 } from '../../../../../src/modules/forms/dtos/form.dtos';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('FormsV1Controller', () => {
   let controller: FormsV1Controller;
   let formsServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     formsServiceMock = {
@@ -31,7 +21,7 @@ describe('FormsV1Controller', () => {
   });
 
   describe('create', () => {
-    it('creates a form via the forms service', async () => {
+    it('Should create a form via the forms service', async () => {
       const body: CreateFormDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
@@ -54,7 +44,7 @@ describe('FormsV1Controller', () => {
   });
 
   describe('get', () => {
-    it('gets a form via the forms service', async () => {
+    it('Should get a form via the forms service', async () => {
       const mockResult = {
         id: 'form-1',
         title: 'New Form',
@@ -71,7 +61,7 @@ describe('FormsV1Controller', () => {
   });
 
   describe('updateSchema', () => {
-    it('updates a form schema via the forms service', async () => {
+    it('Should update a form schema via the forms service', async () => {
       const body: UpdateFormSchemaDto = {
         definition: { schema: {}, uischema: {} },
         title: 'Updated Title',

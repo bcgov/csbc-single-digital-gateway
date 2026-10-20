@@ -3,11 +3,10 @@ import {
   recordConsentSchema,
   serviceAgreementConsentSchema,
 } from '../../../../../src/modules/applications/dtos/consent.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('consent DTO schemas', () => {
-  it('record: requires a uuid agreementVersionId + an approve/reject decision', () => {
+  it('Should require a uuid agreementVersionId and an approve/reject decision for record', () => {
     expect(
       recordConsentSchema.safeParse({ agreementVersionId: UUID, decision: 'approve' }).success,
     ).toBe(true);
@@ -23,7 +22,7 @@ describe('consent DTO schemas', () => {
     ).toBe(false);
   });
 
-  it('surface item: decision is nullable (undecided) and data is preserved', () => {
+  it('Should allow nullable decision (undecided) and preserve data for surface item', () => {
     expect(
       serviceAgreementConsentSchema.safeParse({
         agreementVersionId: 'v1',

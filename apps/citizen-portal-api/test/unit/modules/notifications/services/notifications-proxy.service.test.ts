@@ -6,41 +6,25 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response as ExpressResponse } from 'express';
-
 import { NotificationsProxyService } from '../../../../../src/modules/notifications/services/notifications-proxy.service';
-import { M2mTokenClient } from '../../../../../src/notifications/m2m-token.client';
 import type { Env } from '../../../../../src/config/env.schema';
+import { createMockConfigService } from '../../../../utils/create-mock-config-service';
+import { mockResponse } from '../../../../utils/create-mock-response';
+import { createMockReq } from '../../../../utils/create-mock-req';
+import { createMockRes } from '../../../../utils/create-mock-res';
+import { createTokenSpy } from '../../../../utils/create-token-spy';
 
 describe('NotificationsProxyService Unit Test Suite', () => {
   let service: NotificationsProxyService;
-  let mockConfigService: ConfigService<Env, true>;
   let getTokenSpy: any;
   let invalidateSpy: any;
 
   beforeEach(() => {
     // Spy on M2mTokenClient prototype methods so we mock their HTTP/OIDC requests
-    getTokenSpy = vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mocked-token');
-    invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate').mockImplementation(() => {});
-
-    mockConfigService = {
-      get: vi.fn((key: string) => {
-        switch (key) {
-          case 'NOTIFICATIONS_M2M_ISSUER':
-            return 'http://auth.issuer';
-          case 'NOTIFICATIONS_M2M_CLIENT_ID':
-            return 'client-id';
-          case 'NOTIFICATIONS_M2M_CLIENT_SECRET':
-            return 'client-secret';
-          case 'NOTIFICATION_SERVICE_URL':
-            return 'http://notification.service';
-          default:
-            return undefined;
-        }
-      }),
-    } as unknown as ConfigService<Env, true>;
-
-    service = new NotificationsProxyService(mockConfigService);
+    ({ getTokenSpy, invalidateSpy } = createTokenSpy(getTokenSpy, invalidateSpy));
+    service = new NotificationsProxyService(
+      createMockConfigService() as unknown as ConfigService<Env, true>,
+    );
   });
 
   afterEach(() => {
@@ -48,13 +32,11 @@ describe('NotificationsProxyService Unit Test Suite', () => {
   });
 
   describe('request', () => {
-    it('should successfully make an HTTP request and return the JSON response', async () => {
+    it('Should successfully make an HTTP request and return the JSON response', async () => {
       const mockResult = { success: true };
-      const responseMock = {
-        ok: true,
-        status: 200,
+      const responseMock = mockResponse({
         json: vi.fn().mockResolvedValue(mockResult),
-      } as unknown as Response;
+      });
 
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -70,13 +52,13 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('should include content-type and stringified body if body is provided', async () => {
+    it('Should include content-type and stringified body if body is provided', async () => {
       const mockResult = { created: true };
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: true,
         status: 201,
         json: vi.fn().mockResolvedValue(mockResult),
-      } as unknown as Response;
+      });
 
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
       const requestBody = { foo: 'bar' };
@@ -94,45 +76,45 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('should throw BadGatewayException if fetch throws a network error', async () => {
+    it('Should throw BadGatewayException if fetch throws a network error', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network failure'));
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(BadGatewayException);
     });
 
-    it('should throw BadGatewayException if fetch throws a non-Error object during request', async () => {
+    it('Should throw BadGatewayException if fetch throws a non-Error object during request', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue('unreachable-string-error');
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(BadGatewayException);
     });
 
-    it('should throw NotFoundException if response status is 404', async () => {
-      const responseMock = {
+    it('Should throw NotFoundException if response status is 404', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 404,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException if response status is 400', async () => {
-      const responseMock = {
+    it('Should throw BadRequestException if response status is 400', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 400,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(BadRequestException);
     });
 
-    it('should invalidate token client and throw BadGatewayException if response status is 401', async () => {
-      const responseMock = {
+    it('Should invalidate token client and throw BadGatewayException if response status is 401', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 401,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -140,23 +122,23 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       expect(invalidateSpy).toHaveBeenCalled();
     });
 
-    it('should throw BadGatewayException if response status is 500 or any other error', async () => {
-      const responseMock = {
+    it('Should throw BadGatewayException if response status is 500 or any other error', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 500,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(BadGatewayException);
     });
 
-    it('should throw UnprocessableEntityException with upstream message if status is 422 and json has message string', async () => {
-      const responseMock = {
+    it('Should throw UnprocessableEntityException with upstream message if status is 422 and json has message string', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue({ message: 'Custom validation error' }),
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -165,12 +147,12 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should throw UnprocessableEntityException with fallback message if status is 422 and json lacks message string', async () => {
-      const responseMock = {
+    it('Should throw UnprocessableEntityException with fallback message if status is 422 and json lacks message string', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue({ error: 'Some other key' }),
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -179,12 +161,12 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should throw UnprocessableEntityException with fallback message if status is 422 and json throws/fails', async () => {
-      const responseMock = {
+    it('Should throw UnprocessableEntityException with fallback message if status is 422 and json throws/fails', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockRejectedValue(new Error('JSON parse error')),
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -193,12 +175,12 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should throw UnprocessableEntityException with fallback message if status is 422 and json is null/non-object', async () => {
-      const responseMock = {
+    it('Should throw UnprocessableEntityException with fallback message if status is 422 and json is null/non-object', async () => {
+      const responseMock = mockResponse({
         ok: false,
         status: 422,
         json: vi.fn().mockResolvedValue(null),
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -209,18 +191,9 @@ describe('NotificationsProxyService Unit Test Suite', () => {
   });
 
   describe('pipeStream', () => {
-    it('should successfully establish stream and pipe chunks to client', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
-
-      const mockRes = {
-        status: vi.fn().mockReturnThis(),
-        set: vi.fn(),
-        flushHeaders: vi.fn(),
-        write: vi.fn(),
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
+    it('Should successfully establish stream and pipe chunks to client', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
       const mockReader = {
         read: vi
@@ -233,11 +206,11 @@ describe('NotificationsProxyService Unit Test Suite', () => {
         getReader: vi.fn().mockReturnValue(mockReader),
       };
 
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: mockBody,
-      } as unknown as Response;
+      });
 
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -263,25 +236,19 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       expect(mockRes.end).toHaveBeenCalled();
     });
 
-    it('should register close listener that aborts the signal', async () => {
+    it('Should register close listener that aborts the signal', async () => {
       let closeCallback: (() => void) | undefined;
-      const mockReq = {
+      const mockReq = createMockReq({
         on: vi.fn().mockImplementation((event, cb) => {
           if (event === 'close') {
             closeCallback = cb;
           }
         }),
-      } as unknown as Request;
+      });
 
-      const mockRes = {
-        status: vi.fn().mockReturnThis(),
-        set: vi.fn(),
-        flushHeaders: vi.fn(),
-        write: vi.fn(),
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
+      const mockRes = createMockRes();
 
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: {
@@ -289,7 +256,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
             read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
           }),
         },
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -302,14 +269,9 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       }
     });
 
-    it('should throw BadGatewayException if fetch throws during pipeStream initiation', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
-
-      const mockRes = {
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
+    it('Should throw BadGatewayException if fetch throws during pipeStream initiation', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Stream start error'));
 
@@ -318,14 +280,9 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should throw BadGatewayException if fetch throws a non-Error object during pipeStream initiation', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
-
-      const mockRes = {
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
+    it('Should throw BadGatewayException if fetch throws a non-Error object during pipeStream initiation', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
       vi.spyOn(globalThis, 'fetch').mockRejectedValue('unreachable-string-error');
 
@@ -334,19 +291,14 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should throw BadGatewayException and invalidate if upstream is 401', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
+    it('Should throw BadGatewayException and invalidate if upstream is 401', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
-      const mockRes = {
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
-
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: false,
         status: 401,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -356,20 +308,15 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       expect(invalidateSpy).toHaveBeenCalled();
     });
 
-    it('should throw BadGatewayException if body is null', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
+    it('Should throw BadGatewayException if body is null', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
-      const mockRes = {
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
-
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: null,
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -378,30 +325,21 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       );
     });
 
-    it('should handle reader errors gracefully by just ending the response', async () => {
-      const mockReq = {
-        on: vi.fn(),
-      } as unknown as Request;
-
-      const mockRes = {
-        status: vi.fn().mockReturnThis(),
-        set: vi.fn(),
-        flushHeaders: vi.fn(),
-        write: vi.fn(),
-        end: vi.fn(),
-      } as unknown as ExpressResponse;
+    it('Should handle reader errors gracefully by just ending the response', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
 
       const mockReader = {
         read: vi.fn().mockRejectedValue(new Error('Reader stream error')),
       };
 
-      const responseMock = {
+      const responseMock = mockResponse({
         ok: true,
         status: 200,
         body: {
           getReader: vi.fn().mockReturnValue(mockReader),
         },
-      } as unknown as Response;
+      });
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
@@ -410,7 +348,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
     });
   });
 
-  it('should cover the transpiler metadata branch check when ConfigService is undefined', async () => {
+  it('Should cover the transpiler metadata branch check when ConfigService is undefined', async () => {
     vi.resetModules();
     vi.doMock('@nestjs/config', () => ({
       ConfigService: undefined,

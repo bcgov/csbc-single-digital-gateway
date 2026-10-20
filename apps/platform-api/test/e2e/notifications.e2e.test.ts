@@ -5,19 +5,10 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
+import { seedUser } from '../utils/test-helpers';
+import { UUID, ORIGIN } from '../utils/fixtures';
 
-/**
- * Auth + validation posture for the citizen notifications proxy (feature 113). The upstream
- * notification-service is NOT running in the suite, so only pre-proxy behavior (401 guard,
- * 400 boundary validation) is asserted; live proxy behavior is verified against the running
- * stack in integration.
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['staff'], claims: { sub: 'u' } } satisfies AuthUser);
-const ORIGIN = 'http://localhost:3001';
-const UUID = '11111111-1111-4111-8111-111111111111';
-
-describe('platform notifications proxy (e2e)', () => {
+describe('Notifications E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -43,7 +34,7 @@ describe('platform notifications proxy (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects every notifications route (401 without a session)', async () => {
+  it('Should protect every notifications route (401 without a session)', async () => {
     expect((await http().get('/v1/me/notifications')).status).toBe(401);
     expect((await http().get('/v1/me/notifications/unread-count')).status).toBe(401);
     expect(
@@ -59,7 +50,7 @@ describe('platform notifications proxy (e2e)', () => {
     ).toBe(401);
   });
 
-  it('400s an invalid preferences body for a signed-in user (boundary validation, pre-proxy)', async () => {
+  it('Should return 400 for an invalid preferences body for a signed-in user (boundary validation, pre-proxy)', async () => {
     const res = await http()
       .put('/v1/me/notification-preferences')
       .set('Origin', ORIGIN)
@@ -68,7 +59,7 @@ describe('platform notifications proxy (e2e)', () => {
     expect(res.status).toBe(400);
   });
 
-  it('400s an out-of-range feed limit for a signed-in user (pre-proxy)', async () => {
+  it('Should return 400 for an out-of-range feed limit for a signed-in user (pre-proxy)', async () => {
     const res = await http().get('/v1/me/notifications?limit=101').set('x-test-user', seedUser());
     expect(res.status).toBe(400);
   });

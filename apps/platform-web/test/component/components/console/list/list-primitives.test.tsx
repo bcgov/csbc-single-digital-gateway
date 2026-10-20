@@ -20,14 +20,14 @@ function renderHeader(props: Parameters<typeof SortableHeader>[0]) {
 }
 
 describe('SortableHeader', () => {
-  it('sorts by its column on click', async () => {
+  it('Should sort by its column on click', async () => {
     const onSort = vi.fn();
     renderHeader({ column: 'title', label: 'Title', active: 'updated', order: 'desc', onSort });
     await userEvent.click(screen.getByRole('button', { name: /sort by title/i }));
     expect(onSort).toHaveBeenCalledWith('title');
   });
 
-  it('renders ArrowDown when active and order is desc', () => {
+  it('Should render ArrowDown when active and order is desc', () => {
     const { container } = renderHeader({
       column: 'title',
       label: 'Title',
@@ -41,7 +41,7 @@ describe('SortableHeader', () => {
     expect(container.querySelector('.lucide-arrow-down')).toBeInTheDocument();
   });
 
-  it('renders ArrowUp when active and order is asc', () => {
+  it('Should render ArrowUp when active and order is asc', () => {
     const { container } = renderHeader({
       column: 'title',
       label: 'Title',
@@ -54,7 +54,7 @@ describe('SortableHeader', () => {
     expect(container.querySelector('.lucide-arrow-up')).toBeInTheDocument();
   });
 
-  it('renders flex-row-reverse class when align is right', () => {
+  it('Should render flex-row-reverse class when align is right', () => {
     renderHeader({
       column: 'title',
       label: 'Title',
@@ -69,14 +69,14 @@ describe('SortableHeader', () => {
 });
 
 describe('ListPagination', () => {
-  it('renders nothing when everything fits on one page', () => {
+  it('Should render nothing when everything fits on one page', () => {
     const { container } = render(
       <ListPagination total={5} limit={20} offset={0} onPageChange={() => {}} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows the range and pages forward/back within bounds', async () => {
+  it('Should show the range and pages forward/back within bounds', async () => {
     const onPageChange = vi.fn();
     render(<ListPagination total={45} limit={20} offset={20} onPageChange={onPageChange} />);
     expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 21–40 of 45');
@@ -87,7 +87,7 @@ describe('ListPagination', () => {
     expect(onPageChange).toHaveBeenCalledWith(3);
   });
 
-  it('disables Prev on the first page and Next on the last', () => {
+  it('Should disable Prev on the first page and Next on the last', () => {
     const { rerender } = render(
       <ListPagination total={45} limit={20} offset={0} onPageChange={() => {}} />,
     );
@@ -96,14 +96,14 @@ describe('ListPagination', () => {
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
   });
 
-  it('handles total of 0 when limit is negative to cover the edge case branch', () => {
+  it('Should handle total of 0 when limit is negative to cover the edge case branch', () => {
     render(<ListPagination total={0} limit={-1} offset={0} onPageChange={() => {}} />);
     expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 0–-1 of 0');
   });
 });
 
 describe('ListSearchInput', () => {
-  it('emits a single trailing term after typing (debounced)', async () => {
+  it('Should emit a single trailing term after typing (debounced)', async () => {
     const onChange = vi.fn();
     render(<ListSearchInput value="" onChange={onChange} delay={50} />);
     await userEvent.type(screen.getByRole('searchbox'), 'per');
@@ -112,14 +112,14 @@ describe('ListSearchInput', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it('clears immediately via the clear button', async () => {
+  it('Should clear immediately via the clear button', async () => {
     const onChange = vi.fn();
     render(<ListSearchInput value="permit" onChange={onChange} />);
     await userEvent.click(screen.getByRole('button', { name: /clear search/i }));
     expect(onChange).toHaveBeenCalledWith('');
   });
 
-  it('renders with custom placeholder and className', () => {
+  it('Should render with custom placeholder and className', () => {
     render(
       <ListSearchInput
         value=""
@@ -132,7 +132,7 @@ describe('ListSearchInput', () => {
     expect(screen.getByRole('searchbox').closest('.my-custom-class')).toBeInTheDocument();
   });
 
-  it('adopts external value changes', () => {
+  it('Should adopt external value changes', () => {
     const { rerender } = render(<ListSearchInput value="first" onChange={() => {}} />);
     expect(screen.getByRole('searchbox')).toHaveValue('first');
     rerender(<ListSearchInput value="second" onChange={() => {}} />);

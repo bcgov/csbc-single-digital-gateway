@@ -8,29 +8,22 @@ import {
   publishVersion,
   archiveVersion,
 } from '@/lib/document-types';
+import { mockResponse } from '../../support/mock-response';
+import { mockFetch } from '../../support/vi-fixtures';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
   BFF_ORIGIN: 'http://bff-test',
 }));
 
-const mockResponse = (status: number, data: any, okState = true) => {
-  return {
-    ok: okState,
-    status,
-    json: () => Promise.resolve(data),
-  } as Response;
-};
-
 describe('Document Types Unit Test Suite', () => {
-  const mockFetch = vi.fn();
   globalThis.fetch = mockFetch;
 
   beforeEach(() => {
     mockFetch.mockReset();
   });
 
-  it('queries all document types with query options', async () => {
+  it('Should query all document types with query options', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { items: [{ type: { id: 'dt-1', name: 'Form A' }, versions: [] }] }),
     );
@@ -46,7 +39,7 @@ describe('Document Types Unit Test Suite', () => {
     expect(items[0]?.type.name).toBe('Form A');
   });
 
-  it('queries a single document type by id', async () => {
+  it('Should query a single document type by id', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(200, { type: { id: 'dt-1', name: 'Form A' }, versions: [] }),
     );
@@ -61,7 +54,7 @@ describe('Document Types Unit Test Suite', () => {
     expect(details.type.name).toBe('Form A');
   });
 
-  it('handles API error bodies from envelope messages (single and array)', async () => {
+  it('Should handle API error bodies from envelope messages (single and array)', async () => {
     // Test case 1: Single string message
     mockFetch.mockResolvedValue(
       mockResponse(400, { message: 'Database validation failed' }, false),
@@ -89,7 +82,7 @@ describe('Document Types Unit Test Suite', () => {
     );
   });
 
-  it('sends POST to add a version', async () => {
+  it('Should send POST to add a version', async () => {
     mockFetch.mockResolvedValue(mockResponse(201, { id: 'ver-2', version: 2 }));
 
     const res = await addVersion('dt-1', { schema: {} });
@@ -105,7 +98,7 @@ describe('Document Types Unit Test Suite', () => {
     expect(res.version).toBe(2);
   });
 
-  it('sends PATCH to edit a draft version', async () => {
+  it('Should send PATCH to edit a draft version', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', version: 1 }));
 
     const res = await editDraft('dt-1', 'ver-1', { schema: { title: 'Updated' } });
@@ -121,7 +114,7 @@ describe('Document Types Unit Test Suite', () => {
     expect(res.version).toBe(1);
   });
 
-  it('sends DELETE to delete a draft version', async () => {
+  it('Should send DELETE to delete a draft version', async () => {
     mockFetch.mockResolvedValue(mockResponse(204, null));
 
     await deleteDraft('dt-1', 'ver-1');
@@ -134,7 +127,7 @@ describe('Document Types Unit Test Suite', () => {
     );
   });
 
-  it('throws error when deleteDraft request fails', async () => {
+  it('Should throw error when deleteDraft request fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
     await expect(deleteDraft('dt-1', 'ver-1').catch((e: any) => e.message)).resolves.toContain(
@@ -142,7 +135,7 @@ describe('Document Types Unit Test Suite', () => {
     );
   });
 
-  it('sends POST requests to publish and archive versions', async () => {
+  it('Should send POST requests to publish and archive versions', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'published' }));
 
     // Publish

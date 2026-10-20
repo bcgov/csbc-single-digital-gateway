@@ -23,7 +23,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 describe('ServicesIndexRoute', () => {
-  it('registers ServicesPage as its component correctly', async () => {
+  it('Should register ServicesPage as its component correctly', async () => {
     const Component = Route.options.component;
     expect(Component).toBeDefined();
 

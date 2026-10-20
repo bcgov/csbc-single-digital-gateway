@@ -22,13 +22,10 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
-
-describe('service-agreements (e2e)', () => {
+describe('Service Agreements E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -62,13 +59,13 @@ describe('service-agreements (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s agreement endpoints without a session', async () => {
+  it('Should return 401 for agreement endpoints without a session', async () => {
     expect((await http().get('/v1/service-agreements')).status).toBe(401);
     expect((await http().post('/v1/service-agreements').send({ data: {} })).status).toBe(401);
   });
 
-  it('400s an invalid create body for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 400 for an invalid create body for a signed-in user when fetching service agreements', async () => {
+    const staff = seedUser(['staff']);
     // data is required.
     expect(
       (await http().post('/v1/service-agreements').set('x-test-user', staff).send({})).status,
@@ -84,55 +81,55 @@ describe('service-agreements (e2e)', () => {
     ).toBe(400);
   });
 
-  it('403s a non-admin creating a GLOBAL agreement (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin creating a GLOBAL agreement (no workspaceId)', async () => {
     // A valid body with no workspaceId means "global" — admin-only, enforced before any DB query.
     expect(
       (
         await http()
           .post('/v1/service-agreements')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
           .send({ data: { title: 'ToS' } })
       ).status,
     ).toBe(403);
   });
 
-  it('403s a non-admin listing GLOBAL agreements (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin listing GLOBAL agreements (no workspaceId)', async () => {
     expect(
       (
         await http()
           .get('/v1/service-agreements')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(403);
   });
 
-  it('401s the paginated browse without a session', async () => {
+  it('Should return 401 for the paginated browse without a session', async () => {
     expect((await http().get('/v1/service-agreements/page')).status).toBe(401);
   });
 
-  it('403s a non-admin browsing GLOBAL agreements (no workspaceId)', async () => {
+  it('Should return 403 for a non-admin browsing GLOBAL agreements (no workspaceId)', async () => {
     expect(
       (
         await http()
           .get('/v1/service-agreements/page')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(403);
   });
 
-  it('400s the paginated browse with out-of-range paging or an unknown sort', async () => {
+  it('Should return 400 for the paginated browse with out-of-range paging or an unknown sort', async () => {
     expect(
       (
         await http()
           .get(`/v1/service-agreements/page?workspaceId=${UUID}&limit=0`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/service-agreements/page?workspaceId=${UUID}&sort=bogus`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });

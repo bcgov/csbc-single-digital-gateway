@@ -1,6 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { DocumentTypeVersionsService } from '../../../../../src/modules/document-types/services/document-type-versions.service';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('DocumentTypeVersionsService', () => {
   let service: DocumentTypeVersionsService;
@@ -48,36 +49,15 @@ describe('DocumentTypeVersionsService', () => {
   };
 
   beforeEach(() => {
-    txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
-
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     service = new DocumentTypeVersionsService(dbMock);
   });
 
   describe('addVersion', () => {
-    it('successfully adds a new version when type is found and definition is valid', async () => {
+    it('Should successfully add a new version when type is found and definition is valid', async () => {
       // 1. requireType select
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       // 2. max select in transaction
@@ -102,7 +82,7 @@ describe('DocumentTypeVersionsService', () => {
       });
     });
 
-    it('throws NotFoundException if type is not found', async () => {
+    it('Should throw NotFoundException if type is not found', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // type not found
 
       await expect(service.addVersion('type-invalid', validBasicFormDef)).rejects.toThrow(
@@ -110,7 +90,7 @@ describe('DocumentTypeVersionsService', () => {
       );
     });
 
-    it('throws BadRequestException if definition is invalid', async () => {
+    it('Should throw BadRequestException if definition is invalid', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
 
       await expect(service.addVersion('type-1', { invalid: 'field' })).rejects.toThrow(
@@ -118,7 +98,7 @@ describe('DocumentTypeVersionsService', () => {
       );
     });
 
-    it('throws BadRequestException if type kind is unknown', async () => {
+    it('Should throw BadRequestException if type kind is unknown', async () => {
       dbMock.limit.mockResolvedValueOnce([{ ...dummyType, kind: 'unknown-kind' }]);
 
       await expect(service.addVersion('type-1', validBasicFormDef)).rejects.toThrow(
@@ -128,7 +108,7 @@ describe('DocumentTypeVersionsService', () => {
   });
 
   describe('editDraft', () => {
-    it('successfully edits a draft version', async () => {
+    it('Should successfully edits a draft version', async () => {
       // requireVersion selects:
       // 1. requireType select
       dbMock.limit.mockResolvedValueOnce([dummyType]);
@@ -148,7 +128,7 @@ describe('DocumentTypeVersionsService', () => {
       expect(result.definition.name).toBe('Updated');
     });
 
-    it('throws ConflictException if version is not draft', async () => {
+    it('Should throw ConflictException if version is not draft', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyPublishedVersion]);
 
@@ -159,7 +139,7 @@ describe('DocumentTypeVersionsService', () => {
   });
 
   describe('deleteDraft', () => {
-    it('successfully deletes a draft version', async () => {
+    it('Should successfully delete a draft version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyDraftVersion]);
       dbMock.delete.mockReturnThis();
@@ -169,7 +149,7 @@ describe('DocumentTypeVersionsService', () => {
       expect(dbMock.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('throws ConflictException if trying to delete a published version', async () => {
+    it('Should throw ConflictException if trying to delete a published version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyPublishedVersion]);
 
@@ -178,7 +158,7 @@ describe('DocumentTypeVersionsService', () => {
   });
 
   describe('publish', () => {
-    it('successfully publishes a draft version, archiving the currently published version', async () => {
+    it('Should successfully publish a draft version, archiving the currently published version', async () => {
       // 1. requireType select
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       // 2. tx version check select
@@ -199,14 +179,14 @@ describe('DocumentTypeVersionsService', () => {
       expect(result.publishedAt).toBe('2026-07-12T03:00:00.000Z');
     });
 
-    it('throws NotFoundException if target version does not exist in publish', async () => {
+    it('Should throw NotFoundException if target version does not exist in publish', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       txMock.limit.mockResolvedValueOnce([]); // not found
 
       await expect(service.publish('type-1', 'v-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws ConflictException if version to publish is not draft', async () => {
+    it('Should throw ConflictException if version to publish is not draft', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       txMock.limit.mockResolvedValueOnce([dummyPublishedVersion]); // already published
 
@@ -215,7 +195,7 @@ describe('DocumentTypeVersionsService', () => {
   });
 
   describe('archive', () => {
-    it('successfully archives a published version', async () => {
+    it('Should successfully archive a published version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyPublishedVersion]);
       dbMock.returning.mockResolvedValueOnce([
@@ -233,21 +213,21 @@ describe('DocumentTypeVersionsService', () => {
       expect(result.archivedAt).toBe('2026-07-12T04:00:00.000Z');
     });
 
-    it('throws ConflictException if version is already archived', async () => {
+    it('Should throw ConflictException if version is already archived', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyArchivedVersion]);
 
       await expect(service.archive('type-1', 'v-3')).rejects.toThrow(ConflictException);
     });
 
-    it('throws NotFoundException if target version is not found', async () => {
+    it('Should throw NotFoundException if target version is not found when archiving a document type version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([]); // version not found
 
       await expect(service.archive('type-1', 'v-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws Error if archive mutation returns no row', async () => {
+    it('Should throw Error if archive mutation returns no row when archiving a document type version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyPublishedVersion]);
       dbMock.returning.mockResolvedValueOnce([]); // empty update returning

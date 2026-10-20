@@ -10,13 +10,13 @@ import {
 
 /** Feature 153 — the Address field serializes to an object schema + a `format:'address'` control. */
 describe('form builder — address field', () => {
-  it('is a control-kind palette entry', () => {
+  it('Should be a control-kind palette entry', () => {
     const def = FIELD_TYPE_BY_ID.address;
     expect(def).toBeDefined();
     expect(def.kind).toBe('control');
   });
 
-  it('createField(address) makes a control node (no enum / slider extras)', () => {
+  it('Should make a control node (no enum / slider extras) in createField(address)', () => {
     const node = createField('address');
     expect(node.kind).toBe('control');
     expect(node.fieldType).toBe('address');
@@ -24,13 +24,13 @@ describe('form builder — address field', () => {
     expect(node.min).toBeUndefined();
   });
 
-  it('a new address field defaults to Canada / British Columbia', () => {
+  it('Should a new address field defaults to Canada / British Columbia', () => {
     const node = createField('address');
     expect(node.defaultCountry).toBe('Canada');
     expect(node.defaultProvince).toBe('British Columbia');
   });
 
-  it('serializes to an object property with the six sub-fields + a format:address control', () => {
+  it('Should serialize to an object property with the six sub-fields + a format:address control', () => {
     const node: ControlNode = {
       ...createField('address'),
       key: 'applicant_address',
@@ -65,7 +65,7 @@ describe('form builder — address field', () => {
     expect(control.options?.format).toBe('address');
   });
 
-  it('round-trips serialize → parse back to an address control node', () => {
+  it('Should round-trip serialize → parse back to an address control node', () => {
     const node: ControlNode = {
       ...createField('address'),
       key: 'addr',
@@ -86,7 +86,7 @@ describe('form builder — address field', () => {
     expect(back.options).toEqual({});
   });
 
-  it('serializes author-set defaults into schema.default', () => {
+  it('Should serialize author-set defaults into schema.default', () => {
     const node: ControlNode = {
       ...createField('address'),
       key: 'addr',
@@ -100,7 +100,7 @@ describe('form builder — address field', () => {
     expect(prop.default).toEqual({ country: 'Canada', province: 'British Columbia' });
   });
 
-  it('omits schema.default when no defaults are set', () => {
+  it('Should omit schema.default when no defaults are set', () => {
     // A bare node (not via createField, which seeds Canada/BC) has no defaults → no schema.default.
     const node: ControlNode = {
       kind: 'control',
@@ -117,7 +117,7 @@ describe('form builder — address field', () => {
     expect(prop.default).toBeUndefined();
   });
 
-  it('round-trips defaults through serialize → parse', () => {
+  it('Should round-trip defaults through serialize → parse', () => {
     const node: ControlNode = {
       ...createField('address'),
       key: 'addr',
@@ -132,7 +132,7 @@ describe('form builder — address field', () => {
 
   // Required validation (bug fix): a required address requires the 5 fields (NOT address_two) to be
   // present AND non-empty — `minLength: 1`, since the control writes empty strings for blanks.
-  it('a required address requires the 5 fields (not address_two) with minLength', () => {
+  it('Should a required address requires the 5 fields (not address_two) with minLength', () => {
     const node: ControlNode = { ...createField('address'), key: 'addr', required: true };
     const model: FormModel = { title: '', description: '', fields: [node] };
     const { schema } = serializeModel(model);
@@ -160,7 +160,7 @@ describe('form builder — address field', () => {
     expect(prop.properties.address_two?.minLength).toBeUndefined();
   });
 
-  it('an optional address adds no sub-field required / minLength', () => {
+  it('Should an optional address adds no sub-field required / minLength', () => {
     const node: ControlNode = { ...createField('address'), key: 'addr', required: false };
     const { schema } = serializeModel({ title: '', description: '', fields: [node] });
     const root = schema as {
@@ -176,7 +176,7 @@ describe('form builder — address field', () => {
     expect(prop.properties.country?.minLength).toBeUndefined();
   });
 
-  it('round-trips the required flag through serialize → parse', () => {
+  it('Should round-trip the required flag through serialize → parse', () => {
     const node: ControlNode = { ...createField('address'), key: 'addr', required: true };
     const back = parseModel(serializeModel({ title: '', description: '', fields: [node] }))
       .fields[0] as ControlNode;

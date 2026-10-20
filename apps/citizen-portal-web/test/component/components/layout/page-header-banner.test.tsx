@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 
 describe('PageHeaderBanner', () => {
-  it('renders its children inside a full-width bcgov-gold divider', () => {
+  it('Should render its children inside a full-width bcgov-gold divider', () => {
     render(
       <PageHeaderBanner>
         <h1>My header</h1>
@@ -15,7 +15,7 @@ describe('PageHeaderBanner', () => {
     expect(divider).toContainElement(heading);
   });
 
-  it('renders an optional breadcrumb above the content, in DOM order', () => {
+  it('Should render an optional breadcrumb above the content, in DOM order', () => {
     render(
       <PageHeaderBanner breadcrumb={<nav aria-label="Breadcrumb">crumbs</nav>}>
         <h1>My header</h1>
@@ -28,7 +28,7 @@ describe('PageHeaderBanner', () => {
     expect(nav.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('renders no breadcrumb node when the prop is omitted', () => {
+  it('Should render no breadcrumb node when the prop is omitted', () => {
     render(
       <PageHeaderBanner>
         <h1>Only content</h1>

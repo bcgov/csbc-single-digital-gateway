@@ -14,9 +14,9 @@ const schema: JsonSchema = {
   required: ['name'],
 };
 
-// Controlled harness — JSONForms is uncontrolled-friendly but we keep data in state and
+// Controlled Harness — JSONForms is uncontrolled-friendly but we keep data in state and
 // feed it back so we can assert the emitted value.
-function Harness({ onData }: { onData: (data: unknown) => void }) {
+function JsonFormsMirror({ onData }: { onData: (data: unknown) => void }) {
   const [data, setData] = useState<Record<string, unknown>>({});
   return (
     <JsonForms
@@ -40,7 +40,7 @@ describe('@repo/react/jsonforms — JsonForms wrapper', () => {
   it('invokes onChange with the updated data as the user types', async () => {
     const user = userEvent.setup();
     const onData = vi.fn();
-    render(<Harness onData={onData} />);
+    render(<JsonFormsMirror onData={onData} />);
 
     await user.type(screen.getByLabelText(/full name/i), 'Ada');
 

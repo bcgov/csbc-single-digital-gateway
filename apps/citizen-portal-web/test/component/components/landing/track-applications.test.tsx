@@ -41,7 +41,7 @@ describe('TrackApplications Component', () => {
     },
   ];
 
-  it('renders loading skeleton when loading is true', () => {
+  it('Should render loading skeleton for track applications when loading is true', () => {
     const { container } = render(
       <TrackApplications applications={mockApplications} loading={true} />,
     );
@@ -55,7 +55,7 @@ describe('TrackApplications Component', () => {
     expect(screen.queryByText('You have no applications to track')).not.toBeInTheDocument();
   });
 
-  it('renders empty state when applications list is empty', () => {
+  it('Should render empty state when applications list is empty', () => {
     render(<TrackApplications applications={[]} loading={false} />);
 
     // Assert empty state title and instructions are displayed
@@ -68,7 +68,7 @@ describe('TrackApplications Component', () => {
     expect(screen.queryByText('Income Assistance Application')).not.toBeInTheDocument();
   });
 
-  it('renders list of applications when applications are provided', () => {
+  it('Should render list of applications when applications are provided', () => {
     render(<TrackApplications applications={mockApplications} loading={false} />);
 
     // Assert section heading is present

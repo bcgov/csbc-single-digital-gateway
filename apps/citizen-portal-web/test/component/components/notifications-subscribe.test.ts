@@ -35,7 +35,7 @@ class FakeEventSource {
 }
 
 describe('subscribeToNotifications', () => {
-  it('opens a credentialed EventSource on the BFF stream and relays notification events', () => {
+  it('Should open a credentialed EventSource on the BFF stream and relays notification events', () => {
     FakeEventSource.instances = [];
     const onEvent = vi.fn();
     const sub = subscribeToNotifications(onEvent, FakeEventSource as unknown as typeof EventSource);
@@ -49,7 +49,7 @@ describe('subscribeToNotifications', () => {
     expect(source.closed).toBe(true);
   });
 
-  it('no-ops when no EventSource implementation exists (jsdom)', () => {
+  it('Should no-op when no EventSource implementation exists (jsdom)', () => {
     const sub = subscribeToNotifications(vi.fn(), undefined);
     expect(() => sub.close()).not.toThrow();
   });

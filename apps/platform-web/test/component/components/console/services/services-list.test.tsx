@@ -4,14 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ServicesList } from '@/components/console/services/services-list';
 import type { ServiceSummary } from '@/lib/services';
+import { service } from '../../../../support/testHelpers';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 let mockSearchValue: any = { sort: 'updated', order: 'desc' };
-const mockNavigate = vi.fn();
-const mockParams = { slug: 'riverton' };
+
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
-  useParams: () => mockParams,
+  useParams: () => ({ slug: 'riverton' }),
   useSearch: () => mockSearchValue,
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
@@ -37,20 +38,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   mockNavigate.mockClear();
   mockSearchValue = { sort: 'updated', order: 'desc' };
-});
-
-const service = (over: Partial<ServiceSummary>): ServiceSummary => ({
-  id: 'srv-1',
-  workspaceId: 'ws-1',
-  title: 'Parking Permits',
-  description: '',
-  status: 'published',
-  versionCount: 2,
-  hasSubmissions: true,
-  latestPublished: true,
-  createdAt: '2026-07-15T00:00:00Z',
-  updatedAt: '2026-07-15T12:30:00Z',
-  ...over,
 });
 
 const mockServices: ServiceSummary[] = [
@@ -94,7 +81,7 @@ const cardOf = (name: RegExp) =>
   screen.getByRole('link', { name }).querySelector('[data-slot="card"]');
 
 describe('ServicesList Component Test Suite', () => {
-  it('disables the New button and shows the empty state when workspace is loading/empty', () => {
+  it('Should disable the New button and show the empty state when workspace is loading/empty', () => {
     renderServicesList(false, []);
 
     expect(screen.getByRole('button', { name: /^new$/i })).toBeDisabled();
@@ -103,7 +90,7 @@ describe('ServicesList Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('enables the New button with an empty list when the workspace is loaded', () => {
+  it('Should enable the New button with an empty list when the workspace is loaded', () => {
     renderServicesList(true, []);
 
     expect(screen.getByRole('button', { name: /^new$/i })).not.toBeDisabled();
@@ -112,7 +99,7 @@ describe('ServicesList Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders each service as a status-bordered card link with a badge and last-updated line', () => {
+  it('Should render each service as a status-bordered card link with a badge and last-updated line', () => {
     renderServicesList(true, mockServices);
 
     // Full-card links to the service detail.
@@ -147,7 +134,7 @@ describe('ServicesList Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /more actions/i })).not.toBeInTheDocument();
   });
 
-  it('opens the New service modal when the New button is clicked', async () => {
+  it('Should open the New service modal when the New button is clicked', async () => {
     const user = userEvent.setup();
     renderServicesList(true, []);
 

@@ -28,7 +28,7 @@ const firstStage = (d: MultiStageDefinition) => d.stages[0]!;
 
 describe('Stage Model Unit Test Suite', () => {
   describe('stage-model main components', () => {
-    it('creates default entities: page, stage, empty definition', () => {
+    it('Should create default entities: page, stage, empty definition', () => {
       const page = createPage();
       expect(page.id).toBeDefined();
       expect(page.name).toBe('Untitled page');
@@ -43,14 +43,14 @@ describe('Stage Model Unit Test Suite', () => {
       expect(empty.stages).toHaveLength(1);
     });
 
-    it('modifies metadata via setMeta', () => {
+    it('Should modify metadata via setMeta', () => {
       const empty = emptyDefinition();
       const result = setMeta(empty, { name: 'Flow New', description: 'Updated info' });
       expect(result.name).toBe('Flow New');
       expect(result.description).toBe('Updated info');
     });
 
-    it('normalizes partial or empty raw data in normalizeDefinition', () => {
+    it('Should normalize partial or empty raw data in normalizeDefinition', () => {
       // Normalizes empty / missing stages
       const resultEmpty = normalizeDefinition(null);
       expect(resultEmpty.name).toBe('Untitled multi-stage form');
@@ -74,7 +74,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(normalized.stages[0]?.pages).toEqual([]);
     });
 
-    it('renames and removes stages under correct constraints', () => {
+    it('Should rename and remove stages under correct constraints', () => {
       const def: MultiStageDefinition = {
         name: 'Flow',
         description: '',
@@ -104,7 +104,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(notRemoved.stages).toHaveLength(1);
     });
 
-    it('adds, removes, reorders and renames pages inside stages', () => {
+    it('Should adds, removes, reorders and rename pages inside stages', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -150,7 +150,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(notRemoved.stages[0]?.pages).toHaveLength(1);
     });
 
-    it('updates page schema definitions and bubbles title to page name', () => {
+    it('Should update page schema definitions and bubble title to page name', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -175,7 +175,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result.stages[0]?.pages[0]?.schema).toEqual(newDef.schema);
     });
 
-    it('manages connections (connect, disconnect, incoming, outgoing checks)', () => {
+    it('Should manage connections (connect, disconnect, incoming, outgoing checks)', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -212,7 +212,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(disconnected.edges).toHaveLength(0);
     });
 
-    it('inserts stages immediately after or before anchors with edge links', () => {
+    it('Should insert stages immediately after or before anchors with edge links', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -236,7 +236,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(before.edges[0]?.source).toBe(before.stages[0]?.id);
       expect(before.edges[0]?.target).toBe('s1');
     });
-    it('emptyDefinition has one stage with one page', () => {
+    it('Should have one stage with one page in emptyDefinition', () => {
       const d = emptyDefinition();
       expect(d.stages).toHaveLength(1);
       expect(firstStage(d).pages).toHaveLength(1);
@@ -245,7 +245,7 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('stages', () => {
-    it('addStage appends a stage (with its own page) at a fresh position', () => {
+    it('Should append a stage (with its own page) at a fresh position in addStage', () => {
       const d = emptyDefinition();
       const next = addStage(d);
       expect(next.stages).toHaveLength(2);
@@ -253,7 +253,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(next.stages[1]!.position).not.toEqual(firstStage(d).position);
     });
 
-    it('removeStage removes a stage but refuses the last one', () => {
+    it('Should remove a stage but refuse the last one in removeStage', () => {
       const two = addStage(emptyDefinition());
       const id = two.stages[0]!.id;
       const after = removeStage(two, id);
@@ -262,7 +262,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(last.stages).toHaveLength(1); // refused
     });
 
-    it('removeStage bridges incoming → outgoing when a middle stage is deleted', () => {
+    it('Should bridge incoming → outgoing when a middle stage is deleted in removeStage', () => {
       // Build a chain A → X → B, then delete X.
       let d = emptyDefinition();
       const a = firstStage(d).id;
@@ -276,7 +276,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(healed.edges[0]).toMatchObject({ source: a, target: b });
     });
 
-    it('removeStage drops edges touching the removed stage', () => {
+    it('Should drop edges touching the removed stage in removeStage', () => {
       const two = addStage(emptyDefinition());
       const [a, b] = [two.stages[0]!.id, two.stages[1]!.id];
       const linked = connect(two, a, b);
@@ -285,7 +285,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(after.edges).toHaveLength(0);
     });
 
-    it('renameStage + setStagePosition update the stage', () => {
+    it('Should update the stage in renameStage + setStagePosition', () => {
       const d = emptyDefinition();
       const id = firstStage(d).id;
       expect(firstStage(renameStage(d, id, 'Intake')).name).toBe('Intake');
@@ -297,13 +297,13 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('pages', () => {
-    it('addPage appends a page to the stage', () => {
+    it('Should append a page to the stage in addPage', () => {
       const d = emptyDefinition();
       const id = firstStage(d).id;
       expect(firstStage(addPage(d, id)).pages).toHaveLength(2);
     });
 
-    it('removePage removes a page but refuses the last in a stage', () => {
+    it('Should remove a page but refuse the last in a stage in removePage', () => {
       const base = emptyDefinition();
       const stageId = base.stages[0]!.id;
       const d = addPage(base, stageId);
@@ -314,7 +314,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(last.stages[0]!.pages).toHaveLength(1); // refused
     });
 
-    it('reorderPages moves a page within its stage', () => {
+    it('Should move a page within its stage in reorderPages', () => {
       let d = emptyDefinition();
       const stageId = d.stages[0]!.id;
       d = addPage(d, stageId);
@@ -324,7 +324,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(moved.stages[0]!.pages.map((p) => p.name)).toEqual(['B', 'A']);
     });
 
-    it('updatePageDefinition writes the page schema/uischema', () => {
+    it('Should write the page schema/uischema in updatePageDefinition', () => {
       const d = emptyDefinition();
       const stageId = d.stages[0]!.id;
       const pageId = d.stages[0]!.pages[0]!.id;
@@ -334,7 +334,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(next.stages[0]!.pages[0]!.uischema).toEqual(def.uischema);
     });
 
-    it('updatePageDefinition bubbles the form title up to the page name', () => {
+    it('Should bubble the form title up to the page name in updatePageDefinition', () => {
       const d = emptyDefinition();
       const stageId = d.stages[0]!.id;
       const pageId = d.stages[0]!.pages[0]!.id;
@@ -353,7 +353,7 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('add stage via edge +', () => {
-    it('addStageAfter inserts after the anchor and links anchor → new', () => {
+    it('Should insert after the anchor and link anchor → new in addStageAfter', () => {
       const d = emptyDefinition();
       const anchorId = firstStage(d).id;
       const next = addStageAfter(d, anchorId);
@@ -363,7 +363,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(next.edges[0]).toMatchObject({ source: anchorId, target: next.stages[1]!.id });
     });
 
-    it('addStageAtEnd appends a stage connected to the current last stage (builds a chain)', () => {
+    it('Should append a stage connected to the current last stage (building a chain) in addStageAtEnd', () => {
       let d = emptyDefinition();
       const first = firstStage(d).id;
       d = addStageAtEnd(d);
@@ -375,7 +375,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(d.edges).toContainEqual(expect.objectContaining({ source: second, target: third }));
     });
 
-    it('addStageBefore inserts before the anchor and links new → anchor', () => {
+    it('Should insert before the anchor and link new → anchor in addStageBefore', () => {
       const d = emptyDefinition();
       const anchorId = firstStage(d).id;
       const next = addStageBefore(d, anchorId);
@@ -384,7 +384,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(next.edges[0]).toMatchObject({ source: next.stages[0]!.id, target: anchorId });
     });
 
-    it('hasIncoming/hasOutgoing reflect a stage’s connections', () => {
+    it('Should reflect a stage’s connections in hasIncoming/hasOutgoing', () => {
       const d = emptyDefinition();
       const anchorId = firstStage(d).id;
       expect(hasIncoming(d, anchorId)).toBe(false);
@@ -399,7 +399,7 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('normalizeDefinition', () => {
-    it('adds a missing edges array (template-derived form) without losing stages', () => {
+    it('Should add a missing edges array (template-derived form) without losing stages', () => {
       // A barebones form stores `{ stages }` with no `edges` and stages without `position`.
       const raw = { stages: [{ id: 's1', name: 'Stage 1', pages: [{ id: 'p1', name: 'P1' }] }] };
       const def = normalizeDefinition(raw);
@@ -409,13 +409,13 @@ describe('Stage Model Unit Test Suite', () => {
       expect(def.stages[0]!.pages).toHaveLength(1);
     });
 
-    it('falls back to a fresh definition when there are no stages', () => {
+    it('Should fall back to a fresh definition when there are no stages', () => {
       expect(normalizeDefinition({}).stages).toHaveLength(1);
       expect(normalizeDefinition(undefined).stages).toHaveLength(1);
       expect(normalizeDefinition({ stages: [] }).edges).toEqual([]);
     });
 
-    it('preserves a complete definition', () => {
+    it('Should preserve a complete definition', () => {
       const complete = emptyDefinition();
       const next = normalizeDefinition(complete);
       expect(next.stages).toHaveLength(complete.stages.length);
@@ -424,7 +424,7 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('edges', () => {
-    it('connect adds an edge; ignores self-links and duplicates', () => {
+    it('Should add an edge and ignore self-links and duplicates in connect', () => {
       const two = addStage(emptyDefinition());
       const [a, b] = [two.stages[0]!.id, two.stages[1]!.id];
       expect(connect(two, a, a).edges).toHaveLength(0); // self
@@ -433,7 +433,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(connect(once, a, b).edges).toHaveLength(1); // duplicate ignored
     });
 
-    it('disconnect removes an edge by id', () => {
+    it('Should remove an edge by id in disconnect', () => {
       const two = addStage(emptyDefinition());
       const linked = connect(two, two.stages[0]!.id, two.stages[1]!.id);
       const after = disconnect(linked, linked.edges[0]!.id);
@@ -442,7 +442,7 @@ describe('Stage Model Unit Test Suite', () => {
   });
 
   describe('stage-model additional coverage', () => {
-    it('sets stage position successfully', () => {
+    it('Should set stage position successfully', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -453,7 +453,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result.stages[0]?.position).toEqual({ x: 50, y: 80 });
     });
 
-    it('addStageAtEnd handles empty stages list successfully', () => {
+    it('Should handle empty stages list successfully in addStageAtEnd', () => {
       const emptyDef: MultiStageDefinition = {
         name: '',
         description: '',
@@ -465,7 +465,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result.stages[0]?.position).toEqual({ x: 0, y: 0 });
     });
 
-    it('reorderPages returns unmodified stage if from index is out of bounds', () => {
+    it('Should return unmodified stage in reorderPages if from index is out of bounds', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -483,7 +483,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result).toEqual(def);
     });
 
-    it('updatePageDefinition handles omitted, empty, or whitespace-only titles without changing page name', () => {
+    it('Should handle omitted, empty, or whitespace-only titles without changing page name in updatePageDefinition', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -515,7 +515,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result2.stages[0]?.pages[0]?.name).toBe('Original Page Name');
     });
 
-    it('addStageAfter and addStageBefore exit early if anchor stage is invalid', () => {
+    it('Should exit early if anchor stage is invalid in addStageAfter and addStageBefore', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -527,7 +527,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(addStageBefore(def, 'invalid-stage-id')).toBe(def);
     });
 
-    it('covers removeStage healing edges: chain, self-link, and duplicate link skip', () => {
+    it('Should cover removeStage healing edges: chain, self-link, and duplicate link skip', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -551,7 +551,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result.edges[0]?.id).toBe('e4');
     });
 
-    it('heals edge chain when removing middle stage without pre-existing edges', () => {
+    it('Should heal edge chain when removing middle stage without pre-existing edges', () => {
       const def: MultiStageDefinition = {
         name: '',
         description: '',
@@ -573,7 +573,7 @@ describe('Stage Model Unit Test Suite', () => {
       expect(result.edges[0]?.target).toBe('s3');
     });
 
-    it('covers normalizeDefinition details, addStageAtEnd on empty definition, and hasIncoming/hasOutgoing edges nullish check', () => {
+    it('Should cover normalizeDefinition details, addStageAtEnd on empty definition, and hasIncoming/hasOutgoing edges nullish check', () => {
       // 1. Call normalizeDefinition with nullish/non-array pages and edges
       const raw = {
         name: 'Custom Flow',

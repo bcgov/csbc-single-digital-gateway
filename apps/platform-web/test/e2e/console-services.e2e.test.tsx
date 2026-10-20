@@ -1,20 +1,13 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, renderApp } from '../support/render-app';
+import { ISO } from '../support/fixtures';
+import { mockServicesBff } from '../support/mock-services-bff';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: ISO,
-};
 
 const definition = {
   schema: {
@@ -27,6 +20,7 @@ const definition = {
     elements: [{ type: 'Control', scope: '#/properties/title' }],
   },
 };
+
 const draftVersion = {
   id: 'sv1',
   documentId: 's1',
@@ -38,121 +32,9 @@ const draftVersion = {
   archivedAt: null,
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function withServices(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/v1/document-types')) {
-      return json({ items: [] });
-    }
-    if (url.includes('/v1/services')) {
-      const rest = url.split('/v1/services')[1]?.split('?')[0] ?? '';
-      const segs = rest.split('/').filter(Boolean);
-      if (segs[0] === 'definition') {
-        return json(definition);
-      }
-      if (segs[0] === 'forms') {
-        return json({
-          items: [{ documentId: 'f1', versionId: 'fv1', title: 'Permit form', kind: 'basic-form' }],
-        });
-      }
-      if (segs.length === 0) {
-        if (method === 'POST') {
-          return json(
-            {
-              service: {
-                id: 's1',
-                workspaceId: 'w1',
-                title: 'New',
-                description: '',
-                createdAt: ISO,
-                updatedAt: ISO,
-              },
-              versions: [draftVersion],
-            },
-            201,
-          );
-        }
-        return json({
-          items: [
-            {
-              id: 's1',
-              workspaceId: 'w1',
-              title: 'Permit application',
-              description: '',
-              createdAt: ISO,
-              updatedAt: ISO,
-              status: 'draft',
-              versionCount: 1,
-              hasSubmissions: true,
-              latestPublished: false,
-            },
-          ],
-          total: 1,
-          limit: 20,
-          offset: 0,
-        });
-      }
-      if (segs.length === 1) {
-        return json({
-          service: {
-            id: 's1',
-            workspaceId: 'w1',
-            title: 'Permit application',
-            description: '',
-            createdAt: ISO,
-            updatedAt: ISO,
-          },
-          versions: [draftVersion],
-          definition,
-          hasSubmissions: true,
-        });
-      }
-      if (segs[segs.length - 1] === 'agreements') {
-        return json({ items: [] });
-      }
-      if (segs[segs.length - 1] === 'references') {
-        return json({
-          items: [
-            {
-              id: 'ref1',
-              relation: 'application_form',
-              position: 0,
-              label: 'Apply now',
-              targetDocumentId: 'f1',
-              targetVersionId: 'fv1',
-              targetKind: 'basic-form',
-              targetTitle: 'Permit form',
-              targetVersion: 1,
-              targetStatus: 'draft',
-              hasSubmissions: false,
-              hasStructure: true,
-              createdAt: ISO,
-            },
-          ],
-        });
-      }
-      return json(draftVersion);
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Console Services Integration Test Suite', () => {
-  it('lists a workspace’s services', async () => {
-    withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('Should list a workspace’s services', async () => {
+    mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/');
     expect(
       await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 }),
@@ -160,8 +42,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('requests the paged list with the default sort', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('Should request the paged list with the default sort', async () => {
+    const fetchMock = mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 });
 
@@ -174,8 +56,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
   });
 
-  it('opens the New service modal (title + description) from the services list New button', async () => {
-    withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('Should open the New service modal (title + description) from the services list New button', async () => {
+    mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services');
     const user = userEvent.setup();
 
@@ -190,8 +72,8 @@ describe('Console Services Integration Test Suite', () => {
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('Should tab the detail, list methods, and publish via the summary modal', async () => {
+    const fetchMock = mockServicesBff({ user: authedUser, definition, draftVersion });
     renderApp('/app/riverton/services/s1/old/edit');
     const user = userEvent.setup();
 

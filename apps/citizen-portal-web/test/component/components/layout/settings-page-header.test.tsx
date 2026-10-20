@@ -5,7 +5,7 @@ import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 describe('SettingsPageHeader Component', () => {
   const dummyIcon = 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z';
 
-  it('renders standard title, icon, subtitle, meta, and breadcrumb when provided', () => {
+  it('Should render standard title, icon, subtitle, meta, and breadcrumb when provided', () => {
     render(
       <SettingsPageHeader
         icon={dummyIcon}
@@ -29,7 +29,7 @@ describe('SettingsPageHeader Component', () => {
     expect(screen.getByTestId('breadcrumb-element')).toHaveTextContent('Home > Settings');
   });
 
-  it('omits subtitle, meta, and breadcrumb when not provided', () => {
+  it('Should omit subtitle, meta, and breadcrumb when not provided', () => {
     render(<SettingsPageHeader icon={dummyIcon} title="Settings Title Only" />);
 
     // Title check

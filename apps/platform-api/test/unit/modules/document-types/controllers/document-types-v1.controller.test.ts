@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { DocumentTypesV1Controller } from '../../../../../src/modules/document-types/controllers/document-types-v1.controller';
+import { createMockList, createMockTypeVersion } from '../../../../utils/test-helpers';
 
 describe('DocumentTypesV1Controller', () => {
   let controller: DocumentTypesV1Controller;
@@ -15,8 +16,8 @@ describe('DocumentTypesV1Controller', () => {
     controller = new DocumentTypesV1Controller(typesServiceMock);
   });
 
-  it('list returns items from types service', async () => {
-    const mockList = [{ id: 'type-1', name: 'Type 1' }];
+  it('Should list returns items from types service when calling the document controller list method', async () => {
+    const mockList = createMockList();
     typesServiceMock.staffList.mockResolvedValue(mockList);
 
     const result = await controller.list();
@@ -24,7 +25,7 @@ describe('DocumentTypesV1Controller', () => {
     expect(result).toEqual({ items: mockList });
   });
 
-  it('get returns a single type from types service', async () => {
+  it('Should get returns a single type from types service when calling the document controller get method', async () => {
     const mockType = { id: 'type-1', name: 'Type 1', versions: [] };
     typesServiceMock.staffGet.mockResolvedValue(mockType);
 
@@ -33,12 +34,12 @@ describe('DocumentTypesV1Controller', () => {
     expect(result).toEqual(mockType);
   });
 
-  it('getVersion returns a specific version from types service', async () => {
-    const mockVersion = { id: 'v-1', status: 'published', definition: {} };
-    typesServiceMock.staffGetVersion.mockResolvedValue(mockVersion);
+  it('Should getVersion returns a specific version from types service', async () => {
+    const mockTypeVersion = createMockTypeVersion({ status: 'published' });
+    typesServiceMock.staffGetVersion.mockResolvedValue(mockTypeVersion);
 
     const result = await controller.getVersion('type-1', 'v-1');
     expect(typesServiceMock.staffGetVersion).toHaveBeenCalledWith('type-1', 'v-1');
-    expect(result).toEqual(mockVersion);
+    expect(result).toEqual(mockTypeVersion);
   });
 });

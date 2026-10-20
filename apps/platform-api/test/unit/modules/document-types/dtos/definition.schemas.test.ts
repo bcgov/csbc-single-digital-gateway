@@ -31,7 +31,7 @@ describe('definition.schemas', () => {
   };
 
   describe('jsonSchemaSchema', () => {
-    it('validates a valid JSON Schema and preserves additional properties', () => {
+    it('Should validate a valid JSON Schema and preserve additional properties', () => {
       const parsed = jsonSchemaSchema.safeParse(validJsonSchema);
       expect(parsed.success).toBe(true);
       if (parsed.success) {
@@ -39,7 +39,7 @@ describe('definition.schemas', () => {
       }
     });
 
-    it('rejects when type, properties, or required is missing', () => {
+    it('Should reject when type, properties, or required is missing', () => {
       expect(jsonSchemaSchema.safeParse({ type: 'object', properties: {} }).success).toBe(false);
       expect(jsonSchemaSchema.safeParse({ type: 'object', required: [] }).success).toBe(false);
       expect(jsonSchemaSchema.safeParse({ properties: {}, required: [] }).success).toBe(false);
@@ -47,7 +47,7 @@ describe('definition.schemas', () => {
   });
 
   describe('uiSchemaSchema', () => {
-    it('validates a valid UI Schema and preserves additional properties', () => {
+    it('Should validate a valid UI Schema and preserve additional properties', () => {
       const parsed = uiSchemaSchema.safeParse(validUiSchema);
       expect(parsed.success).toBe(true);
       if (parsed.success) {
@@ -55,14 +55,14 @@ describe('definition.schemas', () => {
       }
     });
 
-    it('rejects when type or elements is missing', () => {
+    it('Should reject when type or elements is missing', () => {
       expect(uiSchemaSchema.safeParse({ type: 'VerticalLayout' }).success).toBe(false);
       expect(uiSchemaSchema.safeParse({ elements: [] }).success).toBe(false);
     });
   });
 
   describe('basicFormDefinitionSchema', () => {
-    it('validates a valid basic form definition', () => {
+    it('Should validate a valid basic form definition', () => {
       const validBasicForm = {
         name: 'Form Name',
         description: 'Form Description',
@@ -72,7 +72,7 @@ describe('definition.schemas', () => {
       expect(basicFormDefinitionSchema.safeParse(validBasicForm).success).toBe(true);
     });
 
-    it('rejects when name, description, schema, or uischema is missing', () => {
+    it('Should reject when name, description, schema, or uischema is missing', () => {
       const base = {
         name: 'Form Name',
         description: 'Form Description',
@@ -94,7 +94,7 @@ describe('definition.schemas', () => {
   });
 
   describe('multiStageDefinitionSchema', () => {
-    it('validates a valid multi-stage form definition', () => {
+    it('Should validate a valid multi-stage form definition', () => {
       const validMultiStageForm = {
         stages: [
           {
@@ -115,7 +115,7 @@ describe('definition.schemas', () => {
       expect(multiStageDefinitionSchema.safeParse(validMultiStageForm).success).toBe(true);
     });
 
-    it('rejects when stages array is missing, or invalid stage/page properties are provided', () => {
+    it('Should reject when stages array is missing, or invalid stage/page properties are provided', () => {
       expect(multiStageDefinitionSchema.safeParse({}).success).toBe(false);
       expect(
         multiStageDefinitionSchema.safeParse({
@@ -132,7 +132,7 @@ describe('definition.schemas', () => {
   });
 
   describe('serviceDefinitionSchema', () => {
-    it('validates a valid service definition', () => {
+    it('Should validate a valid service definition', () => {
       const validServiceForm = {
         schema: validJsonSchema,
         uischema: validUiSchema,
@@ -140,7 +140,7 @@ describe('definition.schemas', () => {
       expect(serviceDefinitionSchema.safeParse(validServiceForm).success).toBe(true);
     });
 
-    it('rejects when schema or uischema is missing', () => {
+    it('Should reject when schema or uischema is missing', () => {
       expect(serviceDefinitionSchema.safeParse({ schema: validJsonSchema }).success).toBe(false);
       expect(serviceDefinitionSchema.safeParse({ uischema: validUiSchema }).success).toBe(false);
     });

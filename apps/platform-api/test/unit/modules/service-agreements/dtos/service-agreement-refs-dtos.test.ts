@@ -10,12 +10,11 @@ import {
   toAgreementVersionDto,
   updateServiceAgreementSchema,
 } from '../../../../../src/modules/service-agreements/dtos/service-agreement.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('Service Agreements DTOs Unit Test Suite', () => {
   describe('service agreement DTO schemas', () => {
-    it('create: workspaceId is optional (global) but must be a uuid when present; data required', () => {
+    it('Should create: workspaceId is optional (global) but must be a uuid when present; data required', () => {
       expect(createServiceAgreementSchema.safeParse({ data: {} }).success).toBe(true);
       expect(createServiceAgreementSchema.safeParse({ workspaceId: UUID, data: {} }).success).toBe(
         true,
@@ -26,7 +25,7 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
       ).toBe(false);
     });
 
-    it('update: data required, title optional (trimmed, non-empty)', () => {
+    it('Should update: data required, title optional (trimmed, non-empty)', () => {
       expect(updateServiceAgreementSchema.safeParse({ data: {} }).success).toBe(true);
       expect(updateServiceAgreementSchema.safeParse({ data: {}, title: 'Terms' }).success).toBe(
         true,
@@ -35,7 +34,7 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
       expect(updateServiceAgreementSchema.safeParse({ data: {}, title: '' }).success).toBe(false);
     });
 
-    it('list: workspaceId optional, must be a uuid when present', () => {
+    it('Should list: workspaceId optional, must be a uuid when present', () => {
       expect(listServiceAgreementsSchema.safeParse({}).success).toBe(true);
       expect(listServiceAgreementsSchema.safeParse({ workspaceId: UUID }).success).toBe(true);
       expect(listServiceAgreementsSchema.safeParse({ workspaceId: 'nope' }).success).toBe(false);
@@ -43,7 +42,7 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
   });
 
   describe('service agreement mappers', () => {
-    it('toAgreementDto surfaces a null workspaceId for a global agreement', () => {
+    it('Should toAgreementDto surfaces a null workspaceId for a global agreement', () => {
       const created = new Date('2026-07-07T00:00:00.000Z');
       const global = toAgreementDto({
         id: 'a1',
@@ -58,7 +57,7 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
       expect(global.createdAt).toBe('2026-07-07T00:00:00.000Z');
     });
 
-    it('toAgreementVersionDto maps status + nullable timestamps', () => {
+    it('Should toAgreementVersionDto maps status + nullable timestamps', () => {
       const created = new Date('2026-07-07T00:00:00.000Z');
       const dto = toAgreementVersionDto({
         id: 'v1',
@@ -77,13 +76,13 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
   });
 
   describe('agreement reference DTO schemas', () => {
-    it('attach requires a uuid agreementDocumentId', () => {
+    it('Should attach requires a uuid agreementDocumentId', () => {
       expect(attachAgreementSchema.safeParse({ agreementDocumentId: UUID }).success).toBe(true);
       expect(attachAgreementSchema.safeParse({}).success).toBe(false);
       expect(attachAgreementSchema.safeParse({ agreementDocumentId: 'nope' }).success).toBe(false);
     });
 
-    it('the response schema round-trips a resolved reference', () => {
+    it('Should round-trip a resolved reference in the response schema', () => {
       const parsed = agreementRefSchema.safeParse({
         id: 'ref1',
         agreementDocumentId: 'a1',

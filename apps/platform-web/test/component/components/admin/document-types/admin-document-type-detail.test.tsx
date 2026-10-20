@@ -2,6 +2,9 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
+import { adminUser, ISO } from '../../../../support/fixtures';
+import { mockDocumentTypesBff, type Entry } from '../../../../support/mock-document-types-bff';
+import { mockAuthUser } from '../../../../support/mock-auth-user';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
@@ -36,29 +39,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const adminUser = {
-  id: 'u1',
-  roles: ['admin'],
-  claims: { sub: 'u1', name: 'Maya Reyes', email: 'maya.reyes@riverton.gov' },
-};
-
-interface Version {
-  id: string;
-  typeId: string;
-  version: number;
-  status: 'draft' | 'published' | 'archived';
-  definition: Record<string, unknown>;
-  createdAt: string;
-  publishedAt: string | null;
-  archivedAt: string | null;
-}
-
-interface Entry {
-  type: { id: string; workspaceId: null; name: string; kind: string; createdAt: string };
-  versions: Version[];
-}
-
 /** A JSONForms-renderable definition (has a `schema`) so the preview pane renders the form stub. */
 const defWithSchema = (title: string) => ({
   schema: { type: 'object', properties: { title: { type: 'string', title } } },
@@ -67,94 +47,6 @@ const defWithSchema = (title: string) => ({
     elements: [{ type: 'Control', scope: '#/properties/title' }],
   },
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<typeof vi.fn> } {
-  const store: Entry[] = structuredClone(initial);
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/auth/me')) {
-      return json(adminUser);
-    }
-    if (url.includes('/v1/admin/document-types')) {
-      const rest = url.split('/v1/admin/document-types')[1]?.split('?')[0] ?? '';
-      const segs = rest.split('/').filter(Boolean);
-      if (segs.length === 0) {
-        return json({ items: store });
-      }
-      const entry = store.find((e) => e.type.id === decodeURIComponent(segs[0]!));
-      if (!entry) {
-        return new Response(null, { status: 404 });
-      }
-      if (segs.length === 1 && method === 'GET') {
-        return json(entry);
-      }
-      if (segs[1] === 'versions') {
-        if (segs.length === 2 && method === 'POST') {
-          const body = init?.body
-            ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
-            : { definition: {} };
-          const nextVerNum = entry.versions.length + 1;
-          const newVersion: Version = {
-            id: `${entry.type.id}-v${nextVerNum}`,
-            typeId: entry.type.id,
-            version: nextVerNum,
-            status: 'draft',
-            definition: body.definition,
-            createdAt: ISO,
-            publishedAt: null,
-            archivedAt: null,
-          };
-          entry.versions.push(newVersion);
-          return json(newVersion);
-        }
-        if (segs.length === 3) {
-          const versionId = decodeURIComponent(segs[2]!);
-          const version = entry.versions.find((v) => v.id === versionId);
-          if (!version) {
-            return new Response(null, { status: 404 });
-          }
-          if (method === 'PATCH') {
-            const body = init?.body
-              ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
-              : { definition: {} };
-            version.definition = body.definition;
-            return json(version);
-          }
-        }
-        if (segs.length === 4) {
-          const versionId = decodeURIComponent(segs[2]!);
-          const version = entry.versions.find((v) => v.id === versionId);
-          if (!version) {
-            return new Response(null, { status: 404 });
-          }
-          if (segs[3] === 'publish' && method === 'POST') {
-            for (const v of entry.versions) {
-              if (v.status === 'published') {
-                v.status = 'archived';
-                v.archivedAt = ISO;
-              }
-            }
-            version.status = 'published';
-            version.publishedAt = ISO;
-            return json(version);
-          }
-        }
-      }
-      return new Response(null, { status: 404 });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return { store, fetchMock };
-}
 
 const publishedEntry: Entry = {
   type: { id: 'dt-1', workspaceId: null, name: 'Basic Form', kind: 'basic-form', createdAt: ISO },
@@ -200,8 +92,8 @@ const draftLatestEntry: Entry = {
 };
 
 describe('AdminDocumentTypeDetail', () => {
-  it('renders the heading, version dropdown, and seeded definition editor', async () => {
-    mockApi([publishedEntry]);
+  it('Should render the heading, version dropdown, and seeded definition editor', async () => {
+    mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -215,8 +107,8 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
   });
 
-  it('shows New version (only) on a non-draft latest version', async () => {
-    mockApi([publishedEntry]);
+  it('Should show New version (only) on a non-draft latest version', async () => {
+    mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -226,8 +118,8 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
   });
 
-  it('shows Save draft + Publish (not New version) when the latest version is a draft', async () => {
-    mockApi([draftLatestEntry]);
+  it('Should show Save draft + Publish (not New version) when the latest version is a draft', async () => {
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
 
     // v2 (draft) is selected by default.
@@ -239,8 +131,8 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.queryByText('Read-only (not a draft)')).not.toBeInTheDocument();
   });
 
-  it('switches the selected version via the dropdown (older non-draft is read-only)', async () => {
-    mockApi([draftLatestEntry]);
+  it('Should switch the selected version via the dropdown and return via Go to current', async () => {
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -252,12 +144,19 @@ describe('AdminDocumentTypeDetail', () => {
 
     await waitFor(() => expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v1'), null, 2)));
     expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Go to current' })).toBeInTheDocument();
+    const goToCurrentButton = screen.getByRole('button', { name: 'Go to current' });
+    expect(goToCurrentButton).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
+
+    await user.click(goToCurrentButton);
+    await waitFor(() => expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v2'), null, 2)));
+    expect(screen.queryByRole('button', { name: 'Go to current' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
   });
 
-  it('saves the draft definition via PATCH', async () => {
-    const { fetchMock } = mockApi([draftLatestEntry]);
+  it('Should save the draft definition via PATCH', async () => {
+    const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -283,8 +182,8 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('shows an error when the draft definition is not valid JSON on save', async () => {
-    mockApi([draftLatestEntry]);
+  it('Should show an error when the draft definition is not valid JSON on save', async () => {
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -297,8 +196,8 @@ describe('AdminDocumentTypeDetail', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Definition is not valid JSON.');
   });
 
-  it('publishes the selected draft version', async () => {
-    const { fetchMock } = mockApi([draftLatestEntry]);
+  it('Should publish the selected draft version', async () => {
+    const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -308,6 +207,7 @@ describe('AdminDocumentTypeDetail', () => {
       { name: 'Publish' },
       { timeout: 32000 },
     );
+    await waitFor(() => expect(publishButton).toBeEnabled());
     await user.click(publishButton);
 
     await waitFor(() => {
@@ -321,8 +221,8 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('creates a new version from the latest published version', async () => {
-    const { fetchMock } = mockApi([publishedEntry]);
+  it('Should create a new version from the latest published version', async () => {
+    const fetchMock = mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -341,8 +241,8 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('renders the live preview and toggles between interactive and read-only', async () => {
-    mockApi([draftLatestEntry]);
+  it('Should render the live preview and toggle between interactive and read-only, and ignore deselect', async () => {
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -350,19 +250,51 @@ describe('AdminDocumentTypeDetail', () => {
     const preview = await screen.findByTestId('jsonforms', undefined, { timeout: 32000 });
     expect(preview).toHaveTextContent('interactive');
 
-    await user.click(screen.getByRole('button', { name: 'Read-only' }));
+    const interactiveBtn = screen.getByRole('button', { name: 'Interactive' });
+    const readonlyBtn = screen.getByRole('button', { name: 'Read-only' });
+
+    // Clicking already active toggle item deselects it, fallback retains interactive
+    await user.click(interactiveBtn);
+    expect(screen.getByTestId('jsonforms')).toHaveTextContent('interactive');
+
+    await user.click(readonlyBtn);
     await waitFor(() => expect(screen.getByTestId('jsonforms')).toHaveTextContent('readonly'));
   });
 
-  it('renders nothing when the document type is not found', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) {
-        return json(adminUser);
-      }
-      return new Response(null, { status: 404 });
+  it('Should handle a document type with no versions and allow creating a version', async () => {
+    const emptyEntry: Entry = {
+      type: {
+        id: 'dt-empty',
+        workspaceId: null,
+        name: 'Empty Type',
+        kind: 'empty-kind',
+        createdAt: ISO,
+      },
+      versions: [],
+    };
+    const fetchMock = mockDocumentTypesBff({ items: [emptyEntry] });
+    renderApp('/admin/document-types/dt-empty');
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('heading', { name: 'Empty Type' })).toBeInTheDocument();
+    expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
+
+    const newVersionBtn = screen.getByRole('button', { name: 'New version' });
+    await user.click(newVersionBtn);
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).includes('/v1/admin/document-types/dt-empty/versions') &&
+            (init?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true);
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  it('Should render nothing when the document type is not found', async () => {
+    mockAuthUser(adminUser);
 
     const { container } = renderApp('/admin/document-types/dt-unknown');
     await new Promise((resolve) => setTimeout(resolve, 100));

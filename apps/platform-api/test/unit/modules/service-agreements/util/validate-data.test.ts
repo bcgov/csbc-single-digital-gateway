@@ -3,7 +3,7 @@ import Ajv from 'ajv';
 import { validateData } from '../../../../../src/modules/service-agreements/util/validate-data';
 
 describe('validateData', () => {
-  it('returns valid true when data matches schema', () => {
+  it('Should return valid true when data matches schema', () => {
     const schema = {
       type: 'object',
       properties: {
@@ -21,7 +21,7 @@ describe('validateData', () => {
     });
   });
 
-  it('returns valid false and mapped errors when data violates schema constraints', () => {
+  it('Should return valid false and mapped errors when data violates schema constraints', () => {
     const schema = {
       type: 'object',
       properties: {
@@ -39,7 +39,7 @@ describe('validateData', () => {
     expect(result.errors).toContain('/age must be >= 18');
   });
 
-  it('ignores presentation keywords cleanly without strict mode errors', () => {
+  it('Should ignore presentation keywords cleanly without strict mode errors', () => {
     const schema = {
       type: 'object',
       properties: {
@@ -54,7 +54,7 @@ describe('validateData', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('handles case where validate.errors is nullish', () => {
+  it('Should handle case where validate.errors is nullish', () => {
     const compileSpy = vi.spyOn(Ajv.prototype, 'compile');
     const mockValidate = Object.assign(() => false, { errors: null });
     compileSpy.mockReturnValue(mockValidate as any);
@@ -65,7 +65,7 @@ describe('validateData', () => {
     compileSpy.mockRestore();
   });
 
-  it('handles case where error message is missing', () => {
+  it('Should handle case where error message is missing', () => {
     const compileSpy = vi.spyOn(Ajv.prototype, 'compile');
     const mockValidate = Object.assign(() => false, {
       errors: [{ instancePath: '/path', message: undefined }],

@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Module, Global } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DATABASE_CLIENT } from '@repo/nestjs/database';
@@ -9,24 +9,20 @@ import { MyApplicationsV1Controller } from '../../../../src/modules/applications
 import { ConsentV1Controller } from '../../../../src/modules/applications/controllers/consent-v1.controller';
 import { ApplicationsService } from '../../../../src/modules/applications/services/applications.service';
 import { ConsentService } from '../../../../src/modules/applications/services/consent.service';
+import { createMockConfigService } from '../../../utils/create-mock-config-service';
 
 describe('ApplicationsModule Unit Test Suite', () => {
-  it('should compile ApplicationsModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-    const mockConfigService = {
-      get: vi.fn(),
-    };
-
+  it('Should compile ApplicationsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
         {
           provide: ConfigService,
-          useValue: mockConfigService,
+          useValue: createMockConfigService(),
         },
       ],
       exports: [DATABASE_CLIENT, ConfigService],
@@ -56,7 +52,7 @@ describe('ApplicationsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for ApplicationsModule', () => {
     const controllers = Reflect.getMetadata('controllers', ApplicationsModule) as any[];
     const providers = Reflect.getMetadata('providers', ApplicationsModule) as any[];
 

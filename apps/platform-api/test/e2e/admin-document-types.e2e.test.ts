@@ -9,6 +9,8 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DocumentTypesModule } from '../../src/modules/document-types/document-types.module';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 const authOptions = {
   issuer: 'https://idp.example.com',
@@ -21,12 +23,7 @@ const authOptions = {
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
-
-describe('admin-document-types (e2e)', () => {
+describe('Admin Document Types E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -60,7 +57,7 @@ describe('admin-document-types (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s admin endpoints without a session', async () => {
+  it('Should return 401 for admin endpoints without a session', async () => {
     expect((await http().get('/v1/admin/document-types')).status).toBe(401);
     expect((await http().get(`/v1/admin/document-types/${UUID}`)).status).toBe(401);
     expect(
@@ -85,8 +82,8 @@ describe('admin-document-types (e2e)', () => {
     ).toBe(401);
   });
 
-  it('403s admin endpoints for a non-admin (staff) session', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 403 for admin endpoints for a non-admin (staff) session when fetching document types', async () => {
+    const staff = seedUser(['staff']);
     expect((await http().get('/v1/admin/document-types').set('x-test-user', staff)).status).toBe(
       403,
     );
@@ -132,8 +129,8 @@ describe('admin-document-types (e2e)', () => {
     ).toBe(403);
   });
 
-  it('400s version creation/update with invalid body for an admin session', async () => {
-    const admin = asUser(['admin']);
+  it('Should return 400 for version creation/update with invalid body for an admin session', async () => {
+    const admin = seedUser(['admin']);
 
     // Test POST /versions validation
     expect(

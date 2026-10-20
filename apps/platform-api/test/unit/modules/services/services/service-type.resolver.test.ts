@@ -1,31 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ServiceTypeResolver } from '../../../../../src/modules/services/services/service-type.resolver';
-
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnValue(qb),
-    innerJoin: vi.fn().mockReturnValue(qb),
-    limit: vi.fn().mockReturnValue(qb),
-    where: vi.fn().mockReturnValue(qb),
-  });
-};
+import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('ServiceTypeResolver', () => {
   let resolver: ServiceTypeResolver;
   let dbMock: any;
 
   beforeEach(() => {
-    dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
-    });
+    const mocks = createMockDb();
+    dbMock = { ...mocks.dbMock, select: vi.fn().mockImplementation(() => createMockQuery([])) };
 
     resolver = new ServiceTypeResolver(dbMock);
   });
 
   describe('resolve', () => {
-    it('successfully resolves the seeded service type and its published version', async () => {
+    it('Should successfully resolve the seeded service type and its published version', async () => {
       const mockResult = {
         typeId: 'service-type-uuid',
         typeVersionId: 'service-version-uuid',
@@ -35,7 +26,7 @@ describe('ServiceTypeResolver', () => {
         },
       };
 
-      dbMock.select.mockReturnValueOnce(mockQuery([mockResult]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([mockResult]));
 
       const result = await resolver.resolve();
 
@@ -48,14 +39,14 @@ describe('ServiceTypeResolver', () => {
       });
     });
 
-    it('falls back to empty schema/uischema objects when definition is empty or keys are missing', async () => {
+    it('Should fall back to empty schema/uischema objects when definition is empty or keys are missing', async () => {
       const mockResult = {
         typeId: 'service-type-uuid',
         typeVersionId: 'service-version-uuid',
         definition: {},
       };
 
-      dbMock.select.mockReturnValueOnce(mockQuery([mockResult]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([mockResult]));
 
       const result = await resolver.resolve();
 
@@ -63,22 +54,22 @@ describe('ServiceTypeResolver', () => {
       expect(result.uischema).toEqual({});
     });
 
-    it('throws InternalServerErrorException if service document type has not been seeded', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+    it('Should throw InternalServerErrorException if service document type has not been seeded', async () => {
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(resolver.resolve()).rejects.toThrow(InternalServerErrorException);
     });
   });
 
   describe('schemaForVersion', () => {
-    it('returns the JSON schema for a valid type version id', async () => {
+    it('Should return the JSON schema for a valid type version id', async () => {
       const mockResult = {
         definition: {
           schema: { type: 'object' },
         },
       };
 
-      dbMock.select.mockReturnValueOnce(mockQuery([mockResult]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([mockResult]));
 
       const result = await resolver.schemaForVersion('service-version-uuid');
 
@@ -86,8 +77,8 @@ describe('ServiceTypeResolver', () => {
       expect(result).toEqual({ type: 'object' });
     });
 
-    it('falls back to empty object when row is not found or schema is missing', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+    it('Should fall back to empty object when row is not found or schema is missing', async () => {
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const result = await resolver.schemaForVersion('service-version-uuid');
 
@@ -108,14 +99,14 @@ describe('ServiceTypeResolver.definitionForVersion (feature 174)', () => {
 
   beforeEach(() => {
     dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
     });
     resolver = new ServiceTypeResolver(dbMock);
   });
 
-  it('should return the schema and uischema of the given type version', async () => {
+  it('Should return the schema and uischema of the given type version', async () => {
     dbMock.select.mockReturnValueOnce(
-      mockQuery([
+      createMockQuery([
         {
           definition: {
             schema: { type: 'object', properties: { title: { type: 'string' } } },
@@ -133,10 +124,10 @@ describe('ServiceTypeResolver.definitionForVersion (feature 174)', () => {
     });
   });
 
-  it('should resolve a NON-published type version (an older, demoted one)', async () => {
+  it('Should resolve a NON-published type version (an older, demoted one)', async () => {
     // The query filters on id ONLY — no status predicate — so a demoted version still resolves.
     dbMock.select.mockReturnValueOnce(
-      mockQuery([{ definition: { schema: { legacy: true }, uischema: { legacy: true } } }]),
+      createMockQuery([{ definition: { schema: { legacy: true }, uischema: { legacy: true } } }]),
     );
 
     const result = await resolver.definitionForVersion('old-demoted-version');
@@ -145,10 +136,10 @@ describe('ServiceTypeResolver.definitionForVersion (feature 174)', () => {
     expect(result.uischema).toEqual({ legacy: true });
   });
 
-  it('should not fall back to the currently-published type version', async () => {
+  it('Should not fall back to the currently-published type version', async () => {
     // Unknown id → empty, NOT the published template. A silent fallback is the exact bug this
     // method exists to prevent (every field of an old service rendering empty).
-    dbMock.select.mockReturnValueOnce(mockQuery([]));
+    dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
     const result = await resolver.definitionForVersion('does-not-exist');
 
@@ -156,8 +147,8 @@ describe('ServiceTypeResolver.definitionForVersion (feature 174)', () => {
     expect(dbMock.select).toHaveBeenCalledTimes(1);
   });
 
-  it('should return empty objects when the type version id is unknown', async () => {
-    dbMock.select.mockReturnValueOnce(mockQuery([]));
+  it('Should return empty objects when the type version id is unknown', async () => {
+    dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
     await expect(resolver.definitionForVersion('nope')).resolves.toEqual({
       schema: {},
@@ -165,11 +156,11 @@ describe('ServiceTypeResolver.definitionForVersion (feature 174)', () => {
     });
   });
 
-  it('should return empty objects when the definition JSONB lacks schema/uischema', async () => {
-    dbMock.select.mockReturnValueOnce(mockQuery([{ definition: {} }]));
+  it('Should return empty objects when the definition JSONB lacks schema/uischema', async () => {
+    dbMock.select.mockReturnValueOnce(createMockQuery([{ definition: {} }]));
     await expect(resolver.definitionForVersion('v')).resolves.toEqual({ schema: {}, uischema: {} });
 
-    dbMock.select.mockReturnValueOnce(mockQuery([{ definition: null }]));
+    dbMock.select.mockReturnValueOnce(createMockQuery([{ definition: null }]));
     await expect(resolver.definitionForVersion('v')).resolves.toEqual({ schema: {}, uischema: {} });
   });
 });
@@ -180,14 +171,14 @@ describe('ServiceTypeResolver.definitionsForVersions (feature 174)', () => {
 
   beforeEach(() => {
     dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
     });
     resolver = new ServiceTypeResolver(dbMock);
   });
 
-  it('should key each definition by its type version id', async () => {
+  it('Should key each definition by its type version id', async () => {
     dbMock.select.mockReturnValueOnce(
-      mockQuery([
+      createMockQuery([
         { id: 'tv-1', definition: { schema: { a: 1 }, uischema: { a: 1 } } },
         { id: 'tv-2', definition: { schema: { b: 2 }, uischema: { b: 2 } } },
       ]),
@@ -199,14 +190,14 @@ describe('ServiceTypeResolver.definitionsForVersions (feature 174)', () => {
     expect(result['tv-2']).toEqual({ schema: { b: 2 }, uischema: { b: 2 } });
   });
 
-  it('should issue no query for an empty id list', async () => {
+  it('Should issue no query for an empty id list', async () => {
     await expect(resolver.definitionsForVersions([])).resolves.toEqual({});
     expect(dbMock.select).not.toHaveBeenCalled();
   });
 
-  it('should de-duplicate repeated ids into one lookup', async () => {
+  it('Should de-duplicate repeated ids into one lookup', async () => {
     dbMock.select.mockReturnValueOnce(
-      mockQuery([{ id: 'tv-1', definition: { schema: {}, uischema: {} } }]),
+      createMockQuery([{ id: 'tv-1', definition: { schema: {}, uischema: {} } }]),
     );
 
     const result = await resolver.definitionsForVersions(['tv-1', 'tv-1', 'tv-1']);
@@ -215,9 +206,9 @@ describe('ServiceTypeResolver.definitionsForVersions (feature 174)', () => {
     expect(dbMock.select).toHaveBeenCalledTimes(1);
   });
 
-  it('should omit ids with no matching row (caller falls back to an empty definition)', async () => {
+  it('Should omit ids with no matching row (caller falls back to an empty definition)', async () => {
     dbMock.select.mockReturnValueOnce(
-      mockQuery([{ id: 'tv-1', definition: { schema: {}, uischema: {} } }]),
+      createMockQuery([{ id: 'tv-1', definition: { schema: {}, uischema: {} } }]),
     );
 
     const result = await resolver.definitionsForVersions(['tv-1', 'missing']);

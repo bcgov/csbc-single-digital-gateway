@@ -7,15 +7,13 @@ import { FormsV1Controller } from '../../../../src/modules/forms/controllers/for
 import { FormsService } from '../../../../src/modules/forms/services/forms.service';
 
 describe('FormsModule Unit Test Suite', () => {
-  it('should compile FormsModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
+  it('Should compile FormsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],
@@ -39,7 +37,7 @@ describe('FormsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for FormsModule', () => {
     const controllers = Reflect.getMetadata('controllers', FormsModule) as any[];
     const providers = Reflect.getMetadata('providers', FormsModule) as any[];
 

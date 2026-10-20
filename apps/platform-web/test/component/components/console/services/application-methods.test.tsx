@@ -11,10 +11,11 @@ import {
   updateExternalApplication,
   type ServiceReference,
 } from '@/lib/services';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
 export let capturedOnOpenChange: ((next: boolean) => void) | undefined;
 export let capturedActionOnClick: (() => void) | undefined;
-export let mockAlwaysOpen = false;
+export let mockOpen = false;
 
 vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@repo/ui/alert-dialog')>();
@@ -22,7 +23,7 @@ vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
     ...actual,
     AlertDialog: (props: any) => {
       capturedOnOpenChange = props.onOpenChange;
-      return <actual.AlertDialog {...props} open={mockAlwaysOpen || props.open} />;
+      return <actual.AlertDialog {...props} open={mockOpen || props.open} />;
     },
     AlertDialogAction: (props: any) => {
       capturedActionOnClick = props.onClick;
@@ -78,8 +79,6 @@ vi.mock('@/components/console/services/external-application-form', () => ({
     return <div data-testid="external-form">Mock External Form</div>;
   },
 }));
-
-const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -195,8 +194,25 @@ function renderApplicationMethods(props: {
   );
 }
 
+const externalRef: ServiceReference = {
+  id: 'ref-external-123',
+  relation: 'external_application',
+  position: 3,
+  label: 'External site',
+  url: 'https://example.com/apply',
+  targetDocumentId: 'doc-external-789',
+  targetVersionId: 'v-external-1',
+  targetKind: 'external-application',
+  targetTitle: 'External Apply',
+  targetVersion: 1,
+  targetStatus: 'draft',
+  hasSubmissions: false,
+  hasStructure: false,
+  createdAt: '2026-06-01T00:00:00.000Z',
+};
+
 describe('Application Methods Component Test Suite', () => {
-  it('renders empty state message when there are no references', () => {
+  it('Should render empty state message when there are no references', () => {
     renderApplicationMethods({ references: [] });
 
     expect(
@@ -205,7 +221,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
   });
 
-  it('does not render add button when readonly is true', () => {
+  it('Should not render add button when readonly is true', () => {
     renderApplicationMethods({ references: [], readonly: true });
 
     expect(
@@ -213,7 +229,7 @@ describe('Application Methods Component Test Suite', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders list of application methods with details', () => {
+  it('Should render list of application methods with details', () => {
     renderApplicationMethods({ references: mockReferences });
 
     // Verify titles are present
@@ -230,7 +246,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(screen.getByText('Archived')).toBeInTheDocument();
   });
 
-  it('renders archived method as text and active method as link', () => {
+  it('Should render archived method as text and active method as link', () => {
     renderApplicationMethods({ references: mockReferences });
 
     // Parking Application Form is active, should be a link
@@ -247,7 +263,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(screen.queryByRole('link', { name: 'Archived Form' })).not.toBeInTheDocument();
   });
 
-  it('handles Add application method button click and navigates', async () => {
+  it('Should handle Add application method button click and navigate', async () => {
     const user = userEvent.setup();
     renderApplicationMethods({ references: [] });
 
@@ -266,7 +282,7 @@ describe('Application Methods Component Test Suite', () => {
     );
   });
 
-  it('handles Archive button click and calls archive mutation', async () => {
+  it('Should handle Archive button click and call archive mutation', async () => {
     vi.mocked(archiveReference).mockResolvedValueOnce();
     const user = userEvent.setup();
     renderApplicationMethods({ references: mockReferences });
@@ -277,7 +293,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(archiveReference).toHaveBeenCalledWith('srv-123', 'v-456', 'ref-multi-123');
   });
 
-  it('handles Delete button click, opens confirmation dialog, can cancel, and can delete', async () => {
+  it('Should handle Delete button click, opens confirmation dialog, can cancel, and can delete', async () => {
     vi.mocked(removeReference).mockResolvedValueOnce();
     const user = userEvent.setup();
     renderApplicationMethods({ references: mockReferences });
@@ -305,7 +321,7 @@ describe('Application Methods Component Test Suite', () => {
     });
   });
 
-  it('displays error message when mutation fails', async () => {
+  it('Should display error message when mutation fails', async () => {
     vi.mocked(archiveReference).mockRejectedValueOnce(new Error('Failed to archive method'));
     const user = userEvent.setup();
     renderApplicationMethods({ references: mockReferences });
@@ -318,14 +334,14 @@ describe('Application Methods Component Test Suite', () => {
     expect(errorMessage).toHaveTextContent('Failed to archive method');
   });
 
-  it('does not display Archive or Delete buttons when readonly is true', () => {
+  it('Should not display Archive or Delete buttons when readonly is true', () => {
     renderApplicationMethods({ references: mockReferences, readonly: true });
 
     expect(screen.queryByRole('button', { name: /archive/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
   });
 
-  it('does not display Archive or Delete buttons for archived methods', () => {
+  it('Should not display Archive or Delete buttons for archived methods', () => {
     renderApplicationMethods({ references: mockReferences });
 
     const archivedListItem = screen.getByText('Archived Form').closest('li');
@@ -333,7 +349,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(archivedListItem?.querySelector('button')).toBeNull();
   });
 
-  it('handles empty label and unknown form kind', () => {
+  it('Should handle empty label and unknown form kind', () => {
     const referencesWithEmptyLabel: ServiceReference[] = [
       {
         id: 'ref-custom-123',
@@ -359,7 +375,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(screen.queryByText(/·/)).not.toBeInTheDocument();
   });
 
-  it('disables Archive button when archive mutation is pending', async () => {
+  it('Should disable Archive button when archive mutation is pending', async () => {
     let resolveArchive!: (value: void) => void;
     const archivePromise = new Promise<void>((resolve) => {
       resolveArchive = resolve;
@@ -377,7 +393,7 @@ describe('Application Methods Component Test Suite', () => {
     resolveArchive();
   });
 
-  it('disables Delete button when delete mutation is pending', async () => {
+  it('Should disable Delete button when delete mutation is pending', async () => {
     let resolveDelete!: (value: void) => void;
     const deletePromise = new Promise<void>((resolve) => {
       resolveDelete = resolve;
@@ -398,7 +414,7 @@ describe('Application Methods Component Test Suite', () => {
     resolveDelete();
   });
 
-  it('displays error message when delete mutation fails', async () => {
+  it('Should display error message when delete mutation fails', async () => {
     vi.mocked(removeReference).mockRejectedValueOnce(new Error('Failed to delete method'));
     const user = userEvent.setup();
     renderApplicationMethods({ references: mockReferences });
@@ -414,7 +430,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(errorMessage).toHaveTextContent('Failed to delete method');
   });
 
-  it('invalidates services queries on archive mutation success', async () => {
+  it('Should invalidate services queries on archive mutation success', async () => {
     vi.mocked(archiveReference).mockResolvedValueOnce();
     const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
     const user = userEvent.setup();
@@ -428,7 +444,7 @@ describe('Application Methods Component Test Suite', () => {
     });
   });
 
-  it('allows canceling the delete action in the confirmation dialog', async () => {
+  it('Should allow canceling the delete action in the confirmation dialog', async () => {
     const user = userEvent.setup();
     renderApplicationMethods({ references: mockReferences });
 
@@ -446,8 +462,8 @@ describe('Application Methods Component Test Suite', () => {
     });
   });
 
-  it('covers AlertDialog onOpenChange true branch and action click when confirmId is null', async () => {
-    mockAlwaysOpen = true;
+  it('Should cover AlertDialog onOpenChange true branch and action click when confirmId is null', async () => {
+    mockOpen = true;
     try {
       renderApplicationMethods({ references: mockReferences });
       await screen.findByRole('alertdialog');
@@ -462,29 +478,13 @@ describe('Application Methods Component Test Suite', () => {
         capturedActionOnClick?.();
       });
     } finally {
-      mockAlwaysOpen = false;
+      mockOpen = false;
     }
   });
 
-  it('covers Dialog onOpenChange and cancel path for editing external method', async () => {
+  it('Should cover Dialog onOpenChange and cancel path for editing external method', async () => {
     vi.mocked(updateExternalApplication).mockResolvedValueOnce({} as any);
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
-      label: 'External site',
-      url: 'https://example.com/apply',
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
-    };
 
     renderApplicationMethods({ references: [externalRef] });
 
@@ -526,7 +526,7 @@ describe('Application Methods Component Test Suite', () => {
     });
   });
 
-  it('triggers onReorder on drag end', () => {
+  it('Should trigger onReorder on drag end', () => {
     const onReorder = vi.fn();
     renderApplicationMethods({ references: mockReferences, onReorder });
 
@@ -536,7 +536,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(onReorder).toHaveBeenCalledWith(['ref-multi-123', 'ref-basic-123']);
   });
 
-  it('does not call onReorder when move returns undefined', () => {
+  it('Should not call onReorder when move returns undefined', () => {
     const onReorder = vi.fn();
     vi.mocked(move).mockReturnValueOnce({});
     renderApplicationMethods({ references: mockReferences, onReorder });
@@ -545,7 +545,7 @@ describe('Application Methods Component Test Suite', () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 
-  it('covers isPending branch when editing external method is pending', async () => {
+  it('Should cover isPending branch when editing external method is pending', async () => {
     let resolvePromise: any;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
@@ -553,22 +553,6 @@ describe('Application Methods Component Test Suite', () => {
     vi.mocked(updateExternalApplication).mockReturnValueOnce(promise as any);
 
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
-      label: 'External site',
-      url: 'https://example.com/apply',
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
-    };
 
     renderApplicationMethods({ references: [externalRef] });
 
@@ -601,26 +585,15 @@ describe('Application Methods Component Test Suite', () => {
     });
   });
 
-  it('handles external application reference with null label and url', async () => {
+  it('Should handle external application reference with null label and url', async () => {
     const user = userEvent.setup();
-    const externalRef: ServiceReference = {
-      id: 'ref-external-123',
-      relation: 'external_application',
-      position: 3,
+    const externalRefNoLabel: ServiceReference = {
+      ...externalRef,
       label: null as any,
       url: null as any,
-      targetDocumentId: 'doc-external-789',
-      targetVersionId: 'v-external-1',
-      targetKind: 'external-application',
-      targetTitle: 'External Apply',
-      targetVersion: 1,
-      targetStatus: 'draft',
-      hasSubmissions: false,
-      hasStructure: false,
-      createdAt: '2026-06-01T00:00:00.000Z',
     };
 
-    renderApplicationMethods({ references: [externalRef] });
+    renderApplicationMethods({ references: [externalRefNoLabel] });
 
     await user.click(screen.getByRole('button', { name: /edit/i }));
     expect(await screen.findByText('Edit external link')).toBeInTheDocument();

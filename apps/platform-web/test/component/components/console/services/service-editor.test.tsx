@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceEditor } from '@/components/console/services/service-editor';
+import { mockDefinition } from '../../../../support/fixtures';
 
 const state = vi.hoisted(() => ({ isIntegrationTest: false }));
 
@@ -26,7 +27,7 @@ afterEach(() => {
   state.isIntegrationTest = false;
 });
 
-const definition = {
+const serviceDefinition = {
   schema: {
     type: 'object',
     required: ['title'],
@@ -51,22 +52,20 @@ const definition = {
 };
 
 /** Mirrors service-detail: owns formData and feeds it back, so an editor feedback loop would throw. */
-function Harness({ initial = { title: 'Birth certificate' } as Record<string, unknown> }) {
+function ServiceDetailMirror({
+  initial = { title: 'Birth certificate' } as Record<string, unknown>,
+}) {
   const [formData, setFormData] = useState<Record<string, unknown>>(initial);
   return (
     <>
-      <ServiceEditor definition={definition} data={formData} onChange={setFormData} />
+      <ServiceEditor definition={serviceDefinition} data={formData} onChange={setFormData} />
       <pre data-testid="state">{JSON.stringify(formData)}</pre>
     </>
   );
 }
 
 describe('ServiceEditor Component Test Suite', () => {
-  it('renders JsonForms with correct props', () => {
-    const mockDefinition = {
-      schema: { type: 'object', properties: { name: { type: 'string' } } },
-      uischema: { type: 'VerticalLayout', elements: [] },
-    };
+  it('Should render JsonForms with correct props', () => {
     const mockData = { name: 'Riverton' };
     const mockOnChange = vi.fn();
 
@@ -89,11 +88,7 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(props.readonly).toBe(false);
   });
 
-  it('calls onChange when JsonForms calls onChange and readonly is false', () => {
-    const mockDefinition = {
-      schema: { type: 'object' },
-      uischema: { type: 'VerticalLayout' },
-    };
+  it('Should call onChange when JsonForms calls onChange and readonly is false', () => {
     const mockOnChange = vi.fn();
 
     render(
@@ -112,11 +107,7 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(mockOnChange).toHaveBeenCalledWith({ title: 'New Title' });
   });
 
-  it('does not call onChange when JsonForms calls onChange and readonly is true', () => {
-    const mockDefinition = {
-      schema: { type: 'object' },
-      uischema: { type: 'VerticalLayout' },
-    };
+  it('Should not call onChange when JsonForms calls onChange and readonly is true', () => {
     const mockOnChange = vi.fn();
 
     render(
@@ -134,6 +125,25 @@ describe('ServiceEditor Component Test Suite', () => {
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
+  it('Should handle definition when uischema elements is missing or not an array (L38)', () => {
+    render(
+      <ServiceEditor definition={{ schema: {}, uischema: {} }} data={{}} onChange={vi.fn()} />,
+    );
+    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
+  });
+
+  it('Should not call onChange when next data is identical to current data', () => {
+    const mockOnChange = vi.fn();
+    const data = { title: 'Same Title' };
+
+    render(<ServiceEditor definition={mockDefinition} data={data} onChange={mockOnChange} />);
+
+    const jsonFormsProps = vi.mocked(JsonForms).mock.calls[0]![0];
+    jsonFormsProps.onChange!({ data: { title: 'Same Title' } } as any);
+
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
   describe('Integration tests', () => {
     beforeEach(() => {
       state.isIntegrationTest = true;
@@ -143,8 +153,8 @@ describe('ServiceEditor Component Test Suite', () => {
       state.isIntegrationTest = false;
     });
 
-    it('renders the contact-methods section outside the title/about card', async () => {
-      const { container } = render(<Harness />);
+    it('Should render the contact-methods section outside the title/about card', async () => {
+      const { container } = render(<ServiceDetailMirror />);
       const titleField = await screen.findByRole('textbox', { name: /title/i }, { timeout: 10000 });
       const addButton = screen.getByRole('button', { name: /add contact method/i });
 
@@ -154,9 +164,9 @@ describe('ServiceEditor Component Test Suite', () => {
       expect(card).not.toContainElement(addButton); // contact methods live outside it
     });
 
-    it('adds a contact method while preserving other fields (no feedback loop)', async () => {
+    it('Should add a contact method while preserving other fields (no feedback loop)', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<ServiceDetailMirror />);
       await screen.findByRole('button', { name: /add contact method/i }, { timeout: 10000 });
 
       await user.click(screen.getByRole('button', { name: /add contact method/i }));
@@ -169,9 +179,12 @@ describe('ServiceEditor Component Test Suite', () => {
       await user.click(within(dialog).getByRole('button', { name: /save|add/i }));
 
       await waitFor(() => {
-        const state = JSON.parse(screen.getByTestId('state').textContent ?? '{}');
-        expect(state.title).toBe('Birth certificate');
-        expect(state.contact_methods?.[0]).toMatchObject({ type: 'phone', value: '+12505551234' });
+        const currentState = JSON.parse(screen.getByTestId('state').textContent ?? '{}');
+        expect(currentState.title).toBe('Birth certificate');
+        expect(currentState.contact_methods?.[0]).toMatchObject({
+          type: 'phone',
+          value: '+12505551234',
+        });
       });
     });
   });

@@ -17,7 +17,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     vi.restoreAllMocks();
   });
 
-  it('should successfully request and cache token', async () => {
+  it('Should successfully request and cache token', async () => {
     const mockTokenResponse = {
       access_token: 'token-123',
       expires_in: 300,
@@ -52,7 +52,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should format issuer base url with trailing slash if not present', async () => {
+  it('Should format issuer base url with trailing slash if not present', async () => {
     const customClient = new M2mTokenClient({
       ...options,
       issuer: 'http://auth.issuer/custom/',
@@ -71,7 +71,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     );
   });
 
-  it('should throw an error if response is not ok', async () => {
+  it('Should throw an error if response is not ok', async () => {
     const responseMock = {
       ok: false,
       status: 400,
@@ -82,7 +82,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     await expect(client.getToken()).rejects.toThrow('m2m token request failed: 400');
   });
 
-  it('should throw an error if access_token is missing or empty in json response', async () => {
+  it('Should throw an error if access_token is missing or empty in json response', async () => {
     const responseMock = {
       ok: true,
       json: vi.fn().mockResolvedValue({ expires_in: 300 }),
@@ -93,7 +93,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     await expect(client.getToken()).rejects.toThrow('m2m token response missing access_token');
   });
 
-  it('should invalidate cache and force refetch on invalidate()', async () => {
+  it('Should invalidate cache and force refetch on invalidate()', async () => {
     const responseMock1 = {
       ok: true,
       json: vi.fn().mockResolvedValue({ access_token: 'token-1', expires_in: 300 }),
@@ -119,7 +119,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should refresh token when it is close to expiry', async () => {
+  it('Should refresh token when it is close to expiry', async () => {
     const responseMock1 = {
       ok: true,
       json: vi.fn().mockResolvedValue({ access_token: 'token-1', expires_in: 60 }), // expires in 60s
@@ -149,7 +149,7 @@ describe('M2mTokenClient Unit Test Suite', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should fall back to 60 seconds expiry if expires_in is missing in token response', async () => {
+  it('Should fall back to 60 seconds expiry if expires_in is missing in token response', async () => {
     const mockTokenResponse = {
       access_token: 'token-fallback',
     };

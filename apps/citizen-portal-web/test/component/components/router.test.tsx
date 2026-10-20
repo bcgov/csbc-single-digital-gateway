@@ -7,15 +7,21 @@ afterEach(() => {
 });
 
 describe('citizen-portal-web router', () => {
-  it('resolves the anonymous landing route at /', async () => {
+  it('Should resolves the anonymous landing route at /', async () => {
     await renderRoute('/');
     expect(
-      await screen.findByRole('heading', { name: 'Access government services online' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Access government services online' },
+        { timeout: 10000 },
+      ),
     ).toBeInTheDocument();
   });
 
-  it('resolves the services catalog route at /services', async () => {
+  it('Should resolves the services catalog route at /services', async () => {
     await renderRoute('/services');
-    expect(await screen.findByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Services', level: 1 }, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 });

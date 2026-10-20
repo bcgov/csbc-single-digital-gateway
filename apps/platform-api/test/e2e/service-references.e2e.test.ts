@@ -20,14 +20,12 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
 const base = `/v1/services/${UUID}/versions/${UUID}`;
 
-describe('service references (e2e)', () => {
+describe('Service References E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -61,12 +59,12 @@ describe('service references (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s reference endpoints without a session', async () => {
+  it('Should return 401 for reference endpoints without a session', async () => {
     expect((await http().get(`${base}/references`)).status).toBe(401);
     expect((await http().post(`${base}/references`).send({})).status).toBe(401);
   });
 
-  it('401s external-application endpoints without a session', async () => {
+  it('Should return 401 for external-application endpoints without a session', async () => {
     expect(
       (
         await http()
@@ -83,8 +81,8 @@ describe('service references (e2e)', () => {
     ).toBe(401);
   });
 
-  it('400s invalid external-application bodies (missing + non-https url)', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 400 for invalid external-application bodies (missing + non-https url)', async () => {
+    const staff = seedUser(['staff']);
     // Missing fields.
     expect(
       (await http().post(`${base}/external-applications`).set('x-test-user', staff).send({}))
@@ -110,8 +108,8 @@ describe('service references (e2e)', () => {
     ).toBe(400);
   });
 
-  it('400s invalid reference + form bodies for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 400 for invalid reference + form bodies for a signed-in user', async () => {
+    const staff = seedUser(['staff']);
     expect(
       (await http().post(`${base}/references`).set('x-test-user', staff).send({})).status,
     ).toBe(400);

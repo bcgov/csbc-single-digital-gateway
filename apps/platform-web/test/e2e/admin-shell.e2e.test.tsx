@@ -1,24 +1,15 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../support/render-app';
 import '@/routes/admin';
 import '@/routes/admin.document-types';
 import '@/routes/admin.document-types.index';
+import { adminUser, adminWorkspace } from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const adminUser = { ...authedUser, roles: ['admin'] };
-
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
 
 describe('Admin Shell Integration Test Suite', () => {
   it('renders the admin nav + "Back to app" for an admin', async () => {
@@ -36,7 +27,7 @@ describe('Admin Shell Integration Test Suite', () => {
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
 
-  it('renders the Document Types placeholder at /admin/document-types', async () => {
+  it('Should render the Document Types placeholder at /admin/document-types', async () => {
     mockAuth(adminUser);
     renderApp('/admin/document-types');
     expect(
@@ -44,7 +35,7 @@ describe('Admin Shell Integration Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('redirects a non-admin away from /admin to /app', async () => {
+  it('Should redirect a non-admin away from /admin to /app', async () => {
     mockAuth(authedUser, { workspaces: [] });
     const { router } = renderApp('/admin');
 
@@ -54,8 +45,8 @@ describe('Admin Shell Integration Test Suite', () => {
 });
 
 describe('admin entry in the account menu', () => {
-  it('shows an Admin link for admins', async () => {
-    mockAuth(adminUser, { workspaces: [riverton] });
+  it('Should show an Admin link for admins', async () => {
+    mockAuth(adminUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton');
 
     const user = userEvent.setup();
@@ -68,8 +59,8 @@ describe('admin entry in the account menu', () => {
     );
   });
 
-  it('hides the Admin link for non-admins', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should hide the Admin link for non-admins', async () => {
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton');
 
     const user = userEvent.setup();

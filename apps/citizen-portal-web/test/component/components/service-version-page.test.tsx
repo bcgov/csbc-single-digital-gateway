@@ -100,7 +100,7 @@ describe('ServiceVersionPage Component', () => {
     });
   });
 
-  it('renders loading state when version or service query is pending', () => {
+  it('Should render loading state when version or service query is pending', () => {
     vi.mocked(useQuery).mockImplementation((options: any) => {
       if (options.queryKey[0] === 'version') {
         return { isPending: true } as any;
@@ -115,7 +115,7 @@ describe('ServiceVersionPage Component', () => {
     expect(screen.queryByTestId('service-sections')).not.toBeInTheDocument();
   });
 
-  it('renders "Version not available" state on error or missing version data', () => {
+  it('Should render "Version not available" state on error or missing version data', () => {
     vi.mocked(useQuery).mockImplementation((options: any) => {
       if (options.queryKey[0] === 'version') {
         return { isPending: false, isError: true, data: null } as any;
@@ -131,7 +131,7 @@ describe('ServiceVersionPage Component', () => {
     expect(link).toHaveAttribute('href', '/services/svc-abc');
   });
 
-  it('renders historical version detail with validity range details and sections', () => {
+  it('Should render historical version detail with validity range details and sections', () => {
     const mockVersionData = {
       version: 2,
       title: 'Historical Title',
@@ -197,7 +197,7 @@ describe('ServiceVersionPage Component', () => {
     expect(sections).toHaveAttribute('data-apps-count', '1');
   });
 
-  it('correctly falls back in validity range formatting when publishedAt is null', () => {
+  it('Should correctly fall back in validity range formatting when publishedAt is null', () => {
     const mockVersionData = {
       version: 1,
       title: 'Historical Title',
@@ -226,7 +226,7 @@ describe('ServiceVersionPage Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('returns empty string for validity range when both publishedAt and createdAt are null', () => {
+  it('Should return empty string for validity range when both publishedAt and createdAt are null', () => {
     const mockVersionData = {
       version: 3,
       title: 'Historical Title',

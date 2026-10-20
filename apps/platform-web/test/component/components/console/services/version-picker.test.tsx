@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { VersionPicker } from '@/components/console/services/version-picker';
 import type { ServiceVersion } from '@/lib/services';
 
-const mockVersions: ServiceVersion[] = [
+const mockServiceVersions: ServiceVersion[] = [
   {
     id: 'v-1',
     typeVersionId: 'type-version-1',
@@ -30,16 +30,16 @@ const mockVersions: ServiceVersion[] = [
 ];
 
 describe('VersionPicker Component Test Suite', () => {
-  it('renders the selected version in the trigger button', () => {
-    render(<VersionPicker versions={mockVersions} selectedId="v-1" onSelect={vi.fn()} />);
+  it('Should render the selected version in the trigger button', () => {
+    render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
     const trigger = screen.getByRole('button', { name: /version v1/i });
     expect(trigger).toBeInTheDocument();
   });
 
-  it('renders all versions in reversed order inside dropdown', async () => {
+  it('Should render all versions in reversed order inside dropdown', async () => {
     const user = userEvent.setup();
-    render(<VersionPicker versions={mockVersions} selectedId="v-1" onSelect={vi.fn()} />);
+    render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
     const trigger = screen.getByRole('button', { name: /version v1/i });
     await user.click(trigger);
@@ -53,9 +53,9 @@ describe('VersionPicker Component Test Suite', () => {
     expect(items[1]).toHaveTextContent('published');
   });
 
-  it('highlights the selected version in the dropdown menu', async () => {
+  it('Should highlight the selected version in the dropdown menu', async () => {
     const user = userEvent.setup();
-    render(<VersionPicker versions={mockVersions} selectedId="v-1" onSelect={vi.fn()} />);
+    render(<VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={vi.fn()} />);
 
     const trigger = screen.getByRole('button', { name: /version v1/i });
     await user.click(trigger);
@@ -67,10 +67,12 @@ describe('VersionPicker Component Test Suite', () => {
     expect(inactiveItem).not.toHaveClass('font-semibold');
   });
 
-  it('calls onSelect when a version item is clicked', async () => {
+  it('Should call onSelect when a version item is clicked', async () => {
     const user = userEvent.setup();
     const handleSelect = vi.fn();
-    render(<VersionPicker versions={mockVersions} selectedId="v-1" onSelect={handleSelect} />);
+    render(
+      <VersionPicker versions={mockServiceVersions} selectedId="v-1" onSelect={handleSelect} />,
+    );
 
     const trigger = screen.getByRole('button', { name: /version v1/i });
     await user.click(trigger);

@@ -2,30 +2,23 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { adminWorkspace } from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 describe('accessing a workspace by slug', () => {
-  it('shows a not-found state when the slug 404s', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should show a not-found state when the slug 404s', async () => {
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/nope');
     expect(
       await screen.findByText(/workspace not found/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
-  it('disables nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should disable nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/nope');
 
     await screen.findByText(/workspace not found/i, undefined, { timeout: 32000 });
@@ -57,8 +50,8 @@ async function confirmDelete(): Promise<void> {
 }
 
 describe('Workspace Settings Integration Test Suite', () => {
-  it('saves a new workspace name via PATCH', async () => {
-    const fetchMock = mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should save a new workspace name via PATCH', async () => {
+    const fetchMock = mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton/settings');
     const user = userEvent.setup();
 
@@ -77,8 +70,8 @@ describe('Workspace Settings Integration Test Suite', () => {
 });
 
 describe('deleting a workspace from settings', () => {
-  it('confirms, deletes, and returns to the selection page listing the remaining workspace', async () => {
-    const fetchMock = mockAuth(authedUser, { workspaces: [riverton, townsville] });
+  it('Should confirm, delete, and return to the selection page listing the remaining workspace', async () => {
+    const fetchMock = mockAuth(authedUser, { workspaces: [adminWorkspace, townsville] });
     const { router } = renderApp('/app/riverton/settings');
 
     await confirmDelete();
@@ -96,8 +89,8 @@ describe('deleting a workspace from settings', () => {
     ).toHaveAttribute('href', '/app/townsville');
   });
 
-  it('shows the empty state when the last workspace is deleted', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should show the empty state when the last workspace is deleted', async () => {
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const { router } = renderApp('/app/riverton/settings');
 
     await confirmDelete();

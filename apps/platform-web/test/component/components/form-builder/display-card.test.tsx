@@ -16,7 +16,7 @@ vi.mock('@repo/ui/rich-text-input', () => ({
 }));
 
 describe('DisplayCard Component Test Suite', () => {
-  it('renders heading input with correct styling and responds to edits', async () => {
+  it('Should render heading input with correct styling and respond to edits', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const node: DisplayNode = {
@@ -38,12 +38,17 @@ describe('DisplayCard Component Test Suite', () => {
     await user.type(input, '!');
     expect(handleChange).toHaveBeenCalledWith([0], { text: 'Main Heading!' });
 
+    // Clear text via onClear button
+    const clearButton = screen.getByRole('button', { name: 'Clear' });
+    await user.click(clearButton);
+    expect(handleChange).toHaveBeenCalledWith([0], { text: '' });
+
     // Test level 3 styling
     rerender(<DisplayCard node={{ ...node, level: 3 }} path={[0]} onChange={handleChange} />);
     expect(screen.getByLabelText('Heading')).toHaveClass('text-lg');
   });
 
-  it('renders paragraph textarea with correct alignment and responds to edits', async () => {
+  it('Should render paragraph textarea with correct alignment and respond to edits', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const node: DisplayNode = {
@@ -66,7 +71,7 @@ describe('DisplayCard Component Test Suite', () => {
     expect(handleChange).toHaveBeenCalledWith([1], { text: 'Paragraph text content!' });
   });
 
-  it('renders RichTextInput for richtext display type and responds to edits', async () => {
+  it('Should render RichTextInput for richtext display type and respond to edits', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     const node: DisplayNode = {
@@ -88,7 +93,7 @@ describe('DisplayCard Component Test Suite', () => {
     expect(handleChange).toHaveBeenCalledWith([2], { content: 'Rich content!' });
   });
 
-  it('defaults to level 2 heading styling when level is undefined', () => {
+  it('Should default to level 2 heading styling when level is undefined', () => {
     const handleChange = vi.fn();
     const node: DisplayNode = {
       kind: 'display',
@@ -103,7 +108,7 @@ describe('DisplayCard Component Test Suite', () => {
     expect(input).toHaveClass('text-xl');
   });
 
-  it('defaults to left text alignment when align is undefined', () => {
+  it('Should default to left text alignment when align is undefined and support right align', () => {
     const handleChange = vi.fn();
     const node: DisplayNode = {
       kind: 'display',
@@ -112,13 +117,16 @@ describe('DisplayCard Component Test Suite', () => {
       text: 'Paragraph text without alignment',
     };
 
-    render(<DisplayCard node={node} path={[1]} onChange={handleChange} />);
+    const { rerender } = render(<DisplayCard node={node} path={[1]} onChange={handleChange} />);
 
     const textarea = screen.getByLabelText('Paragraph');
     expect(textarea).toHaveClass('text-left');
+
+    rerender(<DisplayCard node={{ ...node, align: 'right' }} path={[1]} onChange={handleChange} />);
+    expect(screen.getByLabelText('Paragraph')).toHaveClass('text-right');
   });
 
-  it('handles omitted content value in RichTextInput', () => {
+  it('Should handle omitted content value in RichTextInput', () => {
     const handleChange = vi.fn();
     const node: DisplayNode = {
       kind: 'display',

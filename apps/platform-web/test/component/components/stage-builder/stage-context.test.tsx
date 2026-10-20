@@ -22,7 +22,7 @@ const TestConsumerSuccess = () => {
 };
 
 describe('Stage Context Component Test Suite', () => {
-  it('throws an error if used outside of StageBuilderContext.Provider', () => {
+  it('Should throw an error if used outside of StageBuilderContext.Provider', () => {
     suppressError();
 
     expect(() => render(<TestConsumerThrow />)).toThrow(
@@ -31,7 +31,7 @@ describe('Stage Context Component Test Suite', () => {
     restoreError();
   });
 
-  it('returns context value when used within StageBuilderContext.Provider', () => {
+  it('Should return context value when used within StageBuilderContext.Provider', () => {
     const mockValue: StageBuilderApi = {
       def: { name: 'My Flow', description: '', stages: [], edges: [] },
       addPage: () => {},

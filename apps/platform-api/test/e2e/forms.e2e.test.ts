@@ -20,13 +20,10 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
-
-describe('forms (e2e)', () => {
+describe('Forms E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -60,14 +57,14 @@ describe('forms (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s form endpoints without a session', async () => {
+  it('Should return 401 for form endpoints without a session', async () => {
     expect((await http().get(`/v1/forms/${UUID}`)).status).toBe(401);
     expect((await http().post('/v1/forms').send({})).status).toBe(401);
     expect((await http().patch(`/v1/forms/${UUID}/versions/${UUID}`).send({})).status).toBe(401);
   });
 
-  it('400s invalid create + patch bodies for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+  it('Should return 400 for invalid create + patch bodies for a signed-in user', async () => {
+    const staff = seedUser(['staff']);
     expect((await http().post('/v1/forms').set('x-test-user', staff).send({})).status).toBe(400);
     expect(
       (

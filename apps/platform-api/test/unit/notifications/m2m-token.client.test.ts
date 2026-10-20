@@ -33,7 +33,7 @@ describe('M2mTokenClient', () => {
     vi.useRealTimers();
   });
 
-  it('fetches and caches token successfully on first call', async () => {
+  it('Should fetch and cache token successfully on first call', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -62,7 +62,7 @@ describe('M2mTokenClient', () => {
     );
   });
 
-  it('returns cached token on subsequent calls if not expired', async () => {
+  it('Should return cached token on subsequent calls if not expired', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -85,7 +85,7 @@ describe('M2mTokenClient', () => {
     expect(fetch).toHaveBeenCalledTimes(1); // cache hit
   });
 
-  it('refetches token if cached token is expired or close to expiry skew', async () => {
+  it('Should refetch token if cached token is expired or close to expiry skew', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -119,7 +119,7 @@ describe('M2mTokenClient', () => {
     expect(fetch).toHaveBeenCalledTimes(2); // refetched
   });
 
-  it('throws error if the token endpoint returns non-ok status', async () => {
+  it('Should throw error if the token endpoint returns non-ok status', async () => {
     const mockResponse = {
       ok: false,
       status: 400,
@@ -129,7 +129,7 @@ describe('M2mTokenClient', () => {
     await expect(client.getToken()).rejects.toThrow('m2m token request failed: 400');
   });
 
-  it('throws error if the response is missing access_token', async () => {
+  it('Should throw error if the response is missing access_token', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -142,7 +142,7 @@ describe('M2mTokenClient', () => {
     await expect(client.getToken()).rejects.toThrow('m2m token response missing access_token');
   });
 
-  it('refetches token after invalidate() is called', async () => {
+  it('Should refetch token after invalidate() is called', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -173,7 +173,7 @@ describe('M2mTokenClient', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  it('handles issuer ending with slash', async () => {
+  it('Should handle issuer ending with slash', async () => {
     const slashClient = new M2mTokenClient({
       ...options,
       issuer: 'https://keycloak.example.com/auth/realms/sdg/',
@@ -195,7 +195,7 @@ describe('M2mTokenClient', () => {
     );
   });
 
-  it('falls back to default expiry when expires_in is missing', async () => {
+  it('Should fall back to default expiry when expires_in is missing', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -209,7 +209,7 @@ describe('M2mTokenClient', () => {
     expect(token).toBe('mocked-jwt-token-no-expiry');
   });
 
-  it('fetches a token from the issuer token endpoint with client credentials', async () => {
+  it('Should fetch a token from the issuer token endpoint with client credentials', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(tokenResponse('tok-1', 300));
     const localClient = new M2mTokenClient(OPTIONS);
 
@@ -222,7 +222,7 @@ describe('M2mTokenClient', () => {
     expect(String(init.body)).toContain('client_id=platform-api-m2m');
   });
 
-  it('caches the token until near expiry, then refreshes', async () => {
+  it('Should cache the token until near expiry, then refresh', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(tokenResponse('tok-1', 300))
@@ -239,7 +239,7 @@ describe('M2mTokenClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('invalidate() drops the cache so the next call re-authenticates', async () => {
+  it('Should drop the cache on invalidate() so the next call re-authenticates', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(tokenResponse('tok-1', 300))
@@ -252,7 +252,7 @@ describe('M2mTokenClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('throws on a non-2xx token response', async () => {
+  it('Should throw on a non-2xx token response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('{"error":"invalid_client"}', { status: 401 }),
     );

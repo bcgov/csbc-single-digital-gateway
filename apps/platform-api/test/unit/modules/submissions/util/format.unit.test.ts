@@ -8,7 +8,7 @@ import type { SubmissionStatus } from '../../../../../src/modules/submissions/dt
 
 describe('format utility tests', () => {
   describe('submissionStatusLabel', () => {
-    it('returns correct label for every status', () => {
+    it('Should return correct label for every status', () => {
       const cases: Record<SubmissionStatus, string> = {
         draft: 'Draft',
         pending: 'Pending',
@@ -25,7 +25,7 @@ describe('format utility tests', () => {
   });
 
   describe('submissionReference', () => {
-    it('constructs a stable reference string YYYYMMDD-XXXX from a UUID and a Date', () => {
+    it('Should construct a stable reference string YYYYMMDD-XXXX from a UUID and a Date', () => {
       const submissionId = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
       const createdAt = new Date('2026-07-12T12:00:00.000Z');
 
@@ -39,7 +39,7 @@ describe('format utility tests', () => {
 
   describe('normalizeFormStructure', () => {
     describe('multi-stage-form', () => {
-      it('returns valid values if they exist in structure', () => {
+      it('Should return valid values if they exist in structure', () => {
         const input = {
           name: 'My Multi Form',
           description: 'A desc',
@@ -50,7 +50,7 @@ describe('format utility tests', () => {
         expect(result).toEqual(input);
       });
 
-      it('defaults missing or invalid types to empty strings or arrays', () => {
+      it('Should default missing or invalid types to empty strings or arrays', () => {
         const input = {
           name: 123, // invalid
           description: null, // invalid
@@ -67,7 +67,7 @@ describe('format utility tests', () => {
     });
 
     describe('basic-form and other kinds', () => {
-      it('returns existing schema and uischema', () => {
+      it('Should return existing schema and uischema', () => {
         const input = {
           schema: { type: 'object', properties: { field: { type: 'string' } } },
           uischema: { type: 'Horizontal' },
@@ -76,7 +76,7 @@ describe('format utility tests', () => {
         expect(result).toEqual(input);
       });
 
-      it('defaults schema and uischema if missing', () => {
+      it('Should default schema and uischema if missing', () => {
         const result = normalizeFormStructure('basic-form', {});
         expect(result).toEqual({
           schema: {

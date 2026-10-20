@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { authedUser, renderApp } from '../../../support/render-app';
+import { renderApp } from '../../../support/render-app';
+import { mockNavigate } from '../../../support/vi-fixtures';
+import { mockNotificationsBff } from '../../../support/mock-notifications-bff';
 
-const mockNavigate = vi.fn();
 const sse = vi.hoisted(() => ({
   onEvent: null as null | (() => void),
   isIntegrationTest: false,
@@ -140,64 +141,6 @@ vi.mock('@repo/react/notification-center', async (importOriginal) => {
   };
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const workspace = { id: 'w1', slug: 'riverton', name: 'Riverton', role: 'admin', createdAt: ISO };
-
-const FEED = {
-  items: [
-    {
-      deliveryId: 'd-staff',
-      notificationId: 'n-staff',
-      type: 'submission.received',
-      title: 'New application received',
-      body: 'Application 20260710-AB12 for Income Assistance was submitted and is ready for review.',
-      payload: { submissionId: 'sub1', workspaceSlug: 'riverton' },
-      createdAt: new Date().toISOString(),
-      readAt: null,
-    },
-    {
-      deliveryId: 'd-plain',
-      notificationId: 'n-plain',
-      type: 'demo.announcement',
-      title: 'No destination here',
-      body: null,
-      payload: null,
-      createdAt: new Date().toISOString(),
-      readAt: new Date().toISOString(),
-    },
-  ],
-  total: 2,
-  limit: 20,
-  offset: 0,
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockBff() {
-  const calls: string[] = [];
-  globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    calls.push(`${init?.method ?? 'GET'} ${url}`);
-    if (url.includes('/auth/me')) return json(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return json(workspace);
-    if (url.includes('/v1/workspaces')) return json([workspace]);
-    if (url.includes('/notifications/unread-count')) return json({ count: 1 });
-    if (url.includes('/read-all')) return json({ updated: 1 });
-    if (url.includes('/read')) return json({ ...FEED.items[0], readAt: new Date().toISOString() });
-    if (url.includes('/v1/me/notifications')) return json(FEED);
-    if (url.includes('/v1/submissions/sub1')) return new Response(null, { status: 404 });
-    if (url.includes('/v1/submissions')) return json({ items: [] });
-    if (url.includes('/v1/services')) return json({ items: [] });
-    return new Response(null, { status: 404 });
-  }) as unknown as typeof fetch;
-  return calls;
-}
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -226,7 +169,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       );
     };
 
-    it('renders disabled trigger when disabled prop is true', () => {
+    it('Should render disabled trigger when disabled prop is true', () => {
       renderComponent({ disabled: true });
 
       const triggerBtn = screen.getByRole('button', { name: 'Notifications' });
@@ -235,12 +178,12 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(screen.queryByTestId('mock-notification-center')).not.toBeInTheDocument();
     });
 
-    it('renders the mock notification center by default', () => {
+    it('Should render the mock notification center by default', () => {
       renderComponent();
       expect(screen.getByTestId('mock-notification-center')).toBeInTheDocument();
     });
 
-    it('invalidates queries when subscribeToNotifications receives an event', () => {
+    it('Should invalidate queries when subscribeToNotifications receives an event', () => {
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
       renderComponent();
 
@@ -251,7 +194,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['submissions'] });
     });
 
-    it('triggers markRead mutation when onMarkRead is called', async () => {
+    it('Should trigger markRead mutation when onMarkRead is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-mark-read');
@@ -260,7 +203,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockMarkRead).toHaveBeenCalledWith('d-1');
     });
 
-    it('triggers markAllRead mutation when onMarkAllRead is called', async () => {
+    it('Should trigger markAllRead mutation when onMarkAllRead is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-mark-all-read');
@@ -269,7 +212,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockMarkAllRead).toHaveBeenCalled();
     });
 
-    it('navigates to submission detail when onItemClick is called with valid payload', async () => {
+    it('Should navigate to submission detail when onItemClick is called with valid payload', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-item-click-valid');
@@ -281,7 +224,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('does not navigate when onItemClick is called with missing or invalid payload', async () => {
+    it('Should not navigate when onItemClick is called with missing or invalid payload', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-item-click-invalid');
@@ -290,7 +233,7 @@ describe('NotificationsMenu Component Test Suite', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('navigates to preferences account page when onOpenPreferences is called', async () => {
+    it('Should navigate to preferences account page when onOpenPreferences is called', async () => {
       renderComponent();
 
       const btn = screen.getByTestId('btn-open-prefs');
@@ -310,16 +253,17 @@ describe('NotificationsMenu Component Test Suite', () => {
     afterEach(() => {
       sse.isIntegrationTest = false;
     });
-    it('shows the unread badge for a signed-in staff member', async () => {
-      mockBff();
+
+    it('Should show the unread badge for a signed-in staff member', async () => {
+      mockNotificationsBff({ count: 1 });
       renderApp('/app/riverton');
       expect(
         await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 }),
       ).toBeInTheDocument();
     });
 
-    it('invalidates the submission family on a realtime notification event', async () => {
-      mockBff();
+    it('Should invalidate the submission family on a realtime notification event', async () => {
+      mockNotificationsBff({ count: 1 });
       const { queryClient } = renderApp('/app/riverton');
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 });
       const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
@@ -330,9 +274,9 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('navigates to the workspace review page for a staff payload and marks it read', async () => {
+    it('Should navigate to the workspace review page for a staff payload and mark it read', async () => {
       const user = userEvent.setup();
-      const calls = mockBff();
+      const { calls } = mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',
@@ -353,9 +297,9 @@ describe('NotificationsMenu Component Test Suite', () => {
       });
     });
 
-    it('does not navigate for a payload-less notification', async () => {
+    it('Should not navigate for a payload-less notification', async () => {
       const user = userEvent.setup();
-      mockBff();
+      mockNotificationsBff({ count: 1 });
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',

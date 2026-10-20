@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 describe('AdminHeader', () => {
-  it('renders the header with the Overview section label and subtitle when on /admin', () => {
+  it('Should render the header with the Overview section label and subtitle when on /admin', () => {
     currentPath = '/admin';
     const handleToggle = vi.fn();
     render(<AdminHeader onToggleSidebar={handleToggle} />);
@@ -32,7 +32,7 @@ describe('AdminHeader', () => {
     expect(screen.getByText('Platform administration.')).toBeInTheDocument();
   });
 
-  it('renders the header with the Document Types section label and subtitle when on /admin/document-types', () => {
+  it('Should render the header with the Document Types section label and subtitle when on /admin/document-types', () => {
     currentPath = '/admin/document-types';
     const handleToggle = vi.fn();
     render(<AdminHeader onToggleSidebar={handleToggle} />);
@@ -43,7 +43,7 @@ describe('AdminHeader', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls onToggleSidebar when the toggle button is clicked', async () => {
+  it('Should call onToggleSidebar when the toggle button is clicked', async () => {
     currentPath = '/admin';
     const handleToggle = vi.fn();
     const user = userEvent.setup();

@@ -15,13 +15,13 @@ const base = {
 };
 
 describe('env validation', () => {
-  it('defaults the web origin(s) used for notification email links', () => {
+  it('Should default the web origin(s) used for notification email links', () => {
     const env = validateEnv({ ...base });
     expect(env.CITIZEN_WEB_URL).toBe('http://localhost:3000');
     expect(env.PLATFORM_WEB_URL).toBe('http://localhost:3001');
   });
 
-  it('defaults the outbox relay settings and requires the m2m client secret', () => {
+  it('Should default the outbox relay settings and requires the m2m client secret', () => {
     const env = validateEnv({ ...base });
     expect(env.NOTIFICATION_SERVICE_URL).toBe('http://localhost:4002');
     expect(env.NOTIFICATIONS_M2M_ISSUER).toBe('http://localhost:8080/realms/sdg');
@@ -33,7 +33,7 @@ describe('env validation', () => {
     expect(() => validateEnv(withoutSecret)).toThrow(/Invalid environment/);
   });
 
-  it('applies defaults for NODE_ENV, PORT (4000), LOG_LEVEL, and VALKEY_URL', () => {
+  it('Should apply defaults for NODE_ENV, PORT (4000), LOG_LEVEL, and VALKEY_URL', () => {
     const env = validateEnv({ ...base });
     expect(env.NODE_ENV).toBe('development');
     expect(env.PORT).toBe(4000);
@@ -42,13 +42,13 @@ describe('env validation', () => {
     expect(env.VALKEY_URL).toBe('redis://localhost:6380');
   });
 
-  it('defaults AUTH_DEFAULT_ROLE to citizen and SESSION_KEY_PREFIX to cpa:', () => {
+  it('Should default AUTH_DEFAULT_ROLE to citizen and SESSION_KEY_PREFIX to cpa:', () => {
     const env = validateEnv({ ...base });
     expect(env.AUTH_DEFAULT_ROLE).toBe('citizen');
     expect(env.SESSION_KEY_PREFIX).toBe('cpa:');
   });
 
-  it('rejects staff/admin as AUTH_DEFAULT_ROLE (cross-audience — citizen-portal-api stamps citizen only)', () => {
+  it('Should reject staff/admin as AUTH_DEFAULT_ROLE (cross-audience — citizen-portal-api stamps citizen only)', () => {
     expect(() => validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'staff' })).toThrow(
       /Invalid environment/,
     );
@@ -57,18 +57,18 @@ describe('env validation', () => {
     );
   });
 
-  it('rejects an AUTH_DEFAULT_ROLE outside the role enum', () => {
+  it('Should reject an AUTH_DEFAULT_ROLE outside the role enum', () => {
     expect(() => validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'superuser' })).toThrow(
       /Invalid environment/,
     );
   });
 
-  it('defaults AUTH_RP_LOGOUT to false and parses it as a boolean', () => {
+  it('Should default AUTH_RP_LOGOUT to false and parses it as a boolean', () => {
     expect(validateEnv({ ...base }).AUTH_RP_LOGOUT).toBe(false);
     expect(validateEnv({ ...base, AUTH_RP_LOGOUT: 'true' }).AUTH_RP_LOGOUT).toBe(true);
   });
 
-  it('defaults AUTH_TOKEN_REFRESH_SKEW_SECONDS to 30 and coerces from a string', () => {
+  it('Should default AUTH_TOKEN_REFRESH_SKEW_SECONDS to 30 and coerces from a string', () => {
     expect(validateEnv({ ...base }).AUTH_TOKEN_REFRESH_SKEW_SECONDS).toBe(30);
     expect(
       validateEnv({ ...base, AUTH_TOKEN_REFRESH_SKEW_SECONDS: '120' })
@@ -76,7 +76,7 @@ describe('env validation', () => {
     ).toBe(120);
   });
 
-  it('parses AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: citizen SPA :3000)', () => {
+  it('Should parse AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: citizen SPA :3000)', () => {
     expect(validateEnv({ ...base }).AUTH_ALLOWED_ORIGINS).toEqual(['http://localhost:3000']);
     expect(
       validateEnv({ ...base, AUTH_ALLOWED_ORIGINS: 'https://a.gov, https://b.gov' })
@@ -85,34 +85,34 @@ describe('env validation', () => {
     expect(validateEnv({ ...base, AUTH_ALLOWED_ORIGINS: '' }).AUTH_ALLOWED_ORIGINS).toEqual([]);
   });
 
-  it('requires the OIDC settings (fail-fast)', () => {
+  it('Should require the OIDC settings (fail-fast)', () => {
     expect(() => validateEnv({ DATABASE_URL: DB_URL })).toThrow(/Invalid environment/);
   });
 
-  it('rejects too-short AUTH_SESSION_SECRET', () => {
+  it('Should reject too-short AUTH_SESSION_SECRET', () => {
     expect(() => validateEnv({ ...base, AUTH_SESSION_SECRET: 'short' })).toThrow(
       /Invalid environment/,
     );
   });
 
-  it('throws on an invalid LOG_LEVEL', () => {
+  it('Should throw on an invalid LOG_LEVEL', () => {
     expect(() => validateEnv({ ...base, LOG_LEVEL: 'verbose' })).toThrow(/Invalid environment/);
   });
 
-  it('coerces PORT from a string', () => {
+  it('Should coerce PORT from a string', () => {
     expect(validateEnv({ ...base, PORT: '8080' }).PORT).toBe(8080);
   });
 
-  it('ignores unknown environment variables', () => {
+  it('Should ignore unknown environment variables', () => {
     const env = validateEnv({ ...base, SOME_OTHER: 'x' });
     expect(env).not.toHaveProperty('SOME_OTHER');
   });
 
-  it('throws when DATABASE_URL is missing (required, fail-fast)', () => {
+  it('Should throw when DATABASE_URL is missing (required, fail-fast)', () => {
     expect(() => validateEnv({})).toThrow(/Invalid environment/);
   });
 
-  it('throws on an invalid DATABASE_URL', () => {
+  it('Should throw on an invalid DATABASE_URL', () => {
     expect(() => validateEnv({ DATABASE_URL: 'not-a-url' })).toThrow(/Invalid environment/);
   });
 });

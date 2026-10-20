@@ -1,37 +1,22 @@
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../support/render-app';
-
-const ISO = '2026-07-29T00:00:00.000Z';
-const workspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  ownerId: 'u1',
-  createdAt: ISO,
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
+import { authedUser, jsonResponse, renderApp } from '../support/render-app';
+import { adminWorkspace } from '../support/fixtures';
 
 /** Full-app BFF stub for the workspace Settings screen + the relocated default-agreements panel. */
 function mockBff() {
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.includes('/auth/me')) return json(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/')) return json(workspace);
-    if (url.includes('/default-agreements')) return json({ items: [] });
-    if (url.includes('/members') || url.includes('/addable-staff')) return json({ items: [] });
-    if (url.includes('/notifications/unread-count')) return json({ count: 0 });
+    if (url.includes('/auth/me')) return jsonResponse(authedUser);
+    if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(adminWorkspace);
+    if (url.includes('/default-agreements')) return jsonResponse({ items: [] });
+    if (url.includes('/members') || url.includes('/addable-staff'))
+      return jsonResponse({ items: [] });
+    if (url.includes('/notifications/unread-count')) return jsonResponse({ count: 0 });
     if (url.includes('/v1/me/notifications'))
-      return json({ items: [], total: 0, limit: 20, offset: 0 });
+      return jsonResponse({ items: [], total: 0, limit: 20, offset: 0 });
     if (url.includes('/v1/workspaces'))
-      return json({ items: [workspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
     return new Response(null, { status: 404 });
   }) as unknown as typeof fetch;
 }
@@ -41,8 +26,9 @@ afterEach(() => {
 });
 
 describe('workspace settings — default agreements section', () => {
-  it('renders the Default agreements panel between General and Danger zone', async () => {
+  it('Should render the Default agreements panel between General and Danger zone', async () => {
     mockBff();
+
     renderApp('/app/riverton/settings');
 
     // CardTitle / the panel heading render styled divs (no heading role) — match by text.

@@ -3,7 +3,7 @@ import { notificationOutbox } from '@repo/database';
 import { enqueueNotification } from '../../../src/notifications/enqueue';
 
 describe('enqueueNotification unit tests', () => {
-  it('should call tx.insert with the correct row parameters and conflict options', async () => {
+  it('Should call tx.insert with the correct row parameters and conflict options', async () => {
     const mockOnConflictDoNothing = vi.fn().mockResolvedValue(undefined);
     const mockValues = vi.fn().mockReturnValue({
       onConflictDoNothing: mockOnConflictDoNothing,
@@ -15,7 +15,7 @@ describe('enqueueNotification unit tests', () => {
       insert: mockInsert,
     } as any;
 
-    const mockRow = {
+    const mockNotification = {
       idempotencyKey: 'key-123',
       userId: 'user-456',
       type: 'email',
@@ -25,10 +25,10 @@ describe('enqueueNotification unit tests', () => {
       email: 'test@example.com',
     };
 
-    await enqueueNotification(mockTx, mockRow);
+    await enqueueNotification(mockTx, mockNotification);
 
     expect(mockInsert).toHaveBeenCalledWith(notificationOutbox);
-    expect(mockValues).toHaveBeenCalledWith(mockRow);
+    expect(mockValues).toHaveBeenCalledWith(mockNotification);
     expect(mockOnConflictDoNothing).toHaveBeenCalledWith({
       target: notificationOutbox.idempotencyKey,
     });

@@ -1,22 +1,15 @@
 import { screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../support/render-app';
+import { adminWorkspace } from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 describe('Workspace Selection Integration Test Suite', () => {
-  it('shows an empty state with a Create workspace action when the user has no workspace', async () => {
+  it('Should show an empty state with a Create workspace action when the user has no workspace', async () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
@@ -28,7 +21,7 @@ describe('Workspace Selection Integration Test Suite', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('renders the minimal top bar (no switcher/nav/search) on the selection page', async () => {
+  it('Should render the minimal top bar (no switcher/nav/search) on the selection page', async () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
@@ -39,8 +32,8 @@ describe('Workspace Selection Integration Test Suite', () => {
     expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
   });
 
-  it('does not auto-redirect when the user has a workspace — it lists them to choose', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+  it('Should not auto-redirect when the user has a workspace — it lists them to choose', async () => {
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const { router } = renderApp('/app');
 
     const link = await screen.findByRole('link', { name: /riverton/i }, { timeout: 32000 });
@@ -48,7 +41,7 @@ describe('Workspace Selection Integration Test Suite', () => {
     expect(router.state.location.pathname).toBe('/app');
   });
 
-  it('creates a workspace from the modal and lands on its new route', async () => {
+  it('Should create a workspace from the modal and land on its new route', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [], createdSlug: 'new-town' });
     const { router } = renderApp('/app');
     const user = userEvent.setup();

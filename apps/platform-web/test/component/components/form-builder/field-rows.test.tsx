@@ -11,6 +11,7 @@ import {
 import { useSortable } from '@dnd-kit/react/sortable';
 import { useDroppable } from '@dnd-kit/react';
 import type { ContainerNode, ControlNode, DisplayNode } from '@/components/form-builder/model';
+import { gridNode } from '../../../support/fixtures';
 
 // Mock dnd-kit hooks to prevent runtime issues and verify parameters
 vi.mock('@dnd-kit/react/sortable', () => ({
@@ -34,8 +35,36 @@ vi.mock('@/components/form-builder/display-card', () => ({
     <div data-testid="mock-display-card">DisplayCard: {node.text}</div>
   ),
 }));
+const sectionNode = (label?: string): ContainerNode => ({
+  kind: 'container',
+  layout: 'section',
+  ...(label === undefined ? {} : { label }),
+  children: [],
+});
+
+const renderContainer = (node: ContainerNode) =>
+  render(
+    <ContainerRow
+      node={node}
+      index={0}
+      selectedPath={null}
+      paletteDragType={null}
+      onSelect={vi.fn()}
+      onDelete={vi.fn()}
+      onChangeDisplay={vi.fn()}
+    />,
+  );
 
 describe('Field Rows Component Test Suite', () => {
+  const mockControlNode: ControlNode = {
+    kind: 'control',
+    fieldType: 'text',
+    key: 'name_key',
+    label: 'Your Name',
+    options: {},
+    required: false,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -54,7 +83,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('pathEq helper', () => {
-    it('returns true if paths are identical, otherwise false', () => {
+    it('Should return true if paths are identical, otherwise false', () => {
       expect(pathEq(null, [1])).toBe(false);
       expect(pathEq([1, 2], [1, 2])).toBe(true);
       expect(pathEq([1, 2], [1, 3])).toBe(false);
@@ -63,16 +92,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('FieldRow', () => {
-    const mockControlNode: ControlNode = {
-      kind: 'control',
-      fieldType: 'text',
-      key: 'name_key',
-      label: 'Your Name',
-      options: {},
-      required: false,
-    };
-
-    it('renders control node preview and triggers events', async () => {
+    it('Should render control node preview and trigger events', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
       const handleDelete = vi.fn();
@@ -116,7 +136,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(handleDelete).toHaveBeenCalledWith([0]);
     });
 
-    it('selects when clicking anywhere in the card, but not via the drag handle', async () => {
+    it('Should select when clicking anywhere in the card, but not via the drag handle', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
 
@@ -145,7 +165,7 @@ describe('Field Rows Component Test Suite', () => {
       expect(handleSelect).toHaveBeenCalledWith([0]);
     });
 
-    it('renders display node using DisplayCard', () => {
+    it('Should render display node using DisplayCard', () => {
       const mockDisplayNode: DisplayNode = {
         kind: 'display',
         id: 'disp-1',
@@ -182,7 +202,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('EndZone', () => {
-    it('sets up droppable end zone area', () => {
+    it('Should set up droppable end zone area', () => {
       render(
         <EndZone id="ez-1" container={null} index={5} accept={['field']} paletteDragType={null} />,
       );
@@ -197,7 +217,7 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('EmptyDropZone', () => {
-    it('displays placeholder text and configures droppable container', () => {
+    it('Should display placeholder text and configure droppable container', () => {
       render(<EmptyDropZone id="edz-1" container={2} accept={['container']} />);
 
       expect(screen.getByText('Drop components here')).toBeInTheDocument();
@@ -213,26 +233,25 @@ describe('Field Rows Component Test Suite', () => {
   });
 
   describe('ContainerRow', () => {
-    const mockContainerNode: ContainerNode = {
-      kind: 'container',
-      layout: 'horizontal',
-      label: 'Personal Block',
-      children: [
-        {
-          kind: 'control',
-          fieldType: 'text',
-          key: 'sub_key_1',
-          label: 'Nested Field',
-          options: {},
-          required: false,
-        },
-      ],
-    };
-
-    it('renders layout header, children, and reorder controls', async () => {
+    it('Should render layout header, children, and reorder controls', async () => {
       const user = userEvent.setup();
       const handleSelect = vi.fn();
       const handleDelete = vi.fn();
+      const mockContainerNode: ContainerNode = {
+        kind: 'container',
+        layout: 'horizontal',
+        label: 'Personal Block',
+        children: [
+          {
+            kind: 'control',
+            fieldType: 'text',
+            key: 'sub_key_1',
+            label: 'Nested Field',
+            options: {},
+            required: false,
+          },
+        ],
+      };
 
       render(
         <ContainerRow
@@ -275,359 +294,346 @@ describe('Field Rows Component Test Suite', () => {
       expect(screen.getByTestId('mock-field-preview')).toBeInTheDocument();
       expect(screen.getByText('Preview: Nested Field')).toBeInTheDocument();
     });
+
+    it('Should render drop placeholders inside FieldRow when isDropTarget is true', () => {
+      vi.mocked(useSortable).mockReturnValueOnce({
+        ref: vi.fn(),
+        handleRef: vi.fn(),
+        isDragSource: false,
+        isDropTarget: true,
+      } as any);
+
+      render(
+        <FieldRow
+          node={mockControlNode}
+          index={0}
+          group="root"
+          path={[0]}
+          selected={false}
+          paletteDragType="text"
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
+
+      vi.mocked(useSortable).mockReturnValueOnce({
+        ref: vi.fn(),
+        handleRef: vi.fn(),
+        isDragSource: false,
+        isDropTarget: true,
+      } as any);
+
+      const { container: containerNull } = render(
+        <FieldRow
+          node={mockControlNode}
+          index={0}
+          group="root"
+          path={[0]}
+          selected={false}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(containerNull.querySelector('.h-11')).not.toBeInTheDocument();
+    });
+
+    it('Should use correct fallback labelling in ContainerRow when label is missing', () => {
+      const groupContainer: ContainerNode = {
+        kind: 'container',
+        layout: 'group',
+        children: [],
+      };
+      const rowContainer: ContainerNode = {
+        kind: 'container',
+        layout: 'horizontal',
+        children: [],
+      };
+
+      const { rerender } = render(
+        <ContainerRow
+          node={groupContainer}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Group');
+
+      rerender(
+        <ContainerRow
+          node={rowContainer}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Row');
+
+      const gridContainer: ContainerNode = {
+        kind: 'container',
+        layout: 'grid',
+        columns: 2,
+        children: [],
+      };
+
+      rerender(
+        <ContainerRow
+          node={gridContainer}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Grid');
+    });
+
+    it('Should preview a grid container with its authored column count (feature 169)', () => {
+      const gridContainer: ContainerNode = {
+        kind: 'container',
+        layout: 'grid',
+        columns: 4,
+        children: [],
+      };
+
+      const { container } = render(
+        <ContainerRow
+          node={gridContainer}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      const grid = container.querySelector('[style*="grid-template-columns"]');
+      expect(grid?.getAttribute('style')).toContain('repeat(4, minmax(0, 1fr))');
+    });
+
+    it('Should handle FieldRow selection on display focus capture and control keydown', () => {
+      const handleSelect = vi.fn();
+      const mockDisplayNode: DisplayNode = {
+        kind: 'display',
+        id: 'disp-1',
+        displayType: 'heading',
+        text: 'Title text',
+      };
+
+      render(
+        <FieldRow
+          node={mockDisplayNode}
+          index={0}
+          group="root"
+          path={[0]}
+          selected={false}
+          paletteDragType={null}
+          onSelect={handleSelect}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      const displayWrapper = screen.getByText('DisplayCard: Title text').parentElement!;
+      fireEvent.focusIn(displayWrapper);
+      expect(handleSelect).toHaveBeenCalledWith([0]);
+
+      const mockControlNodeControl: ControlNode = {
+        kind: 'control',
+        fieldType: 'text',
+        key: 'control_key',
+        label: 'My Control',
+        options: {},
+        required: false,
+      };
+
+      render(
+        <FieldRow
+          node={mockControlNodeControl}
+          index={1}
+          group="root"
+          path={[1]}
+          selected={false}
+          paletteDragType={null}
+          onSelect={handleSelect}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      const controlBtn = screen.getByRole('button', { name: 'Select field 2' });
+
+      fireEvent.keyDown(controlBtn, { key: 'Enter' });
+      expect(handleSelect).toHaveBeenCalledWith([1]);
+
+      fireEvent.keyDown(controlBtn, { key: ' ' });
+      expect(handleSelect).toHaveBeenCalledWith([1]);
+
+      // Fire a key event that is NOT enter or space
+      fireEvent.keyDown(controlBtn, { key: 'Escape' });
+      // Should not select or prevent default
+    });
+
+    it('Should render DropPlaceholder inside EndZone when isDropTarget is true', () => {
+      vi.mocked(useDroppable).mockReturnValueOnce({
+        ref: vi.fn(),
+        isDropTarget: true,
+      } as any);
+
+      render(
+        <EndZone id="ez-2" container={null} index={5} accept={['field']} paletteDragType="text" />,
+      );
+
+      expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
+    });
+
+    it('Should render DropPlaceholder inside ContainerRow when isDropTarget is true', () => {
+      vi.mocked(useSortable).mockReturnValueOnce({
+        ref: vi.fn(),
+        handleRef: vi.fn(),
+        isDragSource: false,
+        isDropTarget: true,
+      } as any);
+
+      const mockContainerNodeNoChildren: ContainerNode = {
+        kind: 'container',
+        layout: 'horizontal',
+        children: [],
+      };
+
+      render(
+        <ContainerRow
+          node={mockContainerNodeNoChildren}
+          index={0}
+          selectedPath={null}
+          paletteDragType="text"
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
+    });
+
+    it('Should use childIndex as key fallback when child key is missing in ContainerRow', () => {
+      const mockContainerNodeNoKey: ContainerNode = {
+        kind: 'container',
+        layout: 'horizontal',
+        children: [
+          {
+            kind: 'control',
+            fieldType: 'text',
+            key: '', // missing key
+            label: 'No Key Field',
+            options: {},
+            required: false,
+          },
+        ],
+      };
+
+      const { container } = render(
+        <ContainerRow
+          node={mockContainerNodeNoKey}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+      expect(container).toBeDefined();
+    });
+
+    it('Should render dashed drop placeholder inside EndZone when isDropTarget is true and paletteDragType is null', () => {
+      vi.mocked(useDroppable).mockReturnValueOnce({
+        ref: vi.fn(),
+        isDropTarget: true,
+      } as any);
+
+      const { container } = render(
+        <EndZone id="ez-2" container={null} index={5} accept={['field']} paletteDragType={null} />,
+      );
+
+      expect(container.querySelector('.border-dashed')).toBeInTheDocument();
+    });
+
+    it('Should handle display-only child nodes in ContainerRow', () => {
+      const mockContainerNodeDisplayOnly: ContainerNode = {
+        kind: 'container',
+        layout: 'horizontal',
+        children: [
+          {
+            kind: 'display',
+            id: 'disp-nested',
+            displayType: 'heading',
+            text: 'Nested Heading',
+          },
+        ],
+      };
+
+      render(
+        <ContainerRow
+          node={mockContainerNodeDisplayOnly}
+          index={0}
+          selectedPath={null}
+          paletteDragType={null}
+          onSelect={vi.fn()}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('DisplayCard: Nested Heading')).toBeInTheDocument();
+    });
   });
 
-  it('renders drop placeholders inside FieldRow when isDropTarget is true', () => {
-    vi.mocked(useSortable).mockReturnValueOnce({
-      ref: vi.fn(),
-      handleRef: vi.fn(),
-      isDragSource: false,
-      isDropTarget: true,
-    } as any);
+  describe('Section canvas card', () => {
+    it('labels an untitled section container "Section", not "Row"', () => {
+      renderContainer(sectionNode());
+      expect(screen.getByText('Section')).toBeInTheDocument();
+      expect(screen.queryByText('Row')).not.toBeInTheDocument();
+    });
 
-    const mockControlNode: ControlNode = {
-      kind: 'control',
-      fieldType: 'text',
-      key: 'name_key',
-      label: 'Your Name',
-      options: {},
-      required: false,
-    };
-
-    render(
-      <FieldRow
-        node={mockControlNode}
-        index={0}
-        group="root"
-        path={[0]}
-        selected={false}
-        paletteDragType="text"
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
-
-    vi.mocked(useSortable).mockReturnValueOnce({
-      ref: vi.fn(),
-      handleRef: vi.fn(),
-      isDragSource: false,
-      isDropTarget: true,
-    } as any);
-
-    const { container: containerNull } = render(
-      <FieldRow
-        node={mockControlNode}
-        index={0}
-        group="root"
-        path={[0]}
-        selected={false}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(containerNull.querySelector('.h-11')).not.toBeInTheDocument();
+    it('Should prefer the author title over the type fallback', () => {
+      renderContainer(sectionNode('Applicant details'));
+      expect(screen.getByText('Applicant details')).toBeInTheDocument();
+      expect(screen.queryByText('Section')).not.toBeInTheDocument();
+    });
   });
 
-  it('uses correct fallback labelling in ContainerRow when label is missing', () => {
-    const groupContainer: ContainerNode = {
-      kind: 'container',
-      layout: 'group',
-      children: [],
-    };
-    const rowContainer: ContainerNode = {
-      kind: 'container',
-      layout: 'horizontal',
-      children: [],
-    };
+  describe('Grid layout container', () => {
+    it('Should apply grid styles with explicit columns count', () => {
+      const { container } = renderContainer({ ...gridNode, columns: 4 });
+      const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
+      expect(gridDiv).toBeInTheDocument();
+      expect(gridDiv.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))');
+    });
 
-    const { rerender } = render(
-      <ContainerRow
-        node={groupContainer}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Group');
-
-    rerender(
-      <ContainerRow
-        node={rowContainer}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Row');
-
-    const gridContainer: ContainerNode = {
-      kind: 'container',
-      layout: 'grid',
-      columns: 2,
-      children: [],
-    };
-
-    rerender(
-      <ContainerRow
-        node={gridContainer}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Grid');
-  });
-
-  it('previews a grid container with its authored column count (feature 169)', () => {
-    const gridContainer: ContainerNode = {
-      kind: 'container',
-      layout: 'grid',
-      columns: 4,
-      children: [],
-    };
-
-    const { container } = render(
-      <ContainerRow
-        node={gridContainer}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    const grid = container.querySelector('[style*="grid-template-columns"]');
-    expect(grid?.getAttribute('style')).toContain('repeat(4, minmax(0, 1fr))');
-  });
-
-  it('handles FieldRow selection on display focus capture and control keydown', () => {
-    const handleSelect = vi.fn();
-    const mockDisplayNode: DisplayNode = {
-      kind: 'display',
-      id: 'disp-1',
-      displayType: 'heading',
-      text: 'Title text',
-    };
-
-    render(
-      <FieldRow
-        node={mockDisplayNode}
-        index={0}
-        group="root"
-        path={[0]}
-        selected={false}
-        paletteDragType={null}
-        onSelect={handleSelect}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    const displayWrapper = screen.getByText('DisplayCard: Title text').parentElement!;
-    fireEvent.focusIn(displayWrapper);
-    expect(handleSelect).toHaveBeenCalledWith([0]);
-
-    const mockControlNode: ControlNode = {
-      kind: 'control',
-      fieldType: 'text',
-      key: 'control_key',
-      label: 'My Control',
-      options: {},
-      required: false,
-    };
-
-    render(
-      <FieldRow
-        node={mockControlNode}
-        index={1}
-        group="root"
-        path={[1]}
-        selected={false}
-        paletteDragType={null}
-        onSelect={handleSelect}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    const controlBtn = screen.getByRole('button', { name: 'Select field 2' });
-
-    fireEvent.keyDown(controlBtn, { key: 'Enter' });
-    expect(handleSelect).toHaveBeenCalledWith([1]);
-
-    fireEvent.keyDown(controlBtn, { key: ' ' });
-    expect(handleSelect).toHaveBeenCalledWith([1]);
-
-    // Fire a key event that is NOT enter or space
-    fireEvent.keyDown(controlBtn, { key: 'Escape' });
-    // Should not select or prevent default
-  });
-
-  it('renders DropPlaceholder inside EndZone when isDropTarget is true', () => {
-    vi.mocked(useDroppable).mockReturnValueOnce({
-      ref: vi.fn(),
-      isDropTarget: true,
-    } as any);
-
-    render(
-      <EndZone id="ez-2" container={null} index={5} accept={['field']} paletteDragType="text" />,
-    );
-
-    expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
-  });
-
-  it('renders DropPlaceholder inside ContainerRow when isDropTarget is true', () => {
-    vi.mocked(useSortable).mockReturnValueOnce({
-      ref: vi.fn(),
-      handleRef: vi.fn(),
-      isDragSource: false,
-      isDropTarget: true,
-    } as any);
-
-    const mockContainerNode: ContainerNode = {
-      kind: 'container',
-      layout: 'horizontal',
-      children: [],
-    };
-
-    render(
-      <ContainerRow
-        node={mockContainerNode}
-        index={0}
-        selectedPath={null}
-        paletteDragType="text"
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText('Preview: Preview node text')).toBeInTheDocument();
-  });
-
-  it('uses childIndex as key fallback when child key is missing in ContainerRow', () => {
-    const mockContainerNode: ContainerNode = {
-      kind: 'container',
-      layout: 'horizontal',
-      children: [
-        {
-          kind: 'control',
-          fieldType: 'text',
-          key: '', // missing key
-          label: 'No Key Field',
-          options: {},
-          required: false,
-        },
-      ],
-    };
-
-    const { container } = render(
-      <ContainerRow
-        node={mockContainerNode}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-    expect(container).toBeDefined();
-  });
-
-  it('renders dashed drop placeholder inside EndZone when isDropTarget is true and paletteDragType is null', () => {
-    vi.mocked(useDroppable).mockReturnValueOnce({
-      ref: vi.fn(),
-      isDropTarget: true,
-    } as any);
-
-    const { container } = render(
-      <EndZone id="ez-2" container={null} index={5} accept={['field']} paletteDragType={null} />,
-    );
-
-    expect(container.querySelector('.border-dashed')).toBeInTheDocument();
-  });
-
-  it('handles display-only child nodes in ContainerRow', () => {
-    const mockContainerNode: ContainerNode = {
-      kind: 'container',
-      layout: 'horizontal',
-      children: [
-        {
-          kind: 'display',
-          id: 'disp-nested',
-          displayType: 'heading',
-          text: 'Nested Heading',
-        },
-      ],
-    };
-
-    render(
-      <ContainerRow
-        node={mockContainerNode}
-        index={0}
-        selectedPath={null}
-        paletteDragType={null}
-        onSelect={vi.fn()}
-        onDelete={vi.fn()}
-        onChangeDisplay={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText('DisplayCard: Nested Heading')).toBeInTheDocument();
-  });
-});
-
-const sectionNode = (label?: string): ContainerNode => ({
-  kind: 'container',
-  layout: 'section',
-  ...(label === undefined ? {} : { label }),
-  children: [],
-});
-
-const renderContainer = (node: ContainerNode) =>
-  render(
-    <ContainerRow
-      node={node}
-      index={0}
-      selectedPath={null}
-      paletteDragType={null}
-      onSelect={vi.fn()}
-      onDelete={vi.fn()}
-      onChangeDisplay={vi.fn()}
-    />,
-  );
-
-describe('Section canvas card (feature 172)', () => {
-  it('labels an untitled section container "Section", not "Row"', () => {
-    renderContainer(sectionNode());
-    expect(screen.getByText('Section')).toBeInTheDocument();
-    expect(screen.queryByText('Row')).not.toBeInTheDocument();
-  });
-
-  it('prefers the author title over the type fallback', () => {
-    renderContainer(sectionNode('Applicant details'));
-    expect(screen.getByText('Applicant details')).toBeInTheDocument();
-    expect(screen.queryByText('Section')).not.toBeInTheDocument();
+    it('Should default gridTemplateColumns to 2 columns when node.columns is undefined', () => {
+      const { container } = renderContainer(gridNode);
+      const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
+      expect(gridDiv).toBeInTheDocument();
+      expect(gridDiv.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
+    });
   });
 });

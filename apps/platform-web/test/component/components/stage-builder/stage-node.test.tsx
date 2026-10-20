@@ -93,7 +93,7 @@ describe('Stage Node Unit Test Suite', () => {
     vi.clearAllMocks();
   });
 
-  it('renders correctly with stage details, handles, and action stubs', () => {
+  it('Should render correctly with stage details, handles, and action stubs', () => {
     render(
       <StageBuilderContext.Provider value={mockApi}>
         <StageNode
@@ -125,7 +125,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(screen.getByText('1 field')).toBeInTheDocument();
   });
 
-  it('triggers renameStage when changing stage name input', async () => {
+  it('Should trigger renameStage when changing stage name input', async () => {
     const user = userEvent.setup();
     render(
       <StageBuilderContext.Provider value={mockApi}>
@@ -148,7 +148,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(mockApi.renameStage).toHaveBeenCalledWith('stage-1', 'Stage One!');
   });
 
-  it('triggers removeStage when clicking delete stage button', async () => {
+  it('Should trigger removeStage when clicking delete stage button', async () => {
     const user = userEvent.setup();
     render(
       <StageBuilderContext.Provider value={mockApi}>
@@ -171,7 +171,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(mockApi.removeStage).toHaveBeenCalledWith('stage-1');
   });
 
-  it('triggers addBefore / addAfter when clicking left / right add buttons', async () => {
+  it('Should trigger addBefore / addAfter when clicking left / right add buttons', async () => {
     const user = userEvent.setup();
     render(
       <StageBuilderContext.Provider value={mockApi}>
@@ -195,7 +195,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(mockApi.addAfter).toHaveBeenCalledWith('stage-1');
   });
 
-  it('triggers selectPage / removePage / addPage from page actions', async () => {
+  it('Should trigger selectPage / removePage / addPage from page actions', async () => {
     const user = userEvent.setup();
     render(
       <StageBuilderContext.Provider value={mockApi}>
@@ -228,7 +228,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(mockApi.addPage).toHaveBeenCalledWith('stage-1');
   });
 
-  it('renders null if stage is not found', () => {
+  it('Should render null if stage is not found', () => {
     const { container } = render(
       <StageBuilderContext.Provider value={mockApi}>
         <StageNode
@@ -247,7 +247,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders correct plural fields labeling for 0 or multiple fields', () => {
+  it('Should render correct plural fields labeling for 0 or multiple fields', () => {
     const multiFieldApi: StageBuilderApi = {
       ...mockApi,
       def: {
@@ -297,7 +297,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(screen.getByText('2 fields')).toBeInTheDocument();
   });
 
-  it('triggers reorderPages on drag end triggers', async () => {
+  it('Should trigger reorderPages on drag end triggers', async () => {
     const user = userEvent.setup();
     render(
       <StageBuilderContext.Provider value={mockApi}>
@@ -327,7 +327,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(mockApi.reorderPages).toHaveBeenCalledTimes(1);
   });
 
-  it('renders correctly when page.schema.properties is undefined', () => {
+  it('Should render correctly when page.schema.properties is undefined', () => {
     const undefinedPropertiesApi: StageBuilderApi = {
       ...mockApi,
       def: {
@@ -370,7 +370,7 @@ describe('Stage Node Unit Test Suite', () => {
     expect(screen.getByText('0 fields')).toBeInTheDocument();
   });
 
-  it('hides add stage buttons when stage has incoming and outgoing edges', () => {
+  it('Should hide add stage buttons when stage has incoming and outgoing edges', () => {
     const connectedEdgesApi: StageBuilderApi = {
       ...mockApi,
       def: {
