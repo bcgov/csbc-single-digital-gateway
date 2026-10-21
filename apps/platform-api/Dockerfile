@@ -80,6 +80,12 @@ COPY --from=builder --chown=node:0 /app/packages/nestjs/package.json ./packages/
 COPY --from=builder --chown=node:0 /app/packages/nestjs/dist ./packages/nestjs/dist
 COPY --from=builder --chown=node:0 /app/packages/database/package.json ./packages/database/package.json
 COPY --from=builder --chown=node:0 /app/packages/database/dist ./packages/database/dist
+# Runtime-imported workspace libraries (doc 289/290: content readers; vite builds a
+# self-contained CJS entry per export subpath, resolved through the same symlinks).
+COPY --from=builder --chown=node:0 /app/packages/documents/package.json ./packages/documents/package.json
+COPY --from=builder --chown=node:0 /app/packages/documents/dist ./packages/documents/dist
+COPY --from=builder --chown=node:0 /app/packages/forms/package.json ./packages/forms/package.json
+COPY --from=builder --chown=node:0 /app/packages/forms/dist ./packages/forms/dist
 
 # The application itself.
 COPY --from=builder --chown=node:0 /app/apps/platform-api/package.json ./apps/platform-api/package.json
