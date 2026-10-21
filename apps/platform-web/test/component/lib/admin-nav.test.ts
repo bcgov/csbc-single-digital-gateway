@@ -2,23 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { adminSectionFor, ADMIN_OVERVIEW, ADMIN_NAV } from '@/lib/admin-nav';
 
 describe('Admin Nav Unit Test Suite', () => {
-  it('Should return ADMIN_OVERVIEW for core admin path or base empty pathnames', () => {
+  it('returns ADMIN_OVERVIEW for core admin path or base empty pathnames', () => {
     expect(adminSectionFor('/admin')).toBe(ADMIN_OVERVIEW);
     expect(adminSectionFor('/admin/')).toBe(ADMIN_OVERVIEW);
     expect(adminSectionFor('/')).toBe(ADMIN_OVERVIEW);
     expect(adminSectionFor('')).toBe(ADMIN_OVERVIEW);
   });
 
-  it('Should return matched AdminNavItem when path starts with admin and match a key', () => {
-    const docTypesItem = ADMIN_NAV.find((item) => item.key === 'document-types');
+  it('returns matched AdminNavItem when path starts with admin and matches a key', () => {
+    const docTypesItem = ADMIN_NAV.find((item) => item.key === 'templates');
     expect(docTypesItem).toBeDefined();
 
-    expect(adminSectionFor('/admin/document-types')).toBe(docTypesItem);
-    expect(adminSectionFor('/admin/document-types/')).toBe(docTypesItem);
-    expect(adminSectionFor('/admin/document-types/new')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates/')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates/new')).toBe(docTypesItem);
   });
 
-  it('Should fall back to ADMIN_OVERVIEW for invalid admin paths or cross-app pathnames', () => {
+  it('falls back to ADMIN_OVERVIEW for invalid admin paths or cross-app pathnames', () => {
     expect(adminSectionFor('/admin/non-existent-subpath')).toBe(ADMIN_OVERVIEW);
     expect(adminSectionFor('/portal/document-types')).toBe(ADMIN_OVERVIEW);
     expect(adminSectionFor('/user/settings')).toBe(ADMIN_OVERVIEW);

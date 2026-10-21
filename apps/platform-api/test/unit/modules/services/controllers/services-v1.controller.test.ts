@@ -1,30 +1,107 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ServicesV1Controller } from '../../../../../src/modules/services/controllers/services-v1.controller';
+import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateServiceDto,
   ListServicesPageQueryDto,
-  ListServicesQueryDto,
-  UpdateVersionDataDto,
+  UpdateVersionContentDto,
 } from '../../../../../src/modules/services/dtos/service.dtos';
-import {
-  createMockService,
-  createMockServiceVersions,
-} from '../../../../utils/create-mock-services';
-import { mockUser } from '../../../../utils/fixtures';
 
 describe('ServicesV1Controller', () => {
   let controller: ServicesV1Controller;
   let servicesServiceMock: any;
   let serviceVersionsServiceMock: any;
+  let referenceableServiceMock: any;
+  let serviceMethodsMock: any;
+
+  const mockUser: AuthUser = {
+    id: 'user-1',
+    roles: ['staff'],
+    claims: {
+      sub: 'user-1-sub',
+      email: 'test@example.com',
+      name: 'Test User',
+    },
+  };
 
   beforeEach(() => {
-    servicesServiceMock = createMockService();
-    serviceVersionsServiceMock = createMockServiceVersions();
-    controller = new ServicesV1Controller(servicesServiceMock, serviceVersionsServiceMock);
+    servicesServiceMock = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getServiceDefinition: vi.fn(),
+      get: vi.fn(),
+      remove: vi.fn(),
+      archive: vi.fn(),
+      reactivate: vi.fn(),
+    };
+
+    serviceVersionsServiceMock = {
+      updateDraft: vi.fn(),
+      publish: vi.fn(),
+      archive: vi.fn(),
+      addVersion: vi.fn(),
+      discardVersion: vi.fn(),
+    };
+
+    referenceableServiceMock = { list: vi.fn() };
+
+    serviceMethodsMock = { publishCheck: vi.fn(), methodFor: vi.fn() };
+
+    controller = new ServicesV1Controller(
+      servicesServiceMock,
+      serviceVersionsServiceMock,
+      referenceableServiceMock,
+      serviceMethodsMock,
+    );
+  });
+
+  describe('application methods (doc 289)', () => {
+    it('publishCheck delegates with the caller id and route ids', async () => {
+      serviceMethodsMock.publishCheck.mockResolvedValue({
+        ok: true,
+        hasMethods: true,
+        methods: [],
+      });
+      await expect(controller.publishCheck(mockUser, 's1', 'v1')).resolves.toEqual({
+        ok: true,
+        hasMethods: true,
+        methods: [],
+      });
+      expect(serviceMethodsMock.publishCheck).toHaveBeenCalledWith(mockUser.id, 's1', 'v1');
+    });
+
+    it('applicationMethod delegates with the caller id and route ids', async () => {
+      serviceMethodsMock.methodFor.mockResolvedValue({ form: { id: 'm1' } });
+      await expect(controller.applicationMethod(mockUser, 's1', 'v1', 'm1')).resolves.toEqual({
+        form: { id: 'm1' },
+      });
+      expect(serviceMethodsMock.methodFor).toHaveBeenCalledWith(mockUser.id, 's1', 'v1', 'm1');
+    });
+  });
+
+  describe('listReferenceable', () => {
+    it('delegates to the referenceable services list with the caller id and query (doc 287)', async () => {
+      const query = {
+        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
+        limit: 25,
+        offset: 0,
+      };
+      const page = { items: [], total: 0, limit: 25, offset: 0 };
+      referenceableServiceMock.list.mockResolvedValue(page);
+
+      await expect(controller.listReferenceable(mockUser, query)).resolves.toBe(page);
+      expect(referenceableServiceMock.list).toHaveBeenCalledWith(mockUser.id, query);
+    });
+
+    it('declares the static referenceable route before the :id route', () => {
+      const names = Object.getOwnPropertyNames(ServicesV1Controller.prototype);
+      expect(names.indexOf('listReferenceable')).toBeGreaterThan(-1);
+      expect(names.indexOf('listReferenceable')).toBeLessThan(names.indexOf('get'));
+    });
   });
 
   describe('list', () => {
-    it('Should return a list of services wrapped in an items object', async () => {
+    it('returns a list of services wrapped in an items object', async () => {
       const query: ListServicesPageQueryDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
       } as any;
@@ -39,12 +116,10 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('create', () => {
-    it('Should create a service via the service', async () => {
+    it('creates a service via the service', async () => {
       const body: CreateServiceDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         title: 'New Service',
-        data: {},
-        applications: [],
       };
       const mockResult = { id: 'service-1', title: 'New Service' };
       servicesServiceMock.create.mockResolvedValue(mockResult);
@@ -57,34 +132,20 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('getDefinition', () => {
-    it('Should return the service type schema definition', () => {
-      const mockDef = { schema: { type: 'object' }, uischema: {} };
+    it('returns the service type schema definition', () => {
+      const mockDef = { schema: { type: 'object' }, variants: { default: {} } };
       servicesServiceMock.getServiceDefinition.mockReturnValue(mockDef);
 
-      const result = controller.getDefinition();
+      const result = controller.getDefinition({ templateId: 'tpl-1' });
 
-      expect(servicesServiceMock.getServiceDefinition).toHaveBeenCalledTimes(1);
+      // Doc 228: the editor asks for the template the author chose.
+      expect(servicesServiceMock.getServiceDefinition).toHaveBeenCalledWith('tpl-1');
       expect(result).toEqual(mockDef);
     });
   });
 
-  describe('listForms', () => {
-    it('Should return the forms catalog for a workspace', async () => {
-      const query: ListServicesQueryDto = {
-        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-      };
-      const mockResult = [{ documentId: 'form-1', title: 'Form 1' }];
-      servicesServiceMock.listForms.mockResolvedValue(mockResult);
-
-      const result = await controller.listForms(mockUser, query);
-
-      expect(servicesServiceMock.listForms).toHaveBeenCalledWith(mockUser.id, query.workspaceId);
-      expect(result).toEqual({ items: mockResult });
-    });
-  });
-
   describe('get', () => {
-    it('Should retrieve detailed service by id', async () => {
+    it('retrieves detailed service by id', async () => {
       const mockResult = { id: 'service-1', title: 'Service 1', versions: [] };
       servicesServiceMock.get.mockResolvedValue(mockResult);
 
@@ -96,7 +157,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('removeService', () => {
-    it('Should delete a service via the service', async () => {
+    it('deletes a service via the service', async () => {
       servicesServiceMock.remove.mockResolvedValue(undefined);
 
       await controller.removeService(mockUser, 'service-1');
@@ -106,7 +167,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('archiveService', () => {
-    it('Should archive a service via the service', async () => {
+    it('archives a service via the service', async () => {
       servicesServiceMock.archive.mockResolvedValue(undefined);
 
       await controller.archiveService(mockUser, 'service-1');
@@ -116,7 +177,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('reactivateService', () => {
-    it('Should reactivate a service via the service', async () => {
+    it('reactivates a service via the service', async () => {
       servicesServiceMock.reactivate.mockResolvedValue(undefined);
 
       await controller.reactivateService(mockUser, 'service-1');
@@ -126,11 +187,14 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('updateDraft', () => {
-    it('Should update a draft version via the service versions service', async () => {
-      const body: UpdateVersionDataDto = {
-        data: { updated: true },
+    it('updates a draft version via the service versions service', async () => {
+      const body: UpdateVersionContentDto = {
+        content: {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: 'Form', elements: [], label: 'Updated' } },
+        },
       };
-      const mockResult = { id: 'version-1', data: { updated: true } };
+      const mockResult = { id: 'version-1', content: body.content };
       serviceVersionsServiceMock.updateDraft.mockResolvedValue(mockResult);
 
       const result = await controller.updateDraft(mockUser, 'service-1', 'version-1', body);
@@ -146,7 +210,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('publish', () => {
-    it('Should publish a service version via the service versions service', async () => {
+    it('publishes a service version via the service versions service', async () => {
       const mockResult = { id: 'version-1', status: 'published' };
       serviceVersionsServiceMock.publish.mockResolvedValue(mockResult);
 
@@ -162,7 +226,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('archive', () => {
-    it('Should archive a service version via the service versions service', async () => {
+    it('archives a service version via the service versions service', async () => {
       const mockResult = { id: 'version-1', status: 'archived' };
       serviceVersionsServiceMock.archive.mockResolvedValue(mockResult);
 
@@ -178,7 +242,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('addVersion', () => {
-    it('Should create a new draft version via the service versions service', async () => {
+    it('creates a new draft version via the service versions service', async () => {
       const mockResult = { id: 'version-2', status: 'draft' };
       serviceVersionsServiceMock.addVersion.mockResolvedValue(mockResult);
 
@@ -190,7 +254,7 @@ describe('ServicesV1Controller', () => {
   });
 
   describe('discardVersion', () => {
-    it('Should discard a draft version via the service versions service', async () => {
+    it('discards a draft version via the service versions service', async () => {
       serviceVersionsServiceMock.discardVersion.mockResolvedValue(undefined);
 
       await controller.discardVersion(mockUser, 'service-1', 'version-1');

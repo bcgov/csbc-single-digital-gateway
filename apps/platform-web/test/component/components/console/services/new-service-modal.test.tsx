@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewServiceModal } from '@/components/console/services/new-service-modal';
 import { createService } from '@/lib/services';
-import { mockNavigate } from '../../../../support/vi-fixtures';
 
 vi.mock('@repo/ui/dialog', () => {
   return {
@@ -40,18 +39,27 @@ vi.mock('@repo/ui/dialog', () => {
   };
 });
 
+const mockNavigate = vi.fn();
+const mockParams = { slug: 'riverton' };
 const mockOnOpenChange = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
-  useParams: () => ({ slug: 'riverton' }),
-  Link: ({ children, to, className }: any) => (
-    <a href={to} className={className}>
-      {children}
-    </a>
-  ),
+  useParams: () => mockParams,
 }));
+
+// Doc 228: the picker is covered by its own test; here it answers with one template, as it does
+// when exactly one is published.
+vi.mock('@/components/common/template-select', async () => {
+  const react = await import('react');
+  return {
+    TemplateSelect: ({ onChange }: { onChange: (id: string) => void }) => {
+      react.useEffect(() => onChange('tpl-1'), [onChange]);
+      return null;
+    },
+  };
+});
 
 vi.mock('@/lib/services', () => ({
   createService: vi.fn(),
@@ -61,10 +69,11 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// @jsonforms/react debounces onChange (~10ms), so give the controlled data a beat to flush from the
-// last keystroke before submitting (memory: jsonforms-onchange-debounce).
-const flushDebounce = () => new Promise((resolve) => setTimeout(resolve, 100));
-
+/**
+ * Feature 217: the modal collected a name + short description through JSONForms and posted them as
+ * the service's `data`. A service is authored now, so create takes only a title and the modal is a
+ * single plain field — no JSONForms, and therefore no onChange debounce to flush.
+ */
 function renderNewServiceModal(seedWorkspace = true) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -90,32 +99,26 @@ function renderNewServiceModal(seedWorkspace = true) {
   return { ...utils, queryClient };
 }
 
-const descInput = () => screen.getByLabelText('Short description');
-
 describe('New Service Modal Component Test Suite', () => {
-  it('Should render the JSONForms layout and disable submit when workspace is loading', async () => {
+  it('renders a single title field and disables submit while the workspace is loading', async () => {
     renderNewServiceModal(false);
 
     expect(screen.getByRole('heading', { name: /new service/i })).toBeInTheDocument();
-    // JSONForms heading (display-only Label element).
-    expect(
-      await screen.findByText('Name & description', undefined, { timeout: 20000 }),
-    ).toBeInTheDocument();
-
     expect(screen.getByLabelText(/name of the service/i)).toHaveValue('');
-    expect(descInput()).toHaveValue('');
+    // The short-description field went with the JSONForms body.
+    expect(screen.queryByLabelText(/short description/i)).toBeNull();
 
     expect(screen.getByRole('button', { name: /create service/i })).toBeDisabled();
   });
 
-  it('Should enable submit button when workspace is loaded', async () => {
+  it('enables submit button when workspace is loaded', async () => {
     renderNewServiceModal(true);
 
     const submitBtn = await screen.findByRole('button', { name: /create service/i });
     expect(submitBtn).not.toBeDisabled();
   });
 
-  it('Should submit the fields, calls createService, and navigate on success', async () => {
+  it('submits the fields, calls createService, and navigates on success', async () => {
     const user = userEvent.setup();
     const createdResult = {
       service: { id: 'srv-999', workspaceId: 'w1', title: 'Permit Office' },
@@ -127,29 +130,26 @@ describe('New Service Modal Component Test Suite', () => {
 
     const titleInput = await screen.findByLabelText(/name of the service/i);
     fireEvent.change(titleInput, { target: { value: 'Business License' } });
-    fireEvent.change(descInput(), { target: { value: 'Apply for business license' } });
-    await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     await waitFor(() => {
       expect(createService).toHaveBeenCalledWith({
         workspaceId: 'w1',
         title: 'Business License',
-        data: { title: 'Business License', description: 'Apply for business license' },
-        applications: [],
+        templateId: 'tpl-1',
       });
     });
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/app/$slug/services/$id/old/edit',
+        to: '/app/$slug/services/$id',
         params: { slug: 'riverton', id: 'srv-999' },
         replace: true,
       });
     });
   });
 
-  it('Should close the modal (onOpenChange false) when clicking cancel', async () => {
+  it('closes the modal (onOpenChange false) when clicking cancel', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 
@@ -159,75 +159,34 @@ describe('New Service Modal Component Test Suite', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('Should display an error message when service creation fails', async () => {
+  it('displays an error message when service creation fails', async () => {
     const user = userEvent.setup();
     vi.mocked(createService).mockRejectedValueOnce(new Error('Service title is taken'));
 
     renderNewServiceModal(true);
 
-    const titleInput = await screen.findByLabelText(/name of the service/i);
-    fireEvent.change(titleInput, { target: { value: 'Permit Office' } });
-    await flushDebounce();
+    await user.type(await screen.findByLabelText(/name of the service/i), 'Permit Office');
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Service title is taken');
   });
 
-  it('Should show a validation error when submitting with empty untouched form', async () => {
+  it('shows a validation error when submitting a whitespace-only name', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 
-    const submitBtn = await screen.findByRole('button', { name: /create service/i });
-    await user.click(submitBtn);
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('A title is required');
-    expect(createService).not.toHaveBeenCalled();
-  });
-
-  it('Should submit successfully when description is omitted', async () => {
-    const user = userEvent.setup();
-    const createdResult = {
-      service: { id: 'srv-888', workspaceId: 'w1', title: 'Permits Only' },
-      versions: [],
-    };
-    vi.mocked(createService).mockResolvedValueOnce(createdResult as any);
-
-    renderNewServiceModal(true);
-
-    const titleInput = await screen.findByLabelText(/name of the service/i);
-    fireEvent.change(titleInput, { target: { value: 'Permits Only' } });
-    await flushDebounce();
-    await user.click(screen.getByRole('button', { name: /create service/i }));
-
-    await waitFor(() => {
-      expect(createService).toHaveBeenCalledWith({
-        workspaceId: 'w1',
-        title: 'Permits Only',
-        data: { title: 'Permits Only', description: '' },
-        applications: [],
-      });
-    });
-  });
-
-  it('Should show a validation error when submitting a whitespace-only name', async () => {
-    const user = userEvent.setup();
-    renderNewServiceModal(true);
-
-    const titleInput = await screen.findByLabelText(/name of the service/i);
-    fireEvent.change(titleInput, { target: { value: '   ' } });
-    await flushDebounce();
+    await user.type(await screen.findByLabelText(/name of the service/i), '   ');
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('A title is required');
     expect(createService).not.toHaveBeenCalled();
   });
 
-  it('Should show an error when submitting with no active workspace', async () => {
+  it('shows an error when submitting with no active workspace', async () => {
+    const user = userEvent.setup();
     renderNewServiceModal(false);
 
-    const titleInput = await screen.findByLabelText(/name of the service/i);
-    fireEvent.change(titleInput, { target: { value: 'Valid Title' } });
-    await flushDebounce();
+    await user.type(await screen.findByLabelText(/name of the service/i), 'Valid Title');
 
     const form = document.querySelector('form');
     expect(form).toBeInTheDocument();
@@ -237,7 +196,7 @@ describe('New Service Modal Component Test Suite', () => {
     expect(createService).not.toHaveBeenCalled();
   });
 
-  it('Should close the modal when Dialog triggers onOpenChange(false)', async () => {
+  it('closes the modal when Dialog triggers onOpenChange(false)', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 
@@ -246,7 +205,7 @@ describe('New Service Modal Component Test Suite', () => {
     expect(mockOnOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('Should show a spinner and disable submit while creation is pending', async () => {
+  it('shows a spinner and disables submit while creation is pending', async () => {
     let resolveCreate!: (value: any) => void;
     const createPromise = new Promise((resolve) => {
       resolveCreate = resolve;
@@ -257,7 +216,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'New Service');
-    await flushDebounce();
     const submitBtn = screen.getByRole('button', { name: /create service/i });
     await user.click(submitBtn);
 
@@ -267,7 +225,7 @@ describe('New Service Modal Component Test Suite', () => {
     resolveCreate({ service: { id: 'srv-123' } });
   });
 
-  it('Should invalidate services queries on successful creation', async () => {
+  it('invalidates services queries on successful creation', async () => {
     vi.mocked(createService).mockResolvedValueOnce({ service: { id: 'srv-999' } } as any);
     const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
 
@@ -275,7 +233,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'Business License');
-    await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     await waitFor(() => {
@@ -283,7 +240,7 @@ describe('New Service Modal Component Test Suite', () => {
     });
   });
 
-  it('Should not close the modal when Dialog triggers onOpenChange(true)', async () => {
+  it('does not close the modal when Dialog triggers onOpenChange(true)', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 

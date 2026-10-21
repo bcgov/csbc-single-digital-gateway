@@ -1,0 +1,176 @@
+import { nanoid } from 'nanoid';
+import {
+  DEFAULT_VARIANT,
+  variantOf,
+  withVariant,
+  type DocumentContent,
+  type Uischema,
+} from './document-types';
+import { carriedEntries, withCapabilities } from './capabilities/capability-edits';
+import { findById, idOf, newId } from './element-ids';
+import { withGridItem } from '../renderers/studio/grid-order';
+import { cellAfter, gridLanding, isGrid } from './grid-edits';
+import { copyInRow, isRow, rowHasRoom } from './row-edits';
+import { holdsControl } from './variants/variant-bindings';
+import { refOfScope, scopeOf, withOwner, type PropertyRef } from './property-ref';
+
+/** What a copy produced: the new content, and the copy's id so the studio can select it. */
+export interface CopyResult {
+  content: DocumentContent;
+  copyId: string;
+}
+
+/**
+ * `content` with a copy of the element `id` inserted right after it, in the same layout (doc 254 rule 6). Every copied
+ * element gets a new id, and every copied Control a NEW property — a `nanoid(8)` key holding a copy of the original's
+ * schema, required when the original is — so the copy is its own field, not a second view of the same answer. Controls
+ * in the copied subtree that shared a property share the new one. `undefined` for an unknown id or the root.
+ *
+ * A Grid child's copy takes the first free cell after it (doc 260 rule 22), one cell in size; a row child's lands right
+ * after it at its width (doc 261 rule 18). With no room there is no copy (`undefined`).
+ *
+ * Copies within `variantName` (default unless named). Outside default (doc 262 rule 13c) an element that is or holds a
+ * Control is never copied — a variant adds no field and shows each once — so there is no copy (`undefined`).
+ */
+export function copyElement(
+  content: DocumentContent,
+  id: string,
+  variantName: string = DEFAULT_VARIANT,
+): CopyResult | undefined {
+  const variant = variantOf(content, variantName);
+  if (variantName !== DEFAULT_VARIANT) {
+    const element = findById(variant, id);
+    if (element === undefined || holdsControl(element)) return undefined;
+  }
+  const keys = new Map<string, string>();
+  const ids = new Map<string, string>();
+  let copyId: string | undefined;
+  const next = withCopy(variant, id, (element) => {
+    const copy = cloned(element, keys, ids);
+    copyId = idOf(copy);
+    return copy;
+  });
+  if (next === variant || copyId === undefined) return undefined;
+  const copied = {
+    ...withVariant(content, next, variantName),
+    schema: withKeys(content.schema, keys),
+  };
+  // Doc 258 rule 12: a copied element keeps its Implementation Rules under its new id.
+  const capabilities = carriedEntries(content.capabilities, ids);
+  return {
+    content:
+      capabilities === content.capabilities ? copied : withCapabilities(copied, capabilities),
+    copyId,
+  };
+}
+
+/** `node` with `copy(child)` inserted after the child whose id is `id`, at any depth; the same node when none is. */
+function withCopy(node: Uischema, id: string, copy: (element: Uischema) => Uischema): Uischema {
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return node;
+  const at = elements.findIndex((child) => isRecord(child) && idOf(child) === id);
+  if (at !== -1) {
+    const original = elements[at] as Uischema;
+    if (isGrid(node)) {
+      const after = cellAfter(node, id);
+      const landing = after === undefined ? undefined : gridLanding(node, after);
+      if (landing === undefined) return node;
+      const placed = withGridItem(copy(original), { ...landing.cell, w: 1, h: 1 });
+      return {
+        ...node,
+        elements: [...elements.slice(0, landing.index), placed, ...elements.slice(landing.index)],
+      };
+    }
+    if (isRow(node)) {
+      // Doc 261 rule 18: right after it at its width, the others re-fitted; asked first, so a refusal makes no copy.
+      if (!rowHasRoom(node)) return node;
+      return copyInRow(node, at, copy(original)) ?? node;
+    }
+    return {
+      ...node,
+      elements: [...elements.slice(0, at + 1), copy(original), ...elements.slice(at + 1)],
+    };
+  }
+  const next = elements.map((child) => (isRecord(child) ? withCopy(child, id, copy) : child));
+  return next.some((child, i) => child !== elements[i]) ? { ...node, elements: next } : node;
+}
+
+/** A deep copy with new ids (old → new recorded in `ids`), and Controls re-keyed through `keys` (old key → new). */
+function cloned(element: Uischema, keys: Map<string, string>, ids: Map<string, string>): Uischema {
+  const copy: Uischema = { ...structuredClone(element), id: newId() };
+  const old = idOf(element);
+  if (old !== undefined) ids.set(old, copy['id'] as string);
+  const scope = copy['scope'];
+  const ref = copy['type'] === 'Control' ? refOfScope(scope) : undefined;
+  if (ref !== undefined) copy['scope'] = scopeOf(rekeyed(ref, keys));
+  const elements = copy['elements'];
+  if (Array.isArray(elements)) {
+    copy['elements'] = elements.map((child: unknown) =>
+      isRecord(child) ? cloned(child, keys, ids) : child,
+    );
+  }
+  return copy;
+}
+
+/**
+ * A copied Control's new property reference (doc 254 rule 6, doc 271 rule 13). A page field gets a fresh key. An item
+ * field inside a record copied WITH it keeps its key under the record's new array; one copied alone gets a fresh key
+ * in the same array. Recorded in `keys` as `key` (page) or `array/key` (item), so shared properties share the copy.
+ */
+function rekeyed(ref: PropertyRef, keys: Map<string, string>): PropertyRef {
+  if (ref.array === undefined) {
+    const fresh = keys.get(ref.key) ?? nanoid(8);
+    keys.set(ref.key, fresh);
+    return { key: fresh };
+  }
+  const array = keys.get(ref.array);
+  if (array !== undefined) return { array, key: ref.key };
+  const id = `${ref.array}/${ref.key}`;
+  const fresh = keys.get(id) ?? nanoid(8);
+  keys.set(id, fresh);
+  return { array: ref.array, key: fresh };
+}
+
+/**
+ * `schema` with each re-keyed property copied under its new key, required when the original is — a page property at
+ * the root, an item property (`array/key`) in its array's `items` (doc 271 rule 13).
+ */
+function withKeys(
+  schema: Record<string, unknown>,
+  keys: ReadonlyMap<string, string>,
+): Record<string, unknown> {
+  const items = [...keys].filter(([old]) => old.includes('/'));
+  let next = withRootKeys(schema, new Map([...keys].filter(([old]) => !old.includes('/'))));
+  for (const [old, fresh] of items) {
+    const [array, key] = old.split('/') as [string, string];
+    next = withOwner(next, { array, key }, (owner) => withRootKeys(owner, new Map([[key, fresh]])));
+  }
+  return next;
+}
+
+/** `schema` (an object schema: the root, or an array's `items`) with each re-keyed property copied in place. */
+function withRootKeys(
+  schema: Record<string, unknown>,
+  keys: ReadonlyMap<string, string>,
+): Record<string, unknown> {
+  const properties = isRecord(schema['properties']) ? schema['properties'] : {};
+  const added = [...keys].filter(([old]) => isRecord(properties[old]));
+  if (added.length === 0) return schema;
+  const required = Array.isArray(schema['required'])
+    ? (schema['required'] as unknown[])
+    : undefined;
+  const newlyRequired = added.filter(([old]) => required?.includes(old)).map(([, fresh]) => fresh);
+  return {
+    ...schema,
+    properties: {
+      ...properties,
+      ...Object.fromEntries(added.map(([old, fresh]) => [fresh, structuredClone(properties[old])])),
+    },
+    ...(required !== undefined &&
+      newlyRequired.length > 0 && { required: [...required, ...newlyRequired] }),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

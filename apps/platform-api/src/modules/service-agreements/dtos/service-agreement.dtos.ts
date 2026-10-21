@@ -1,26 +1,34 @@
+import { DOCUMENT_TYPE } from '@repo/database';
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { documentContentSchema } from '../../templates/dtos/template.dtos';
+
+/**
+ * Feature 217. A service agreement is a `documents` row with `type = 'services.service-agreement'` whose
+ * version payload is one `content` (a `@repo/forms` StudioDocument), and whose `title` /
+ * `description` are GENERATED from that content. The old `data`-filled-against-a-type model is
+ * gone, and with `document_references` the "services this agreement is attached to" list went too.
+ */
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
 /**
  * Create an agreement. `workspaceId` present → a workspace-scoped (staff) agreement; absent →
- * a global (admin) agreement. `data` holds the authored fields (validated for shape only here;
- * the full JSON-Schema validation runs on publish).
+ * a global (admin) agreement. `title` is stamped into the copied template's default variant `label`,
+ * which is what the GENERATED title column reads.
  */
 export const createServiceAgreementSchema = z.object({
   workspaceId: z.uuid().optional(),
-  data: z.record(z.string(), z.unknown()),
+  title: z.string().trim().min(1).max(255),
+  /** Doc 228: the template to build from. Omitted = the only published one of this type. */
+  templateId: z.uuid().optional(),
 });
 export class CreateServiceAgreementDto extends createZodDto(createServiceAgreementSchema) {}
 export type CreateServiceAgreementInput = z.infer<typeof createServiceAgreementSchema>;
 
-/** Edit a draft version's authored data (and optionally retitle the document). */
-export const updateServiceAgreementSchema = z.object({
-  data: z.record(z.string(), z.unknown()),
-  title: z.string().trim().min(1).max(255).optional(),
-});
+/** Edit a draft version's content. */
+export const updateServiceAgreementSchema = z.object({ content: documentContentSchema });
 export class UpdateServiceAgreementDto extends createZodDto(updateServiceAgreementSchema) {}
 export type UpdateServiceAgreementInput = z.infer<typeof updateServiceAgreementSchema>;
 
@@ -52,8 +60,9 @@ export const serviceAgreementSchema = z.object({
   id: z.string(),
   // Nullable: a global (admin-authored) agreement has no workspace.
   workspaceId: z.string().nullable(),
-  title: z.string(),
-  kind: z.string(),
+  /** From the current version's GENERATED title — NULL when its content carries no root label. */
+  title: z.string().nullable(),
+  type: z.literal(DOCUMENT_TYPE.serviceAgreement),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -62,9 +71,18 @@ export type ServiceAgreementResponse = z.infer<typeof serviceAgreementSchema>;
 
 export const serviceAgreementVersionSchema = z.object({
   id: z.string(),
-  version: z.number().int(),
+  versionNumber: z.number().int(),
+  revision: z.number().int(),
   status: z.enum(['draft', 'published', 'archived']),
-  data: z.record(z.string(), z.unknown()),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  content: z.record(z.string(), z.unknown()),
+  /**
+   * Doc 221: the template version this version is PINNED to (doc 217). A client looks its content up
+   * in `definitions[templateVersionId]` — the same shape services has used since feature 174 — rather
+   * than being handed whichever template happens to be published now.
+   */
+  templateVersionId: z.string().nullable(),
   createdAt: z.string(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
@@ -84,23 +102,43 @@ export type ServiceAgreementWithVersion = z.infer<typeof serviceAgreementWithVer
 
 export const agreementDefinitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
+  capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 
-/** A service this agreement is attached to (agreements may be attached to many services). */
-export const associatedServiceSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  workspaceSlug: z.string(),
+/**
+ * Doc 225 rule 7: what may be deleted, and why not.
+ *
+ * The API is the authority and the console mirrors it. Deletability depends on consents and on
+ * workspace defaults — neither of which the browser can see — so a console computing it from the
+ * versions it holds would be guessing, and would guess differently from the endpoint that refuses.
+ */
+export const serviceAgreementDeletableSchema = z.object({
+  /** Whether the whole agreement may go. */
+  agreement: z.boolean(),
+  /** Why it may not, ready to show. Absent exactly when `agreement` is true. */
+  reason: z.string().optional(),
+  /** The versions that may be deleted on their own — empty when there is only one (rule 4). */
+  versionIds: z.array(z.string()),
 });
-export type AssociatedService = z.infer<typeof associatedServiceSchema>;
+export type ServiceAgreementDeletable = z.infer<typeof serviceAgreementDeletableSchema>;
 
-/** Detail: the agreement + all its versions + the type definition + the services it's attached to. */
+/** Detail: the agreement + all its versions + the template to render.
+ *
+ * Feature 217 dropped `services` (which services this agreement is attached to): it was derived
+ * from `document_references`, and linking documents is a later feature. */
 export const serviceAgreementDetailSchema = z.object({
   agreement: serviceAgreementSchema,
   versions: z.array(serviceAgreementVersionSchema),
-  definition: agreementDefinitionSchema,
-  services: z.array(associatedServiceSchema),
+  /**
+   * Doc 221: the template of every version, keyed by `templateVersionId` — the shape services has
+   * used since feature 174. A surface MUST look up `definitions[version.templateVersionId]`: a
+   * version authored before a template reshape has to render against the template it was authored
+   * under, not whichever one is published now.
+   */
+  definitions: z.record(z.string(), agreementDefinitionSchema),
+  deletable: serviceAgreementDeletableSchema,
 });
 export class ServiceAgreementDetailDto extends createZodDto(serviceAgreementDetailSchema) {}
 export type ServiceAgreementDetail = z.infer<typeof serviceAgreementDetailSchema>;
@@ -127,12 +165,22 @@ export class ServiceAgreementListPageDto extends createZodDto(serviceAgreementLi
 
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
-export function toAgreementDto(row: Document): ServiceAgreementResponse {
+/**
+ * `title` now lives on the VERSION (generated from its content), so the caller passes the current
+ * version rather than reading a column off the document row.
+ */
+export function toAgreementDto(
+  row: Document,
+  current?: Pick<DocumentVersion, 'title'>,
+): ServiceAgreementResponse {
+  if (row.type !== DOCUMENT_TYPE.serviceAgreement) {
+    throw new Error(`document ${row.id} is a ${row.type}, not a service agreement`);
+  }
   return {
     id: row.id,
     workspaceId: row.workspaceId,
-    title: row.title,
-    kind: row.kind,
+    title: current?.title ?? null,
+    type: row.type,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -141,9 +189,13 @@ export function toAgreementDto(row: Document): ServiceAgreementResponse {
 export function toAgreementVersionDto(row: DocumentVersion): ServiceAgreementVersionResponse {
   return {
     id: row.id,
-    version: row.version,
+    versionNumber: row.versionNumber,
+    revision: row.revision,
     status: row.status,
-    data: row.data,
+    title: row.title,
+    description: row.description,
+    content: row.content,
+    templateVersionId: row.templateVersionId,
     createdAt: row.createdAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
     archivedAt: row.archivedAt?.toISOString() ?? null,

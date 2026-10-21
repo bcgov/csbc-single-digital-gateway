@@ -22,8 +22,17 @@ Key conventions carried from the schema:
 
 ## 1. Main database (`@repo/database`)
 
-Staff-authored catalogue (services / forms / agreements), citizens' submissions, reviews,
-and the transactional notification outbox.
+Staff-authored catalogue (services / application methods / agreements), citizens' submissions,
+reviews, and the transactional notification outbox.
+
+Feature 217 made the document model generic. A **template** is a `documents` row with
+`kind = 'template'`, so the `document_types` / `document_type_versions` catalog is gone; a version's
+whole payload is one `content` jsonb (a `@repo/forms` `StudioDocument`), replacing the
+`definition` / `schema` / `data` split; and `title` / `description` are GENERATED from that content
+(both nullable — `->>` over a rich Lexical description yields NULL). `document_references` and
+`document_version_contributors` were dropped with no replacement, so no document links to another
+today: a service does not know its ways to apply, and a submission's `document_id` is the FORM it
+was made on, not a service.
 
 ```mermaid
 erDiagram
@@ -32,20 +41,15 @@ erDiagram
     users ||--o{ workspace_members : "member of"
     workspaces ||--o{ workspace_members : "has member"
 
-    workspaces |o--o{ document_types : "scopes (null=global)"
-    document_types ||--o{ document_type_versions : "versioned by"
-
     workspaces |o--o{ documents : "scopes (null=global)"
-    document_types ||--o{ documents : "instance of (type_id,kind)"
+    documents |o--o{ documents : "follows template (id,type,kind)"
     documents ||--o{ document_members : "shared with"
+    users |o--o{ document_members : "added by"
     workspace_members ||--o{ document_members : "grants"
     documents ||--o{ document_versions : "versioned by"
-    document_type_versions ||--o{ document_versions : "pins type version"
-    document_versions ||--o{ document_version_contributors : "edited by"
-    users ||--o{ document_version_contributors : "contributor"
-
-    document_versions ||--o{ document_references : "owner (service)"
-    document_versions ||--o{ document_references : "target (form/svc/agreement)"
+    document_versions |o--o{ document_versions : "conforms to template version"
+    document_versions ||--o{ document_version_history : "audited by"
+    users ||--o{ document_version_history : "actor"
 
     documents ||--o{ submissions : "submitted against"
     document_versions ||--o{ submissions : "of version"
@@ -90,68 +94,43 @@ erDiagram
         wm_role role "admin|member"
         wm_status status "active|suspended"
     }
-    document_types {
-        uuid id PK "UK(id,kind)"
-        uuid workspace_id FK "nullable = global"
-        text name
-        text kind
-    }
-    document_type_versions {
-        uuid id PK "UK(id,type_id)"
-        uuid type_id FK
-        int version "UK(type_id,version)"
-        jsonb definition
-        dtv_status status "GENERATED draft|published|archived"
-        timestamptz published_at
-        timestamptz archived_at
-    }
     documents {
-        uuid id PK "UK(id,type_id),(id,workspace_id),(id,kind)"
-        uuid type_id "FK (type_id,kind)->document_types"
+        uuid id PK "UK(id,type,kind),(id,workspace_id),(id,template_id)"
+        uuid template_id "FK (template_id,type,template_kind)->(id,type,kind)"
         uuid workspace_id FK "nullable = global"
-        text kind "denormalized, pinned"
-        text title
-        text description
+        doc_kind kind "document|template"
+        doc_type type "services.service|services.service-application-method|services.service-agreement"
+        doc_kind template_kind "GENERATED 'template'"
     }
     document_members {
-        uuid id PK
+        uuid id PK "UK(document_id,user_id)"
+        uuid added_by_user_id FK "SET NULL"
         uuid document_id "FK (document_id,workspace_id)"
-        uuid user_id "FK (user_id,workspace_id)"
+        uuid user_id "FK (workspace_id,user_id)"
         uuid workspace_id
-        dm_role role "admin|editor|viewer"
+        dm_role role "owner|admin|editor|viewer"
     }
     document_versions {
         uuid id PK "UK(id,document_id)"
-        uuid document_id "FK (document_id,type_id)"
-        uuid type_id
-        uuid type_version_id "FK (type_version_id,type_id)"
-        int version "UK(document_id,version)"
-        jsonb data
-        jsonb schema "form structure, null for services"
+        uuid document_id FK "CASCADE"
+        uuid template_id "FK (document_id,template_id)->documents"
+        uuid template_version_id "FK (template_version_id,template_id)->self"
+        int version_number "UK(document_id,version_number)"
+        int revision "optimistic lock"
+        jsonb content "StudioDocument {schema,uischema}"
+        text title "GENERATED content->uischema->>label, NULLABLE"
+        text description "GENERATED, NULL for rich descriptions"
         dv_status status "GENERATED draft|published|archived"
         timestamptz published_at
         timestamptz archived_at
     }
-    document_version_contributors {
+    document_version_history {
         uuid id PK
-        uuid document_version_id FK
+        uuid document_version_id FK "CASCADE, explicitly named (63-char limit)"
         uuid user_id FK "RESTRICT"
-        timestamptz first_update_at
-        timestamptz last_update_at
-    }
-    document_references {
-        uuid id PK "UK(owner_version_id,target_document_id)"
-        uuid owner_version_id "FK ->document_versions"
-        uuid owner_document_id
-        text owner_kind "CHECK = 'service'"
-        uuid target_version_id "nullable for agreement"
-        uuid target_document_id
-        text target_kind
-        uuid workspace_id
-        uuid target_workspace_id "null = global agreement"
-        dr_relation relation "related_service|application_form|service_agreement|external_application"
-        text label
-        int position
+        dvh_action action "created|updated|published|archived"
+        int revision
+        jsonb delta "RFC 6902 patch, NULL for publish/archive"
     }
     submissions {
         uuid id PK "UK(id,workspace_id)"
@@ -190,8 +169,9 @@ erDiagram
     workspace_default_agreements {
         uuid id PK "UK(workspace_id,agreement_document_id)"
         uuid workspace_id FK
-        uuid agreement_document_id "FK (agreement_document_id,agreement_kind)"
-        text agreement_kind "CHECK = 'service-agreement'"
+        uuid agreement_document_id "FK (agreement_document_id,agreement_type,agreement_kind)"
+        doc_type agreement_type "GENERATED = 'services.service-agreement'"
+        doc_kind agreement_kind "GENERATED = 'document'"
         uuid agreement_workspace_id "null = global"
     }
     notification_outbox {

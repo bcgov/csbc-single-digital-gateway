@@ -12,6 +12,18 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   useNavigate: () => mockNavigate,
 }));
 
+// Doc 228: the picker is covered by its own test; here it answers with one template, as it does
+// when exactly one is published.
+vi.mock('@/components/common/template-select', async () => {
+  const { useEffect } = await import('react');
+  return {
+    TemplateSelect: ({ onChange }: { onChange: (id: string) => void }) => {
+      useEffect(() => onChange('tpl-1'), [onChange]);
+      return null;
+    },
+  };
+});
+
 vi.mock('@/lib/service-agreements', () => ({
   createAgreement: vi.fn(),
 }));
@@ -65,20 +77,19 @@ describe('NewAgreementModal Component Test Suite', () => {
     expect(screen.getByText('New service agreement')).toBeInTheDocument();
 
     const titleInput = screen.getByLabelText(/title/i);
-    const descInput = screen.getByLabelText(/description/i);
     const createBtn = screen.getByRole('button', { name: /create agreement/i });
 
+    // Feature 217: create takes a TITLE only — the description field went with the version `data`.
+    expect(screen.queryByLabelText(/description/i)).toBeNull();
+
     await userEvent.type(titleInput, 'Workspace Agreement');
-    await userEvent.type(descInput, 'Description content');
     await userEvent.click(createBtn);
 
     // Verify createAgreement was called with workspaceId
     expect(createAgreement).toHaveBeenCalledWith({
       workspaceId: 'w1',
-      data: {
-        title: 'Workspace Agreement',
-        description: 'Description content',
-      },
+      title: 'Workspace Agreement',
+      templateId: 'tpl-1',
     });
 
     // Verify navigate was called with correct router parameters
@@ -110,12 +121,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     await userEvent.click(createBtn);
 
     // Verify createAgreement does not carry workspaceId
-    expect(createAgreement).toHaveBeenCalledWith({
-      data: {
-        title: 'Global Policy',
-        description: '',
-      },
-    });
+    expect(createAgreement).toHaveBeenCalledWith({ title: 'Global Policy', templateId: 'tpl-1' });
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({

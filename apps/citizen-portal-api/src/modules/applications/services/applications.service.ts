@@ -4,9 +4,7 @@ import { UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
   countries,
-  documentReferences,
   documentVersions,
-  documents,
   reviews,
   submissionVersions,
   submissions,
@@ -22,11 +20,13 @@ import {
   type SubmissionResponse,
   type SubmissionStatus,
 } from '../dtos/application.dtos';
+import { applicationReference, normalizeContent, submissionStatusLabel } from '../util/format';
 import {
-  applicationReference,
-  normalizeFormStructure,
-  submissionStatusLabel,
-} from '../util/format';
+  draftTarget,
+  linkedServiceVersion,
+  moveDraft,
+  neverSubmittedDraft,
+} from './application-drafts';
 import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
@@ -39,9 +39,6 @@ import {
   validateDecimals,
   validateSubmission,
 } from '../util/validate';
-import { ConsentService } from './consent.service';
-
-const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
 type SubmissionRow = typeof submissions.$inferSelect;
 type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
@@ -55,101 +52,28 @@ type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
 export class ApplicationsService {
   constructor(
     @InjectDatabase() private readonly db: Database,
-    private readonly consent: ConsentService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
   /**
-   * The form a citizen applies through, for a given service — validated to be an `application_form`
-   * of the service's published version. Returns the form's kind + render structure. 404 otherwise.
+   * Start an application on a published method version, resume the citizen's draft on it, or move their
+   * never-submitted draft from an older version of the same method onto it (doc 292 rules 2-5).
    */
-  async getApplicationForm(serviceId: string, formId: string) {
-    const svc = await this.db
-      .select({ versionId: documentVersions.id })
-      .from(documents)
-      .innerJoin(
-        documentVersions,
-        and(
-          eq(documentVersions.documentId, documents.id),
-          eq(documentVersions.status, 'published'),
-        ),
-      )
-      .where(and(eq(documents.id, serviceId), eq(documents.kind, 'service')))
-      .limit(1);
-    const published = svc[0];
-    if (published === undefined) {
-      throw new NotFoundException('Service not found');
-    }
-    const refRows = await this.db
-      .select({ formVersionId: documentReferences.targetVersionId })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.ownerVersionId, published.versionId),
-          eq(documentReferences.relation, 'application_form'),
-          eq(documentReferences.targetDocumentId, formId),
-        ),
-      )
-      .limit(1);
-    const ref = refRows[0];
-    // An application_form reference always pins a version (only service_agreement refs may omit it).
-    if (ref === undefined || ref.formVersionId === null) {
-      throw new NotFoundException('Application form not found');
-    }
-    const formRows = await this.db
-      .select({ kind: documents.kind, title: documents.title, structure: documentVersions.schema })
-      .from(documentVersions)
-      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
-      .where(eq(documentVersions.id, ref.formVersionId))
-      .limit(1);
-    const form = formRows[0];
-    if (form === undefined) {
-      throw new NotFoundException('Application form not found');
-    }
-    return {
-      serviceId,
-      formId,
-      formVersionId: ref.formVersionId,
-      kind: form.kind,
-      title: form.title,
-      structure: normalizeFormStructure(form.kind, form.structure ?? {}),
-    };
-  }
-
-  /** Start a new application for a form version, or resume the citizen's existing draft for it. */
   async createOrResumeDraft(userId: string, formVersionId: string): Promise<SubmissionResponse> {
-    const fvRows = await this.db
-      .select({
-        documentId: documentVersions.documentId,
-        kind: documents.kind,
-        workspaceId: documents.workspaceId,
-      })
-      .from(documentVersions)
-      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
-      .where(eq(documentVersions.id, formVersionId))
-      .limit(1);
-    const fv = fvRows[0];
-    if (fv === undefined || !FORM_KINDS.has(fv.kind) || fv.workspaceId === null) {
-      // Application forms are always workspace-scoped (only service agreements may be global),
-      // so a workspace-less document is not a valid application form version.
-      throw new UnprocessableEntityException('Not an application form version');
+    const target = await draftTarget(this.db, formVersionId);
+    const draft = await neverSubmittedDraft(this.db, userId, target.documentId);
+    if (draft !== undefined) {
+      const current =
+        draft.submission.documentVersionId === formVersionId
+          ? draft
+          : await moveDraft(this.db, draft, formVersionId, target);
+      return this.toDto(current.submission, current.version);
     }
-    // Hoist the narrowed workspace: property narrowing (fv.workspaceId) doesn't survive into the
-    // transaction closure below, but a const local does.
-    const { workspaceId } = fv;
-    const existing = await this.findUserDraft(userId, formVersionId);
-    if (existing) {
-      return this.toDto(existing.submission, existing.version);
-    }
+    const { documentId, workspaceId } = target;
     return this.db.transaction(async (tx) => {
       const subIns = await tx
         .insert(submissions)
-        .values({
-          documentId: fv.documentId,
-          documentVersionId: formVersionId,
-          userId,
-          workspaceId,
-        })
+        .values({ documentId, documentVersionId: formVersionId, userId, workspaceId })
         .returning();
       const sub = subIns[0];
       if (sub === undefined) {
@@ -174,35 +98,11 @@ export class ApplicationsService {
   async getDetail(userId: string, submissionId: string): Promise<ApplicationDetail> {
     const sub = await this.requireOwn(userId, submissionId);
     const ver = await this.requireLatest(submissionId);
-    const [formDoc] = await this.db
-      .select({ title: documents.title, kind: documents.kind })
-      .from(documents)
-      .where(eq(documents.id, sub.documentId))
-      .limit(1);
     const [formVer] = await this.db
-      .select({ schema: documentVersions.schema })
+      .select({ title: documentVersions.title, content: documentVersions.content })
       .from(documentVersions)
       .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
-    const refRows = await this.db
-      .select({ serviceId: documentReferences.ownerDocumentId })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, sub.documentVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      )
-      .limit(1);
-    const serviceId = refRows[0]?.serviceId ?? '';
-    const [svc] = serviceId
-      ? await this.db
-          .select({ title: documents.title })
-          .from(documents)
-          .where(eq(documents.id, serviceId))
-          .limit(1)
-      : [];
-    const kind = formDoc?.kind ?? 'basic-form';
     const reviewReason = await this.latestReviewReason(sub.id);
     return {
       id: sub.id,
@@ -211,11 +111,8 @@ export class ApplicationsService {
       statusLabel: submissionStatusLabel(ver.status),
       formId: sub.documentId,
       formVersionId: sub.documentVersionId,
-      formTitle: formDoc?.title ?? 'Application',
-      serviceId,
-      serviceTitle: svc?.title ?? 'Service',
-      kind,
-      structure: normalizeFormStructure(kind, formVer?.schema ?? {}),
+      formTitle: formVer?.title ?? null,
+      structure: normalizeContent(formVer?.content ?? {}),
       data: ver.data,
       reviewReason,
       createdAt: sub.createdAt.toISOString(),
@@ -270,11 +167,10 @@ export class ApplicationsService {
    * constraint; no address fields → no DB read.
    */
   private async validateAddressPostals(
-    kind: string,
     structure: Record<string, unknown>,
     data: Record<string, unknown>,
   ): Promise<string[]> {
-    const entries = collectAddressPostals(kind, structure, data);
+    const entries = collectAddressPostals(structure, data);
     if (entries.length === 0) {
       return [];
     }
@@ -300,7 +196,7 @@ export class ApplicationsService {
     const sub = await this.requireOwn(userId, submissionId);
     const ver = await this.requireDraft(submissionId);
     const form = await this.loadFormStructure(sub.documentVersionId);
-    const result = validateSubmission(form.kind, form.structure, data);
+    const result = validateSubmission(form.structure, data);
     if (!result.valid) {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
@@ -309,10 +205,7 @@ export class ApplicationsService {
     }
     // Number fields (feature 155): enforce each decimal field's decimal-places limit (options.decimals).
     // Checked here rather than via schema `multipleOf`, which is floating-point fragile.
-    const decimalErrors = validateDecimals(
-      collectDecimalConstraints(form.kind, form.structure),
-      data,
-    );
+    const decimalErrors = validateDecimals(collectDecimalConstraints(form.structure), data);
     if (decimalErrors.length > 0) {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
@@ -321,7 +214,7 @@ export class ApplicationsService {
     }
     // Address fields (feature 153): postal codes are validated against the entered country's regex
     // (resolved from geo reference data — country-dependent, so it can't live in the static schema).
-    const postalErrors = await this.validateAddressPostals(form.kind, form.structure, data);
+    const postalErrors = await this.validateAddressPostals(form.structure, data);
     if (postalErrors.length > 0) {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
@@ -331,15 +224,15 @@ export class ApplicationsService {
     // Address locks (feature 170): a sub-field the author marked read-only must equal the default it
     // was pinned to. The rendered field is read-only, but that is UX only — this is the enforcement
     // point for a request crafted outside the UI.
-    const lockErrors = validateAddressLocks(collectAddressLocks(form.kind, form.structure), data);
+    const lockErrors = validateAddressLocks(collectAddressLocks(form.structure), data);
     if (lockErrors.length > 0) {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
         errors: lockErrors,
       });
     }
-    // Consent gate: every required service agreement must be approved (against its current version).
-    await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
+    // Feature 217: the consent gate ("every required service agreement must be approved") is gone
+    // with `document_references` — an application no longer knows which agreements apply to it.
     // Pre-resolve the citizen's contact email (read BEFORE the tx) for the notification seed.
     const [owner] = await this.db
       .select({ email: users.email })
@@ -353,17 +246,15 @@ export class ApplicationsService {
       .from(workspaces)
       .where(eq(workspaces.id, sub.workspaceId))
       .limit(1);
-    const [serviceRef] = await this.db
-      .select({ title: documents.title })
-      .from(documentReferences)
-      .innerJoin(documents, eq(documents.id, documentReferences.ownerDocumentId))
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, sub.documentVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      )
+    // Doc 292 rule 9: the staff message names the SERVICE again — the published one that links to this method
+    // (doc 290 `document_links`); the method's own title when none does.
+    const service = await linkedServiceVersion(this.db, sub.documentId);
+    const [formRef] = await this.db
+      .select({ title: documentVersions.title })
+      .from(documentVersions)
+      .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
+    const serviceTitle = service?.title ?? formRef?.title ?? null;
     const members = await this.db
       .select({ userId: workspaceMembers.userId, email: users.email })
       .from(workspaceMembers)
@@ -405,7 +296,7 @@ export class ApplicationsService {
       // no self-exclusion is needed.
       const staffContent = staffSubmissionContent(
         applicationReference(sub.id, sub.createdAt),
-        serviceRef?.title ?? null,
+        serviceTitle,
       );
       for (const member of members) {
         // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
@@ -442,42 +333,30 @@ export class ApplicationsService {
     return items.filter((item): item is MyApplication => item !== null);
   }
 
+  /**
+   * Feature 217: this used to resolve the OWNING SERVICE through the form's `application_form`
+   * reference, and returned `null` — hiding the row — when there was none. With references gone
+   * there is no service to name, and no reason to hide a submission: every one of the citizen's
+   * applications is now listed, identified by the form it was made on.
+   */
   private async toMyApplication(sub: SubmissionRow): Promise<MyApplication | null> {
-    const refRows = await this.db
-      .select({
-        serviceId: documentReferences.ownerDocumentId,
-        serviceVersionId: documentReferences.ownerVersionId,
-      })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, sub.documentVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      )
-      .limit(1);
-    const ref = refRows[0];
-    if (ref === undefined) {
-      return null;
-    }
-    const [svc] = await this.db
-      .select({ title: documents.title })
-      .from(documents)
-      .where(eq(documents.id, ref.serviceId))
-      .limit(1);
     const [form] = await this.db
-      .select({ title: documents.title })
-      .from(documents)
-      .where(eq(documents.id, sub.documentId))
+      .select({ title: documentVersions.title })
+      .from(documentVersions)
+      .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
-    const ver = await this.latestVersion(sub.id);
+    const [ver, service] = await Promise.all([
+      this.latestVersion(sub.id),
+      linkedServiceVersion(this.db, sub.documentId),
+    ]);
     const status: SubmissionStatus = ver?.status ?? 'draft';
     return {
       id: sub.id,
-      serviceId: ref.serviceId,
-      serviceVersionId: ref.serviceVersionId,
-      serviceTitle: svc?.title ?? 'Service',
-      formTitle: form?.title ?? 'Application',
+      // Doc 292 rule 7: where a draft row sends the citizen back to (its apply page).
+      serviceId: service?.serviceId ?? null,
+      formId: sub.documentId,
+      formVersionId: sub.documentVersionId,
+      formTitle: form?.title ?? null,
       reference: applicationReference(sub.id, sub.createdAt),
       status,
       statusLabel: submissionStatusLabel(status),
@@ -485,40 +364,20 @@ export class ApplicationsService {
     };
   }
 
-  private async findUserDraft(
-    userId: string,
-    formVersionId: string,
-  ): Promise<{ submission: SubmissionRow; version: SubmissionVersionRow } | null> {
-    const subs = await this.db
-      .select()
-      .from(submissions)
-      .where(and(eq(submissions.userId, userId), eq(submissions.documentVersionId, formVersionId)))
-      .orderBy(desc(submissions.createdAt));
-    const withVersions = await Promise.all(
-      subs.map(async (submission) => ({
-        submission,
-        version: await this.latestVersion(submission.id),
-      })),
-    );
-    const draft = withVersions.find((entry) => entry.version?.status === 'draft');
-    return draft && draft.version ? { submission: draft.submission, version: draft.version } : null;
-  }
-
-  /** The form version's kind + normalized render/validation structure (for submit validation). */
+  /** The form version's normalized render/validation structure (for submit validation). */
   private async loadFormStructure(
     formVersionId: string,
-  ): Promise<{ kind: string; structure: Record<string, unknown> }> {
+  ): Promise<{ structure: Record<string, unknown> }> {
     const rows = await this.db
-      .select({ kind: documents.kind, structure: documentVersions.schema })
+      .select({ content: documentVersions.content })
       .from(documentVersions)
-      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
       .where(eq(documentVersions.id, formVersionId))
       .limit(1);
     const row = rows[0];
     if (row === undefined) {
       throw new NotFoundException('Application form not found');
     }
-    return { kind: row.kind, structure: normalizeFormStructure(row.kind, row.structure ?? {}) };
+    return { structure: normalizeContent(row.content) };
   }
 
   /** The most recent reviewer note for a submission (for the citizen banner), or null. */

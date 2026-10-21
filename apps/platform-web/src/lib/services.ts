@@ -1,18 +1,39 @@
 /**
  * Service-documents API client (feature 38) — wraps the `/v1/services` facade. Workspace-scoped;
  * all calls carry the session cookie.
+ *
+ * Feature 217: a service is an AUTHORED document. Its title and description are GENERATED from the
+ * current version's content, so both are nullable here; a version carries one `content` instead of
+ * `data`, and it pins a `templateVersionId` rather than a document-type version. Gone with
+ * `document_references`: the forms catalog, the reference and agreement-ref endpoints, and the
+ * `applications` half of create and draft-save.
  */
+import type { DocumentContent } from '@repo/documents/content';
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { FormWithVersion } from '@/lib/forms';
 import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type VersionStatus = 'draft' | 'published' | 'archived';
 
+/** The `{ schema, variants }` a renderer needs (doc 275). */
+export interface FormDefinition {
+  schema: Record<string, unknown>;
+  variants: Record<string, Record<string, unknown>>;
+  /**
+   * Doc 221: on a TEMPLATE definition, what a consuming document's owner may do. Absent = the template
+   * governs nothing. The service edit page (doc 230) hands it to the studio as `governedBy`.
+   */
+  capabilities?: Record<string, unknown>;
+}
+
 export interface Service {
   id: string;
   workspaceId: string;
-  title: string;
-  description: string;
+  /** From the current version's generated title — null when its content carries no root label. */
+  title: string | null;
+  /** From the current version's generated description — null for a rich description. */
+  description: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,7 +41,7 @@ export interface Service {
 export interface ServiceSummary extends Service {
   status: VersionStatus | 'none';
   versionCount: number;
-  /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
+  /** Whether the service has submissions — gates delete (none) vs archive. */
   hasSubmissions: boolean;
   /** Whether the latest version was ever published — un-archive reads "Publish" (true) vs "Restore". */
   latestPublished: boolean;
@@ -29,11 +50,14 @@ export interface ServiceSummary extends Service {
 export interface ServiceVersion {
   id: string;
   documentId: string;
-  /** The document type version this version is pinned to — selects its render template (feature 174). */
-  typeVersionId: string;
-  version: number;
+  /** The template version this version conforms to — selects its render template (feature 174). */
+  templateVersionId: string | null;
+  versionNumber: number;
+  revision: number;
   status: VersionStatus;
-  data: Record<string, unknown>;
+  title: string | null;
+  description: string | null;
+  content: Record<string, unknown>;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;
@@ -45,59 +69,25 @@ export interface ServiceDetail {
   /** The template for the current version (latest published, else latest). */
   definition: FormDefinition;
   /**
-   * Every template the service's versions span, keyed by `typeVersionId` (feature 174). Read
-   * surfaces must look up `definitions[version.typeVersionId]` so a version authored before a
-   * Service type reshape renders against its OWN template. Usually a single entry.
+   * Every template the service's versions span, keyed by `templateVersionId` (feature 174). Read
+   * surfaces must look up `definitions[version.templateVersionId]` so a version authored before a
+   * template reshape renders against its OWN schema and uischema. Usually a single entry.
    */
   definitions: Record<string, FormDefinition>;
-  /** Whether any of the service's application forms has submissions — gates delete vs archive. */
+  /** Whether the service has submissions — gates delete vs archive. */
   hasSubmissions: boolean;
+  /**
+   * Doc 230 (the doc 225 contract): what may be deleted, and why not. The API decides — it can see
+   * submissions — so the edit page renders its delete control from this alone.
+   */
+  deletable: {
+    service: boolean;
+    /** Why the service may not go, ready to show. Absent exactly when `service` is true. */
+    reason?: string;
+    /** Versions deletable on their own: drafts, never the only version. */
+    versionIds: string[];
+  };
 }
-
-export interface FormCatalogEntry {
-  documentId: string;
-  versionId: string;
-  title: string;
-  kind: string;
-}
-
-export interface ServiceReference {
-  id: string;
-  relation: 'related_service' | 'application_form' | 'external_application';
-  position: number;
-  label: string | null;
-  /** For an `external_application` reference, the external https destination; null for forms. */
-  url: string | null;
-  targetDocumentId: string;
-  targetVersionId: string;
-  targetKind: string;
-  targetTitle: string;
-  targetVersion: number;
-  /** Target form version status (draft/published/archived). */
-  targetStatus: string;
-  /** Whether the target form has submissions — gates delete (none) vs archive (some). */
-  hasSubmissions: boolean;
-  /** Whether the target form has authored structure (fields/stages/pages) — gates service publish. */
-  hasStructure: boolean;
-  createdAt: string;
-}
-
-/** A JSONForms definition authored by the form builder. */
-export interface FormDefinition {
-  schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
-}
-
-/** An application as sent to the composite create/update endpoints. */
-export type ApplicationInput = {
-  id?: string;
-  label: string;
-  position: number;
-  form:
-    | { mode: 'existing'; versionId: string }
-    // `definition` = designed blob: `{schema,uischema}` (basic) or `{stages,edges}` (multi-stage).
-    | { mode: 'new'; typeId: string; title: string; definition?: object };
-};
 
 const BASE = `${BFF_ORIGIN}/v1/services`;
 
@@ -161,14 +151,13 @@ export function serviceQueryOptions(id: string) {
 }
 
 /**
- * The version a details URL resolves to: the one named in the path, else the published one, else the
- * LATEST one (features 174, 175).
+ * The version a details URL resolves to: the one named in the path, else the published one, else
+ * the LATEST one (features 174, 175).
  *
  * The latest-version fallback is what lets a service that has never been published still show its
- * content — otherwise a brand-new service's only page was an empty state until someone published it.
- * It mirrors how the API picks the detail response's `definition`
- * (`findLast(publishedAt != null) ?? versions.at(-1)` in `services.service.ts`), so the template and
- * the data can't disagree about which version is being shown.
+ * content — otherwise a brand-new service's only page was an empty state until someone published
+ * it. It mirrors how the API picks the detail response's `definition`, so the template and the
+ * content can't disagree about which version is being shown.
  *
  * `undefined` only when the service has no versions at all, or the path names an unknown id.
  */
@@ -185,8 +174,8 @@ export function selectServiceVersion(
 
 /**
  * The template the selected version was authored under (feature 174) — looked up by the version's
- * `typeVersionId`, so a version predating a Service type reshape renders against its OWN schema and
- * uischema. Falls back to the detail's current `definition`, then to empty.
+ * `templateVersionId`, so a version predating a template reshape renders against its OWN schema and
+ * variants. Falls back to the detail's current `definition`, then to empty.
  */
 export function definitionForServiceVersion(
   detail: ServiceDetail | undefined,
@@ -199,124 +188,20 @@ export function definitionForServiceVersion(
   if (version === undefined) {
     return undefined;
   }
-  return detail.definitions[version.typeVersionId] ?? detail.definition;
+  return (
+    (version.templateVersionId === null
+      ? undefined
+      : detail.definitions[version.templateVersionId]) ?? detail.definition
+  );
 }
 
 export function serviceDefinitionQueryOptions() {
   return queryOptions({
     queryKey: ['services', 'definition'] as const,
     queryFn: async () =>
-      ok<{ schema: Record<string, unknown>; uischema: Record<string, unknown> }>(
-        await fetch(`${BASE}/definition`, { credentials: 'include' }),
-      ),
+      ok<FormDefinition>(await fetch(`${BASE}/definition`, { credentials: 'include' })),
     staleTime: 5 * 60_000,
   });
-}
-
-export interface FormType {
-  typeId: string;
-  name: string;
-  kind: string;
-}
-
-/** The published form document types (basic-form / multi-stage-form) — for creating a new form inline. */
-export function formTypesQueryOptions() {
-  return queryOptions({
-    queryKey: ['document-types', 'forms'] as const,
-    queryFn: async () => {
-      const envelope = await ok<{
-        items: Array<{ type: { id: string; name: string; kind: string } }>;
-      }>(await fetch(`${BFF_ORIGIN}/v1/document-types`, { credentials: 'include' }));
-      return envelope.items
-        .map((item) => ({ typeId: item.type.id, name: item.type.name, kind: item.type.kind }))
-        .filter((type) => type.kind === 'basic-form' || type.kind === 'multi-stage-form');
-    },
-    staleTime: 5 * 60_000,
-  });
-}
-
-export function formsCatalogQueryOptions(workspaceId: string) {
-  return queryOptions({
-    queryKey: ['services', 'forms', workspaceId] as const,
-    queryFn: async () => {
-      const envelope = await ok<{ items: FormCatalogEntry[] }>(
-        await fetch(`${BASE}/forms?workspaceId=${encodeURIComponent(workspaceId)}`, {
-          credentials: 'include',
-        }),
-      );
-      return envelope.items;
-    },
-  });
-}
-
-export function serviceReferencesQueryOptions(id: string, versionId: string) {
-  return queryOptions({
-    queryKey: ['services', 'detail', id, 'references', versionId] as const,
-    queryFn: async () => {
-      const envelope = await ok<{ items: ServiceReference[] }>(
-        await fetch(
-          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references`,
-          { credentials: 'include' },
-        ),
-      );
-      return envelope.items;
-    },
-    staleTime: 10_000,
-  });
-}
-
-export interface ServiceAgreementRef {
-  id: string;
-  /** Document-only pointer — the agreement resolves its current published version server-side. */
-  agreementDocumentId: string;
-  title: string;
-  isOptional: boolean;
-  isGlobal: boolean;
-  position: number;
-  createdAt: string;
-}
-
-/** The service agreements attached to a service version (feature 86). */
-export function serviceAgreementRefsQueryOptions(id: string, versionId: string) {
-  return queryOptions({
-    queryKey: ['services', 'detail', id, 'agreements', versionId] as const,
-    queryFn: async () => {
-      const envelope = await ok<{ items: ServiceAgreementRef[] }>(
-        await fetch(
-          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
-          { credentials: 'include' },
-        ),
-      );
-      return envelope.items;
-    },
-    staleTime: 10_000,
-  });
-}
-
-export function attachServiceAgreement(
-  id: string,
-  versionId: string,
-  agreementDocumentId: string,
-): Promise<ServiceAgreementRef> {
-  return send(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
-    'POST',
-    { agreementDocumentId },
-  );
-}
-
-export async function detachServiceAgreement(
-  id: string,
-  versionId: string,
-  referenceId: string,
-): Promise<void> {
-  const res = await fetch(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/${encodeURIComponent(referenceId)}`,
-    { method: 'DELETE', credentials: 'include' },
-  );
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
 }
 
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
@@ -331,27 +216,53 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
   );
 }
 
-/** Composite create — service + draft v1 data + applications (inline forms + references), atomic. */
+/** A service another document may reference (doc 287): the workspace's own in any status, plus published ones elsewhere. */
+export interface ReferenceableService {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  title: string | null;
+  description: string | null;
+  status: VersionStatus | 'none';
+}
+
+/** The services `workspaceId` may reference, never `excludeId` (the service being edited), matching `q`. */
+export function referenceableServicesQueryOptions(
+  workspaceId: string,
+  params: { q: string; excludeId?: string; limit?: number },
+) {
+  return queryOptions({
+    queryKey: ['services', 'referenceable', workspaceId, params] as const,
+    queryFn: async () => {
+      const search = new URLSearchParams({ workspaceId, limit: String(params.limit ?? 25) });
+      if (params.q !== '') search.set('q', params.q);
+      if (params.excludeId !== undefined) search.set('excludeId', params.excludeId);
+      return ok<Paginated<ReferenceableService>>(
+        await fetch(`${BASE}/referenceable?${search.toString()}`, { credentials: 'include' }),
+      );
+    },
+    staleTime: 10_000,
+  });
+}
+
+/** Create a service — the document + its draft v1, seeded from the published Service template. */
 export function createService(input: {
   workspaceId: string;
   title: string;
-  data: Record<string, unknown>;
-  applications: ApplicationInput[];
+  /** Doc 228: the template to build from. */
+  templateId?: string;
 }): Promise<{ service: Service; versions: ServiceVersion[] }> {
   return send(BASE, 'POST', input);
 }
 
-/** Composite draft save — data + title + reconciled application references. */
+/**
+ * Save a draft version's content: its form, and (doc 230) the staff's answers to it in `data`. Without
+ * `data` the server keeps the answers it has.
+ */
 export function updateDraft(
   id: string,
   versionId: string,
-  input: {
-    data: Record<string, unknown>;
-    title?: string;
-    applications?: ApplicationInput[];
-    /** Ordered application-method reference ids — repositions them on save (feature 132). */
-    applicationOrder?: string[];
-  },
+  input: { content: DocumentContent & { data?: Record<string, unknown> } },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
@@ -367,6 +278,53 @@ export function publishVersion(id: string, versionId: string): Promise<ServiceVe
   );
 }
 
+/** Doc 289: one application method's row in the publish precheck. */
+export interface MethodCheck {
+  id: string;
+  /** Null when the method was not found. */
+  title: string | null;
+  status: VersionStatus | null;
+  /** Empty = valid. */
+  problems: string[];
+}
+
+/** Doc 289: what publishing a service version checks — `GET …/versions/:versionId/publish-check`. */
+export interface PublishCheck {
+  ok: boolean;
+  hasMethods: boolean;
+  methods: MethodCheck[];
+}
+
+/** Doc 289 rule 9: never cached across dialog opens — each open checks the version as it is now. */
+export function publishCheckQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'publish-check', id, versionId] as const,
+    queryFn: async () =>
+      ok<PublishCheck>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/publish-check`,
+          { credentials: 'include' },
+        ),
+      ),
+    gcTime: 0,
+    staleTime: 0,
+  });
+}
+
+/** Doc 289 rule 16: an application method as service version `versionId` uses it (published, draft or then-published). */
+export function serviceMethodQueryOptions(id: string, versionId: string, methodId: string) {
+  return queryOptions({
+    queryKey: ['services', 'method', id, versionId, methodId] as const,
+    queryFn: async () =>
+      ok<FormWithVersion>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/application-methods/${encodeURIComponent(methodId)}`,
+          { credentials: 'include' },
+        ),
+      ),
+  });
+}
+
 export function archiveVersion(id: string, versionId: string): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/archive`,
@@ -378,119 +336,32 @@ export function addServiceVersion(id: string): Promise<ServiceVersion> {
   return send(`${BASE}/${encodeURIComponent(id)}/versions`, 'POST');
 }
 
-/** Delete a service with no application methods (server returns 409 if it has any → archive instead). */
+/** Delete a service with no submissions (the server returns 409 otherwise → archive instead). */
 export async function deleteService(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
+  await noContent(`${BASE}/${encodeURIComponent(id)}`, 'DELETE');
 }
 
-/** Discard a draft version (deletes it + its application forms). */
+/** Discard a draft version. Refuses the last remaining version — delete the service instead. */
 export async function discardServiceVersion(id: string, versionId: string): Promise<void> {
-  const res = await fetch(
+  await noContent(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
-    { method: 'DELETE', credentials: 'include' },
+    'DELETE',
   );
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
 }
 
-/** Archive a service (archives all its versions). */
+/** Archive a service (archives every non-archived version). */
 export async function archiveService(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/archive`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
+  await noContent(`${BASE}/${encodeURIComponent(id)}/archive`, 'POST');
 }
 
-/** Reactivate an archived service (restores its latest version + that version's forms). */
+/** Reactivate an archived service (clears `archived_at` on its latest version). */
 export async function reactivateService(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/reactivate`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
+  await noContent(`${BASE}/${encodeURIComponent(id)}/reactivate`, 'POST');
 }
 
-/** Create a new form (of `typeId`, with an optional designed `definition`) AND reference it from a
- * service draft version — the "Add application method" route flow (feature 44). */
-export function createReferencedForm(
-  id: string,
-  versionId: string,
-  input: { typeId: string; title: string; label?: string; definition?: object },
-): Promise<ServiceReference> {
-  return send(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/forms`,
-    'POST',
-    input,
-  );
-}
-
-/** Create an external application method (a labelled https link) on a service draft version and
- * reference it — the External-link "Add application method" flow (feature 131). */
-export function createExternalApplication(
-  id: string,
-  versionId: string,
-  input: { label: string; url: string },
-): Promise<ServiceReference> {
-  return send(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications`,
-    'POST',
-    input,
-  );
-}
-
-/** Edit an external application method's label + url (draft version only). */
-export function updateExternalApplication(
-  id: string,
-  versionId: string,
-  referenceId: string,
-  input: { label: string; url: string },
-): Promise<ServiceReference> {
-  return send(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications/${encodeURIComponent(referenceId)}`,
-    'PATCH',
-    input,
-  );
-}
-
-/** Remove an application method from a service draft version. The form is deleted with its last
- * reference when it has no submissions; the server returns 409 when it does (archive instead). */
-export async function removeReference(
-  id: string,
-  versionId: string,
-  referenceId: string,
-): Promise<void> {
-  const res = await fetch(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}`,
-    { method: 'DELETE', credentials: 'include' },
-  );
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
-}
-
-/** Archive an application-method form (for forms with submissions that can't be deleted). */
-export async function archiveReference(
-  id: string,
-  versionId: string,
-  referenceId: string,
-): Promise<void> {
-  const res = await fetch(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}/archive`,
-    { method: 'POST', credentials: 'include' },
-  );
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
+async function noContent(url: string, method: string): Promise<void> {
+  const res = await fetch(url, { method, credentials: 'include' });
+  // Doc 230: through `ok`, so a refusal carries the API's own reason (a 409's whole point) rather
+  // than "Request failed: 409" — the edit page's delete dialog shows it.
+  if (!res.ok) await ok<never>(res);
 }

@@ -4,6 +4,10 @@
  * reaches notification-service directly. Mutations are credentialed calls (Origin →
  * CSRF-allowlisted), matching the applications.ts idiom.
  */
+import {
+  type SharedEventStreamDeps,
+  subscribeSharedEventStream,
+} from '@repo/react/shared-event-stream';
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 
@@ -112,25 +116,35 @@ export interface NotificationsSubscription {
   close: () => void;
 }
 
+/** The lock + channel the tabs share. */
+export const NOTIFICATIONS_CHANNEL = 'sdg-staff-notifications';
+
 /**
- * Subscribe to the BFF's real-time notification stream (feature 125). A native EventSource
- * (auto-reconnecting — which also re-enters the BFF pipe with a fresh m2m token upstream) on
- * the session cookie; events carry no data, so `onEvent` should invalidate + refetch. The
- * constructor is injectable for tests; when no implementation exists (jsdom), this no-ops —
- * the 30s unread poll remains the fallback everywhere.
+ * Subscribe to the BFF's real-time notification stream (feature 125) — ONE stream for all of this browser's tabs
+ * (126 B1 / 125 B1): a stream per tab used up the browser's six connections per host, after which every request to
+ * the BFF queued forever. `@repo/react/shared-event-stream` elects one tab to hold the native EventSource (on the
+ * session cookie; auto-reconnecting) and relays its events to the rest. Events carry no data, so `onEvent` should
+ * invalidate + refetch. Both arguments after `onEvent` are injectable for tests; with no EventSource (jsdom) this
+ * no-ops — the 30s unread poll remains the fallback everywhere.
  */
 export function subscribeToNotifications(
   onEvent: () => void,
   EventSourceCtor: typeof EventSource | undefined = typeof EventSource === 'undefined'
     ? undefined
     : EventSource,
+  shared: Omit<SharedEventStreamDeps, 'EventSource'> = {
+    locks: typeof navigator === 'undefined' ? undefined : navigator.locks,
+    BroadcastChannel: typeof BroadcastChannel === 'undefined' ? undefined : BroadcastChannel,
+  },
 ): NotificationsSubscription {
-  if (EventSourceCtor === undefined) {
-    return { close: () => {} };
-  }
-  const source = new EventSourceCtor(`${BFF_ORIGIN}/v1/me/notifications/stream`, {
-    withCredentials: true,
-  });
-  source.addEventListener('notification', onEvent);
-  return { close: () => source.close() };
+  return subscribeSharedEventStream(
+    {
+      url: `${BFF_ORIGIN}/v1/me/notifications/stream`,
+      channel: NOTIFICATIONS_CHANNEL,
+      event: 'notification',
+      onEvent,
+      withCredentials: true,
+    },
+    { EventSource: EventSourceCtor, ...shared },
+  );
 }

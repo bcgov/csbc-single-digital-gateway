@@ -3,21 +3,14 @@ import { z } from 'zod';
 
 /**
  * DTOs for the citizen application/submission surface (feature 63). Workspace-free, like the rest
- * of the citizen API. The form-to-fill read is public; the `/me/applications` lifecycle is auth-only.
+ * of the citizen API; the `/me/applications` lifecycle is auth-only.
+ *
+ * Feature 217: the public form-to-fill read is gone (it resolved a form through the service's
+ * `application_form` references), and so is every "owning service" field — a submission's document
+ * is the FORM, and the service was only ever reachable through a reference. `kind` is gone too:
+ * a form is one `{ schema, variants }` document (doc 275), and a routed application is a `Funnel` root inside
+ * each variant.
  */
-
-// ── The form a citizen fills (public read) ───────────────────────────────────────────────────────
-
-/** The form to render for an application: its kind + structure (`{schema,uischema}` or `{stages,…}`). */
-export const applicationFormToFillSchema = z.object({
-  serviceId: z.string(),
-  formId: z.string(),
-  formVersionId: z.string(),
-  kind: z.string(),
-  title: z.string(),
-  structure: z.record(z.string(), z.unknown()),
-});
-export class ApplicationFormToFillDto extends createZodDto(applicationFormToFillSchema) {}
 
 // ── Submission status (mirrors submission_versions.status) ────────────────────────────────────────
 
@@ -36,11 +29,12 @@ export type SubmissionStatus = z.infer<typeof submissionStatusSchema>;
 
 export const myApplicationSchema = z.object({
   id: z.string(),
-  serviceId: z.string(),
-  serviceVersionId: z.string(),
-  serviceTitle: z.string(),
-  /** The application method / form the citizen applied through (the row's title). */
-  formTitle: z.string(),
+  /** Doc 292 rule 7: the published service the application's method belongs to, or null. */
+  serviceId: z.string().nullable(),
+  formId: z.string(),
+  formVersionId: z.string(),
+  /** The application method / form the citizen applied through — its version's generated title. */
+  formTitle: z.string().nullable(),
   reference: z.string(),
   status: submissionStatusSchema,
   statusLabel: z.string(),
@@ -69,8 +63,7 @@ export class SubmissionDto extends createZodDto(submissionSchema) {}
 
 /**
  * The full view of one application for the application page: the submission + the form it was made
- * through (kind + render structure) + the owning service, so the page can show names and render the
- * submitted answers read-only.
+ * through, so the page can show the name and render the submitted answers read-only.
  */
 export const applicationDetailSchema = z.object({
   id: z.string(),
@@ -79,11 +72,8 @@ export const applicationDetailSchema = z.object({
   statusLabel: z.string(),
   formId: z.string(),
   formVersionId: z.string(),
-  formTitle: z.string(),
-  serviceId: z.string(),
-  serviceTitle: z.string(),
-  /** `basic-form` | `multi-stage-form` — how to render `structure` + `data`. */
-  kind: z.string(),
+  formTitle: z.string().nullable(),
+  /** The authored document to render `data` against: `{ schema, variants }` (doc 275). */
   structure: z.record(z.string(), z.unknown()),
   data: z.record(z.string(), z.unknown()),
   /** The latest reviewer note (from `reviews.reason`), surfaced for rejected / action-needed. */

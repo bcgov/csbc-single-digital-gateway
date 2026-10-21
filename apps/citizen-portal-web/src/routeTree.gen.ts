@@ -16,7 +16,6 @@ import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
-import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
 import { Route as DevDropdownMenuRouteImport } from './routes/dev/dropdown-menu'
 import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
 import { Route as DevDialogRouteImport } from './routes/dev/dialog'
@@ -26,13 +25,13 @@ import { Route as DevBreadcrumbRouteImport } from './routes/dev/breadcrumb'
 import { Route as DevBadgeRouteImport } from './routes/dev/badge'
 import { Route as DevAlertRouteImport } from './routes/dev/alert'
 import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
-import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
+import { Route as ApplicationsApplicationIdRouteImport } from './routes/applications.$applicationId'
 import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as AccountServiceAgreementsIndexRouteImport } from './routes/account_.service-agreements.index'
 import { Route as AccountServiceAgreementsServiceAgreementIdRouteImport } from './routes/account_.service-agreements.$serviceAgreementId'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
-import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
+import { Route as ServicesServiceIdApplyMethodIdRouteImport } from './routes/services.$serviceId.apply.$methodId'
 
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
@@ -67,11 +66,6 @@ const DevStatusBannerRoute = DevStatusBannerRouteImport.update({
 const DevIconsRoute = DevIconsRouteImport.update({
   id: '/icons',
   path: '/icons',
-  getParentRoute: () => DevRouteRoute,
-} as any)
-const DevFormElementsRoute = DevFormElementsRouteImport.update({
-  id: '/form-elements',
-  path: '/form-elements',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevDropdownMenuRoute = DevDropdownMenuRouteImport.update({
@@ -119,11 +113,12 @@ const DevAccordionRoute = DevAccordionRouteImport.update({
   path: '/accordion',
   getParentRoute: () => DevRouteRoute,
 } as any)
-const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
-  id: '/applications/$id',
-  path: '/applications/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApplicationsApplicationIdRoute =
+  ApplicationsApplicationIdRouteImport.update({
+    id: '/applications/$applicationId',
+    path: '/applications/$applicationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AccountNotificationsRoute = AccountNotificationsRouteImport.update({
   id: '/account_/notifications',
   path: '/account/notifications',
@@ -152,10 +147,10 @@ const ServicesServiceIdVersionsVersionIdRoute =
     path: '/services/$serviceId/versions/$versionId',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ServicesServiceIdApplyFormIdRoute =
-  ServicesServiceIdApplyFormIdRouteImport.update({
-    id: '/services/$serviceId/apply/$formId',
-    path: '/services/$serviceId/apply/$formId',
+const ServicesServiceIdApplyMethodIdRoute =
+  ServicesServiceIdApplyMethodIdRouteImport.update({
+    id: '/services/$serviceId/apply/$methodId',
+    path: '/services/$serviceId/apply/$methodId',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -164,7 +159,7 @@ export interface FileRoutesByFullPath {
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/account/notifications': typeof AccountNotificationsRoute
-  '/applications/$id': typeof ApplicationsIdRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -174,7 +169,6 @@ export interface FileRoutesByFullPath {
   '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
-  '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
@@ -182,14 +176,14 @@ export interface FileRoutesByFullPath {
   '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
-  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/account/notifications': typeof AccountNotificationsRoute
-  '/applications/$id': typeof ApplicationsIdRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -199,7 +193,6 @@ export interface FileRoutesByTo {
   '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
-  '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
@@ -207,7 +200,7 @@ export interface FileRoutesByTo {
   '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account/service-agreements': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
-  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesById {
@@ -216,7 +209,7 @@ export interface FileRoutesById {
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/account_/notifications': typeof AccountNotificationsRoute
-  '/applications/$id': typeof ApplicationsIdRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -226,7 +219,6 @@ export interface FileRoutesById {
   '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
-  '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
@@ -234,7 +226,7 @@ export interface FileRoutesById {
   '/account_/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
   '/account_/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
-  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/apply/$methodId': typeof ServicesServiceIdApplyMethodIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRouteTypes {
@@ -244,7 +236,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/account'
     | '/account/notifications'
-    | '/applications/$id'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -254,7 +246,6 @@ export interface FileRouteTypes {
     | '/dev/dialog'
     | '/dev/draggable'
     | '/dev/dropdown-menu'
-    | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
     | '/dev/'
@@ -262,14 +253,14 @@ export interface FileRouteTypes {
     | '/account/service-agreements/$serviceAgreementId'
     | '/account/service-agreements/'
     | '/services/$serviceId/'
-    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
     | '/account/notifications'
-    | '/applications/$id'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -279,7 +270,6 @@ export interface FileRouteTypes {
     | '/dev/dialog'
     | '/dev/draggable'
     | '/dev/dropdown-menu'
-    | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
     | '/dev'
@@ -287,7 +277,7 @@ export interface FileRouteTypes {
     | '/account/service-agreements/$serviceAgreementId'
     | '/account/service-agreements'
     | '/services/$serviceId'
-    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   id:
     | '__root__'
@@ -295,7 +285,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/account'
     | '/account_/notifications'
-    | '/applications/$id'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -305,7 +295,6 @@ export interface FileRouteTypes {
     | '/dev/dialog'
     | '/dev/draggable'
     | '/dev/dropdown-menu'
-    | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
     | '/dev/'
@@ -313,7 +302,7 @@ export interface FileRouteTypes {
     | '/account_/service-agreements/$serviceAgreementId'
     | '/account_/service-agreements/'
     | '/services/$serviceId/'
-    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/apply/$methodId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesById: FileRoutesById
 }
@@ -322,12 +311,12 @@ export interface RootRouteChildren {
   DevRouteRoute: typeof DevRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   AccountNotificationsRoute: typeof AccountNotificationsRoute
-  ApplicationsIdRoute: typeof ApplicationsIdRoute
+  ApplicationsApplicationIdRoute: typeof ApplicationsApplicationIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   AccountServiceAgreementsServiceAgreementIdRoute: typeof AccountServiceAgreementsServiceAgreementIdRoute
   AccountServiceAgreementsIndexRoute: typeof AccountServiceAgreementsIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
-  ServicesServiceIdApplyFormIdRoute: typeof ServicesServiceIdApplyFormIdRoute
+  ServicesServiceIdApplyMethodIdRoute: typeof ServicesServiceIdApplyMethodIdRoute
   ServicesServiceIdVersionsVersionIdRoute: typeof ServicesServiceIdVersionsVersionIdRoute
 }
 
@@ -380,13 +369,6 @@ declare module '@tanstack/react-router' {
       path: '/icons'
       fullPath: '/dev/icons'
       preLoaderRoute: typeof DevIconsRouteImport
-      parentRoute: typeof DevRouteRoute
-    }
-    '/dev/form-elements': {
-      id: '/dev/form-elements'
-      path: '/form-elements'
-      fullPath: '/dev/form-elements'
-      preLoaderRoute: typeof DevFormElementsRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/dropdown-menu': {
@@ -452,11 +434,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevAccordionRouteImport
       parentRoute: typeof DevRouteRoute
     }
-    '/applications/$id': {
-      id: '/applications/$id'
-      path: '/applications/$id'
-      fullPath: '/applications/$id'
-      preLoaderRoute: typeof ApplicationsIdRouteImport
+    '/applications/$applicationId': {
+      id: '/applications/$applicationId'
+      path: '/applications/$applicationId'
+      fullPath: '/applications/$applicationId'
+      preLoaderRoute: typeof ApplicationsApplicationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account_/notifications': {
@@ -494,11 +476,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceIdVersionsVersionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/services/$serviceId/apply/$formId': {
-      id: '/services/$serviceId/apply/$formId'
-      path: '/services/$serviceId/apply/$formId'
-      fullPath: '/services/$serviceId/apply/$formId'
-      preLoaderRoute: typeof ServicesServiceIdApplyFormIdRouteImport
+    '/services/$serviceId/apply/$methodId': {
+      id: '/services/$serviceId/apply/$methodId'
+      path: '/services/$serviceId/apply/$methodId'
+      fullPath: '/services/$serviceId/apply/$methodId'
+      preLoaderRoute: typeof ServicesServiceIdApplyMethodIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -514,7 +496,6 @@ interface DevRouteRouteChildren {
   DevDialogRoute: typeof DevDialogRoute
   DevDraggableRoute: typeof DevDraggableRoute
   DevDropdownMenuRoute: typeof DevDropdownMenuRoute
-  DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
   DevStatusBannerRoute: typeof DevStatusBannerRoute
   DevIndexRoute: typeof DevIndexRoute
@@ -530,7 +511,6 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevDialogRoute: DevDialogRoute,
   DevDraggableRoute: DevDraggableRoute,
   DevDropdownMenuRoute: DevDropdownMenuRoute,
-  DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
   DevStatusBannerRoute: DevStatusBannerRoute,
   DevIndexRoute: DevIndexRoute,
@@ -545,13 +525,13 @@ const rootRouteChildren: RootRouteChildren = {
   DevRouteRoute: DevRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   AccountNotificationsRoute: AccountNotificationsRoute,
-  ApplicationsIdRoute: ApplicationsIdRoute,
+  ApplicationsApplicationIdRoute: ApplicationsApplicationIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   AccountServiceAgreementsServiceAgreementIdRoute:
     AccountServiceAgreementsServiceAgreementIdRoute,
   AccountServiceAgreementsIndexRoute: AccountServiceAgreementsIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
-  ServicesServiceIdApplyFormIdRoute: ServicesServiceIdApplyFormIdRoute,
+  ServicesServiceIdApplyMethodIdRoute: ServicesServiceIdApplyMethodIdRoute,
   ServicesServiceIdVersionsVersionIdRoute:
     ServicesServiceIdVersionsVersionIdRoute,
 }

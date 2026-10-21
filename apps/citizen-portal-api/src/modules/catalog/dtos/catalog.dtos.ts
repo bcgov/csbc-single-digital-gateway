@@ -19,11 +19,15 @@ export type ListServicesQuery = z.infer<typeof listServicesQuerySchema>;
 
 // ── Responses ───────────────────────────────────────────────────────────────────────────────────
 
-/** A catalog service card — no workspace fields. Title/description come from the published version. */
+/**
+ * A catalog service card — no workspace fields. Title/description are GENERATED from the published
+ * version's content (feature 217), and are NULL when it carries no root label, or when the
+ * description is authored as rich content rather than plain text.
+ */
 export const catalogServiceSchema = z.object({
   id: z.string(),
-  title: z.string(),
-  description: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
 });
 export type CatalogService = z.infer<typeof catalogServiceSchema>;
 export class CatalogServiceDto extends createZodDto(catalogServiceSchema) {}
@@ -32,39 +36,31 @@ export class CatalogServiceListDto extends createZodDto(
 ) {}
 
 /**
- * An application method the published service version references — either an in-portal form
- * (relation `application_form`, `kind` basic-form/multi-stage-form) or an external link (relation
- * `external_application`, `kind` external-application; feature 131). `label` is the call-to-action /
- * method name; `title` is the form/method name. For an external method, `url` is the `https`
- * destination the citizen visits; NULL for forms. Workspace-free.
- */
-export const applicationFormSchema = z.object({
-  id: z.string(),
-  label: z.string().nullable(),
-  title: z.string(),
-  formId: z.string(),
-  formVersionId: z.string(),
-  kind: z.string(),
-  url: z.string().nullable(),
-});
-export type ApplicationForm = z.infer<typeof applicationFormSchema>;
-
-/**
  * A service detail = the card fields + a pointer to its current published version (so the detail
- * page can render the version content and link to the version permalink) + the application-method
- * forms the service offers. Workspace-free.
+ * page can render the version content and link to the version permalink). Workspace-free.
+ *
+ * Feature 217 dropped `applications` (the ways to apply): they came from `document_references`; doc 291 brings them back
+ * as `applicationMethods`, read from the published version's document-reference answers.
  */
+/** Doc 291 rule 5: an application method a citizen may open, as its published version names it. */
+export const catalogApplicationMethodSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+});
+
 export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   publishedVersionId: z.string(),
-  version: z.number().int(),
+  versionNumber: z.number().int(),
   publishedAt: z.string().nullable(),
-  /** The filled service content. */
-  data: z.record(z.string(), z.unknown()),
-  /** The JSON Schema + UISchema (from the bound Service type version) for rendering `data`. */
+  /** The authored document to render: its own content, not a type template + filled values. */
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
-  /** The forms a citizen can apply through (the published version's `application_form` references). */
-  applications: z.array(applicationFormSchema),
+  /** Doc 275: the uischemas by variant name; `default` is always present. */
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: z.record(z.string(), z.unknown()),
+  /** Doc 291 rules 4-6: the published application methods, in reference order. */
+  applicationMethods: z.array(catalogApplicationMethodSchema),
 });
 export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
 export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}
@@ -72,21 +68,35 @@ export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSc
 /**
  * A historical service version a citizen may read directly — only `published` or `archived`
  * versions are exposed (drafts are staff-internal). Backs "view the service as it was" from an
- * application. `data` is the version's filled service content (JSONB).
+ * application.
  */
 export const catalogServiceVersionSchema = z.object({
   id: z.string(),
   serviceId: z.string(),
-  version: z.number().int(),
+  versionNumber: z.number().int(),
   status: z.enum(['published', 'archived']),
-  title: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  /** The JSON Schema + UISchema (from the bound Service type version) for rendering `data`. */
+  title: z.string().nullable(),
+  /** The authored document to render: its own content (feature 217). */
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+  /** Doc 275: the uischemas by variant name; `default` is always present. */
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
 });
 export type CatalogServiceVersion = z.infer<typeof catalogServiceVersionSchema>;
 export class CatalogServiceVersionDto extends createZodDto(catalogServiceVersionSchema) {}
+
+/** Doc 291 rule 7: one application method's PUBLISHED form — what the apply page fills. No answers. */
+export const catalogApplicationMethodDetailSchema = catalogApplicationMethodSchema.extend({
+  /** Doc 292: the published version a citizen's draft is created on. */
+  versionId: z.string(),
+  schema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+});
+export type CatalogApplicationMethodDetail = z.infer<typeof catalogApplicationMethodDetailSchema>;
+export class CatalogApplicationMethodDetailDto extends createZodDto(
+  catalogApplicationMethodDetailSchema,
+) {}

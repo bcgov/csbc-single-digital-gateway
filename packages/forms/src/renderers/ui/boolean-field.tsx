@@ -1,0 +1,84 @@
+import { computeLabel, type ControlProps } from '@jsonforms/core';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@repo/ui/field';
+import type { MouseEvent, ReactNode } from 'react';
+import { controlWiring, type ControlInputProps } from './control-field';
+import { PlainField } from './control-plain-field';
+import { plainBoolean } from './control-plain-value';
+import { presentationOf } from './control-presentation';
+
+/**
+ * Doc 188 rule 23: a boolean field that must be TICKED is `const: true` on its property (doc 187 rule 29) — Ajv's own
+ * way to say it, so the gate, the rail's flags and the API's `validateSubmission` all enforce it with no new code. Its
+ * default message ("must be equal to constant") means nothing to a citizen, so the boolean controls say this instead.
+ */
+export const MUST_BE_CHECKED_MESSAGE = 'must be checked';
+
+/** Whether this control's property is the `const: true` kind. */
+export const mustBeChecked = (control: ControlProps): boolean =>
+  (control.schema as { const?: unknown }).const === true;
+
+// Clicks here already toggle: the control itself, its hidden input, or a label (which forwards to the input).
+const TOGGLES_NATIVELY = 'input, label, [role="checkbox"], [role="switch"]';
+
+/** Doc 188 rule 20b: a click anywhere else on the field toggles its checkbox or switch. */
+function toggleFromField(event: MouseEvent<HTMLDivElement>) {
+  if (event.target instanceof Element && event.target.closest(TOGGLES_NATIVELY)) return;
+  event.currentTarget.querySelector<HTMLElement>('[role="checkbox"], [role="switch"]')?.click();
+}
+
+/** What `BooleanField` hands its checkbox or switch: `ControlField`'s input props, named by the label. */
+export type BooleanInputProps = ControlInputProps & { 'aria-labelledby'?: string };
+
+interface BooleanFieldProps {
+  readonly control: ControlProps;
+  /** The control ahead of its label (Checkbox) or after it (Switch) — doc 188 rules 18-19. */
+  readonly placement: 'start' | 'end';
+  readonly children: (input: BooleanInputProps) => ReactNode;
+}
+
+/**
+ * The chrome shared by the boolean controls (doc 188 rule 17): a horizontal `@repo/ui` `Field` holding the control
+ * and a `FieldContent` of label, schema description and errors. Base UI's checkbox and switch are not labelable
+ * elements, so the control is named by `aria-labelledby` as well as the label's `htmlFor`, and described by
+ * whichever description and error rendered — the same ids `ControlField` uses. Hidden controls render nothing.
+ */
+export function BooleanField({ control, placement, children }: BooleanFieldProps) {
+  const { label, required, description, errors, enabled, visible, config } = control;
+  // Doc 211 rule 5: both boolean controls read Yes or No, so the value is computed here rather than passed in
+  // by each of them — there is nothing for a Checkbox and a Switch to disagree about once neither is drawn.
+  if (presentationOf(config) === 'plain')
+    return <PlainField control={control} value={plainBoolean(control.data)} />;
+  if (!visible) return null;
+  // Rule 23: a must-be-checked field reads as required to a citizen — asterisk included — and says why in plain words.
+  const ticked = mustBeChecked(control);
+  const message = ticked && errors ? MUST_BE_CHECKED_MESSAGE : errors;
+
+  // Doc 202 rule 50: a checkbox and a switch have no HTML read-only, so read-only falls back to disabled.
+  const { ids, input } = controlWiring(control, false, true);
+  const content = (
+    <FieldContent>
+      {ids.label ? (
+        <FieldLabel id={ids.label} htmlFor={input.id}>
+          {computeLabel(label, required === true || ticked, config?.hideRequiredAsterisk === true)}
+        </FieldLabel>
+      ) : null}
+      {ids.description ? (
+        <FieldDescription id={ids.description}>{description}</FieldDescription>
+      ) : null}
+      {ids.error ? <FieldError id={ids.error}>{message}</FieldError> : null}
+    </FieldContent>
+  );
+  const box = children({ ...input, ...(ids.label ? { 'aria-labelledby': ids.label } : {}) });
+
+  return (
+    // Keyboard users toggle through the focusable control itself; the field-wide click is a pointer convenience.
+    <Field
+      orientation="horizontal"
+      data-disabled={enabled ? undefined : true}
+      {...(enabled ? { className: 'cursor-pointer', onClick: toggleFromField } : {})}
+    >
+      {placement === 'start' ? box : content}
+      {placement === 'start' ? content : box}
+    </Field>
+  );
+}

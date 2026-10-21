@@ -5,3 +5,4 @@
 @source '../**/*.{ts,tsx,html}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
 @source '../../../packages/react/src/**/*.{ts,tsx}';
+@source '../../../packages/documents/src/**/*.{ts,tsx}';

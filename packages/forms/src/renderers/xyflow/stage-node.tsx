@@ -1,0 +1,195 @@
+import { JsonFormsDispatch } from '@jsonforms/react';
+import { Handle, type NodeProps } from '@xyflow/react';
+import { useContext, type ReactNode } from 'react';
+import { AddNodeMenu } from './add-affordance';
+import { FlowContext } from './flow-context';
+import { connectorClass, sourceSide, targetSide, trailingAnchor } from './flow-handles';
+import { useFlowEditor } from './flow-editor';
+import type { StageFlowNode } from './flow-nodes';
+import {
+  frameOverrideClass,
+  NodeBadge,
+  ringClass,
+  splitRingClass,
+  type NodeTone,
+} from './node-badge';
+
+// xyflow's stylesheet is imported unlayered, so it beats Tailwind's layered utilities: handle sizes and colours need
+// the important modifier to apply.
+const EDIT_HANDLE_CLASS = 'size-2.5! border-ring! bg-background!';
+const VIEW_HANDLE_CLASS = 'opacity-0';
+
+/**
+ * Doc 203 rules 8-9, amended 2026-09-17 and 2026-09-21: where a Stage sits in the flow, said on the CARD rather
+ * than in chrome hung off it — a BLUE ring on the one the flow starts at, a GREY one on any Stage no edge leaves.
+ *
+ * Not red (user 2026-09-17). An end is a perfectly good state — a finished flow's last Stage is one — and a
+ * ring that reads as a warning on a correct document trains the author to ignore it. Red now means only that a
+ * node can never route an answer anywhere (doc 199 rule 45b).
+ *
+ * Rule 8b (2026-09-21): the three treatments are NO LONGER exclusive. `stageTones` returns a LIST, and a Stage
+ * that is both start and end wears both captions and a split ring. Unreachable still SUPPRESSES the others — an
+ * unreachable Stage needs to say it is stranded before it says anything else — and a start is never
+ * unreachable, so that pair never arises.
+ */
+function stageTones(data: StageFlowNode['data']): NodeTone[] {
+  // Unreachable SUPPRESSES the others: a stranded node needs to say that before it says anything else. A
+  // start is never unreachable, so that pair never arises.
+  if (data.isUnreachable) return ['danger'];
+  const tones: NodeTone[] = [];
+  if (data.isStart) tones.push('success');
+  if (data.isLeaf) tones.push('neutral');
+  return tones;
+}
+
+/** Rule 8b: a Stage that is both start and end — a one-Stage flow. */
+const isSplit = (tones: readonly NodeTone[]) => tones.length > 1;
+
+function stageTreatment(data: StageFlowNode['data']): string {
+  const tones = stageTones(data);
+  const base = 'pointer-events-auto rounded-xl';
+  if (tones.length === 0) return base;
+  // Rule 8d: any ringed node drops the frame's own outline — the ring is what carries the meaning.
+  const ring = isSplit(tones) ? splitRingClass() : ringClass(tones[0] as NodeTone);
+  return `${base} ${ring} ${frameOverrideClass()}`;
+}
+
+/** Doc 203 rules 8-9 (amended): what a Stage's ring says in words. */
+export const START_LABEL = 'Start';
+export const END_LABEL = 'End';
+export const UNREACHABLE_LABEL = 'Not reachable';
+
+const STAGE_LABELS: Readonly<Record<NodeTone, string>> = {
+  danger: UNREACHABLE_LABEL,
+  success: START_LABEL,
+  neutral: END_LABEL,
+};
+
+/** Rule 8b: the opaque inset the split ring needs; a single ring sits outside the box and needs none. */
+function StageBody({ split, children }: { readonly split: boolean; readonly children: ReactNode }) {
+  return split ? (
+    <div data-slot="stage-node-body" className="rounded-lg bg-background">
+      {children}
+    </div>
+  ) : (
+    children
+  );
+}
+
+/**
+ * The captions for this Stage — the same tones the ring uses, so the two can never disagree.
+ *
+ * Rule 8b: Start sits LEFT and End sits RIGHT, so a Stage that is both wears one at each end of the strip
+ * above the card, each directly above its own half of the split ring.
+ */
+function StageBadges({ data }: { readonly data: StageFlowNode['data'] }) {
+  const tones = stageTones(data);
+  return (
+    <>
+      {tones.map((tone) => (
+        <NodeBadge
+          key={tone}
+          label={STAGE_LABELS[tone]}
+          tone={tone}
+          side={tone === 'neutral' ? 'right' : 'left'}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * The xyflow node every Stage is drawn with (doc 195 rules 7, 15): the Stage element dispatched back through JSONForms
+ * with the Flow's registry — so the registry, never a tester, decides whether it gets a studio frame — between a target
+ * handle on top and a source handle beneath. View-only, the handles only anchor edges: not connectable, and hidden.
+ * Under a Flow editor (doc 196 rule 5) they are visible and connectable.
+ *
+ * Doc 198 rules 3, 32: the handles sit on the faces the canvas direction puts them on, and the leaf + that hangs off
+ * the card follows them. Changing the layout without moving them draws every edge,
+ * and every affordance, leaving the wrong face.
+ *
+ * Rule 15b: xyflow sets `pointer-events: none` on a node that is neither selectable nor draggable, which every child
+ * inherits — so a press on the card would fall through to the pane (in the studio, selecting the Flow instead of the
+ * Stage). The dispatched Stage sits in a `pointer-events-auto` wrapper so it can be pressed.
+ */
+export function StageNode({ data }: NodeProps<StageFlowNode>) {
+  const flow = useContext(FlowContext);
+  const editor = useFlowEditor();
+  const editing = editor !== null;
+  if (!flow) return null;
+  const { schema, path, enabled, renderers, cells } = flow;
+  const handleClass = editing ? EDIT_HANDLE_CLASS : VIEW_HANDLE_CLASS;
+  return (
+    <>
+      {/*
+        Doc 203 rule 8, SUPERSEDED 2026-09-17 (user: "the start stage should have a thick green border/glow.
+        The input slot should be removed"). The start Stage wore a "Start" badge on a connector line above its
+        target handle; the card itself now says it, and the input slot is gone — nothing flows INTO the start,
+        so offering somewhere to connect one was inviting a shape the flow has no meaning for.
+
+        The handle is still RENDERED, hidden and unconnectable, rather than deleted: xyflow silently drops an
+        edge whose end names a handle the node does not have (doc 199 rule 18's trap), so deleting it would
+        make an authored edge into the start VANISH with no error anywhere. Kept, such an edge still draws, and
+        its source still earns the "Not reachable" badge — which is the honest reading of that document.
+      */}
+      <StageBadges data={data} />
+      <Handle
+        type="target"
+        position={targetSide(flow.direction)}
+        isConnectable={editing && !data.isStart}
+        className={data.isStart ? VIEW_HANDLE_CLASS : handleClass}
+      />
+      <div
+        data-slot="stage-node"
+        className={stageTreatment(data)}
+        {...(data.isStart ? { 'data-start': '' } : {})}
+        {...(data.isLeaf ? { 'data-end': '' } : {})}
+        {...(data.isUnreachable ? { 'data-unreachable': '' } : {})}
+        {...(isSplit(stageTones(data)) ? { 'data-split': '' } : {})}
+      >
+        {/*
+          Rule 8b: the split ring is a gradient BACKGROUND, so it needs an opaque child to cover everything
+          but the 4px band. Without one it showed through the studio frame's transparent padding too, and
+          the "ring" came out about 30px thick instead of matching `ring-4`. `rounded-lg` is `rounded-xl`
+          less the 4px band, so the inner corner follows the outer one.
+        */}
+        <StageBody split={isSplit(stageTones(data))}>
+          <JsonFormsDispatch
+            uischema={data.element}
+            schema={schema}
+            path={path}
+            enabled={enabled}
+            {...(renderers ? { renderers } : {})}
+            {...(cells ? { cells } : {})}
+          />
+        </StageBody>
+      </div>
+      <Handle
+        type="source"
+        position={sourceSide(flow.direction)}
+        isConnectable={editing}
+        className={handleClass}
+      />
+      {/*
+        Doc 198 rules 6-7: the end of a chain grows a dangling + that appends the next Stage. It hangs off the
+        TRAILING face — the one the flow leaves by — so it continues the chain rather than reading as something
+        under the card (doc 199 amendment 8).
+      */}
+      {editor && data.isLeaf ? (
+        <div
+          data-slot="flow-leaf-add"
+          className={`pointer-events-none absolute flex items-center ${trailingAnchor(flow.direction)}`}
+        >
+          <span aria-hidden="true" className={connectorClass(flow.direction)} />
+          {/* Doc 199 rule 24: the leaf + now offers a Stage or a Condition. */}
+          <AddNodeMenu
+            label="Add a node"
+            onAdd={(kind) =>
+              editor.onGesture({ type: 'append', stageId: editor.idOf(data.element), kind })
+            }
+          />
+        </div>
+      ) : null}
+    </>
+  );
+}

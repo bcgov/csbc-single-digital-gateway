@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   Popover,
   PopoverContent,
@@ -65,5 +65,24 @@ describe('Popover', () => {
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  // Forms doc 185 rule 12 — a trigger-less popover positioned against another element.
+  it('positions a trigger-less popover against the anchor passed to PopoverContent', async () => {
+    const anchorElement = document.createElement('div');
+    document.body.append(anchorElement);
+    const anchor = vi.fn(() => anchorElement);
+
+    render(
+      <Popover open>
+        <PopoverContent anchor={anchor}>Anchored</PopoverContent>
+      </Popover>,
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Anchored');
+    await waitFor(() => expect(anchor).toHaveBeenCalled());
+    expect(dialog).not.toHaveAttribute('anchor');
+    anchorElement.remove();
   });
 });

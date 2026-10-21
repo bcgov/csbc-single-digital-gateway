@@ -3,7 +3,7 @@
 //   - the barrel             src/index.ts
 //   - the package.json "exports" map             (one subpath per module)
 // Run after adding/removing a module: `npm run gen:entries` (from packages/react).
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,6 +20,19 @@ const modules = readdirSync(srcDir, { withFileTypes: true })
 //    directory index explicitly (`./<module>/index`) so the file never re-exports itself.
 for (const name of modules) {
   writeFileSync(resolve(srcDir, `${name}.ts`), `export * from './${name}/index';\n`);
+}
+
+// 1b. Remove ORPHANED flat entries — a `src/<name>.ts` with no `src/<name>/index.ts` beside it.
+//     Without this, deleting a module leaves its entry file behind, the barrel keeps re-exporting
+//     a directory that no longer exists, and the build fails on a module nobody asked for.
+for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+  if (!entry.isFile() || !entry.name.endsWith('.ts') || entry.name === 'index.ts') {
+    continue;
+  }
+  const name = entry.name.slice(0, -'.ts'.length);
+  if (!modules.includes(name)) {
+    rmSync(resolve(srcDir, entry.name));
+  }
 }
 
 // 2. Barrel (root export) → re-export each flat module entry.

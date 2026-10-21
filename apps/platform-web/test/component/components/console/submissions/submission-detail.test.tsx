@@ -5,11 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SubmissionDetail } from '@/components/console/submissions/submission-detail';
 import { reviewSubmission } from '@/lib/submissions';
 import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions';
-import { mockBasicSubmission } from '../../../../support/fixtures';
+
+const mockParams = { slug: 'riverton', id: 'sub-123' };
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
-  useParams: () => ({ slug: 'riverton', id: 'sub-123' }),
+  useParams: () => mockParams,
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {
@@ -25,13 +26,18 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   },
 }));
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ data, readonly }: any) => (
-    <div data-testid="mock-json-forms">
-      Mocked JSONForms: {JSON.stringify(data)} (readonly: {String(readonly)})
-    </div>
-  )),
-}));
+/**
+ * Feature 217: the answers were a read-only `<JsonForms>` over the submission's `structure`, which
+ * went with the `@repo/react` renderers. They are listed as key/value pairs until `@repo/forms`'
+ * `SubmissionView` (doc 211) is wired in, so there is no JSONForms mock left — and no per-page
+ * multi-stage rendering, since a staged form is one `Flow` document now.
+ */
+
+// Docs 282-283: a document-shaped submission reads back through DocumentView, which renders
+// JSONForms — proxied here so the test can see what it was handed.
+vi.mock('@repo/documents/view', async () =>
+  (await import('../../../../support/mock-documents')).documentViewMock(),
+);
 
 vi.mock('@repo/ui/skeleton', () => ({
   Skeleton: () => <div data-testid="skeleton" />,
@@ -62,10 +68,27 @@ vi.mock('@/lib/submissions', async (importOriginal) => {
   };
 });
 
+const mockBasicSubmission: SubmissionDetailData = {
+  id: 'sub-123',
+  formId: 'form-123',
+  formTitle: 'Application Form',
+  applicantName: 'Test User',
+  applicantEmail: 'test@example.com',
+  status: 'pending',
+  statusLabel: 'Pending Review',
+  reference: 'REF-0001',
+  submittedAt: '2026-07-15T00:00:00Z',
+  updatedAt: '2026-07-15T00:00:00Z',
+  structure: {
+    schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
+    uischema: { type: 'VerticalLayout', elements: [] },
+  },
+  data: { parkingType: 'Residential' },
+  reviews: [],
+};
+
 const mockMultiStageSubmission: SubmissionDetailData = {
   id: 'sub-456',
-  serviceId: 'srv-123',
-  serviceTitle: 'Business Permit',
   formId: 'form-456',
   formTitle: 'Multi Form',
   applicantName: 'Jane Doe',
@@ -75,7 +98,6 @@ const mockMultiStageSubmission: SubmissionDetailData = {
   reference: 'REF-0002',
   submittedAt: '2026-07-15T00:00:00Z',
   updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'multi-stage-form',
   structure: {
     stages: [
       {
@@ -137,14 +159,14 @@ describe('SubmissionDetail Component Test Suite', () => {
     queryClient.clear();
   });
 
-  it('Should render loading skeletons when query is pending', () => {
+  it('renders loading skeletons when query is pending', () => {
     mockSubmissionLoading = true;
     renderSubmissionDetail(queryClient);
 
     expect(screen.getAllByTestId('skeleton')).toHaveLength(2);
   });
 
-  it('Should render error state when query fails', async () => {
+  it('renders error state when query fails', async () => {
     mockSubmissionError = new Error('Failed to fetch');
     renderSubmissionDetail(queryClient);
 
@@ -155,22 +177,20 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(backBtn.getAttribute('href')).toBe('/app/riverton/submissions');
   });
 
-  it('Should render loaded state for basic form submission with reviewable status', async () => {
+  it('renders loaded state for basic form submission with reviewable status', async () => {
     mockSubmissionData = mockBasicSubmission;
     renderSubmissionDetail(queryClient);
 
     // Header info
     expect(await screen.findByRole('heading', { name: 'Test User' })).toBeInTheDocument();
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
-    expect(screen.getByText('Parking Permits · Application Form')).toBeInTheDocument();
+    expect(screen.getByText('Application Form')).toBeInTheDocument();
     expect(screen.getByText(/REF-0001 · test@example\.com/)).toBeInTheDocument();
 
     // Answers section
     expect(screen.getByRole('heading', { name: 'Answers' })).toBeInTheDocument();
-    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Mocked JSONForms: {"parkingType":"Residential"} \(readonly: true\)/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('parkingType')).toBeInTheDocument();
+    expect(screen.getByText('Residential')).toBeInTheDocument();
 
     // Review Panel for reviewable status ('pending')
     expect(screen.getByRole('heading', { name: 'Review' })).toBeInTheDocument();
@@ -183,19 +203,17 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.queryByRole('heading', { name: 'History' })).not.toBeInTheDocument();
   });
 
-  it('Should render loaded state for multi-stage form submission with actioned status and history', async () => {
+  it('renders loaded state for multi-stage form submission with actioned status and history', async () => {
     mockSubmissionData = mockMultiStageSubmission;
     renderSubmissionDetail(queryClient);
 
     expect(await screen.findByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
     expect(screen.getAllByText('Approved')).toHaveLength(2);
-    expect(screen.getByText('Business Permit · Multi Form')).toBeInTheDocument();
+    expect(screen.getByText('Multi Form')).toBeInTheDocument();
     expect(screen.getByText(/REF-0002/)).toBeInTheDocument();
 
-    // Multi-stage answers should show titles of pages
-    expect(screen.getByRole('heading', { name: 'Business Details' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Contact Details' })).toBeInTheDocument();
-    expect(screen.getAllByTestId('mock-json-forms')).toHaveLength(2);
+    // Feature 217: no per-page sections — the answers are one flat list, whatever the document.
+    expect(screen.queryByRole('heading', { name: 'Business Details' })).toBeNull();
 
     // Actioned review status notice
     expect(screen.getByText(/has been actioned/i)).toBeInTheDocument();
@@ -208,7 +226,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.getByText(/Admin Staff/)).toBeInTheDocument();
   });
 
-  it('Should perform review submission successfully and invalidate queries', async () => {
+  it('performs review submission successfully and invalidates queries', async () => {
     const user = userEvent.setup();
     mockSubmissionData = mockBasicSubmission;
 
@@ -241,7 +259,7 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(noteInput).toHaveValue(''); // Resets textarea after success
   });
 
-  it('Should show error message if review submission fails', async () => {
+  it('shows error message if review submission fails', async () => {
     const user = userEvent.setup();
     mockSubmissionData = mockBasicSubmission;
 
@@ -257,11 +275,9 @@ describe('SubmissionDetail Component Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('Should handle null submittedAt, empty page names, and review without reason in multi-stage form', async () => {
+  it('handles null submittedAt, empty page names, and reviews without reason in multi-stage form', async () => {
     const mockCustomSubmission: SubmissionDetailData = {
       id: 'sub-custom',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
       formId: 'form-custom',
       formTitle: 'Custom Form',
       applicantName: 'Charlie',
@@ -271,7 +287,6 @@ describe('SubmissionDetail Component Test Suite', () => {
       reference: 'REF-0003',
       submittedAt: null as any,
       updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
       structure: {
         stages: [
           {
@@ -310,11 +325,9 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.queryByText('Looks great!')).not.toBeInTheDocument();
   });
 
-  it('Should handle basic form submission with empty/missing schema', async () => {
+  it('handles basic form submission with empty/missing schema', async () => {
     const mockEmptyBasicSubmission: SubmissionDetailData = {
       id: 'sub-empty',
-      serviceId: 'srv-123',
-      serviceTitle: 'Empty Service',
       formId: 'form-empty',
       formTitle: 'Empty Form',
       applicantName: 'Empty User',
@@ -324,7 +337,6 @@ describe('SubmissionDetail Component Test Suite', () => {
       reference: 'REF-0004',
       submittedAt: '2026-07-15T00:00:00Z',
       updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'basic-form',
       structure: {},
       data: {},
       reviews: [],
@@ -334,65 +346,41 @@ describe('SubmissionDetail Component Test Suite', () => {
     renderSubmissionDetail(queryClient);
 
     expect(await screen.findByRole('heading', { name: 'Empty User' })).toBeInTheDocument();
-    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
+    expect(screen.getByText(/no answers/i)).toBeInTheDocument();
   });
 
-  it('Should cover multi-stage form structure fallbacks', async () => {
-    const mockFallbackSubmission: SubmissionDetailData = {
-      id: 'sub-fallback',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
-      formId: 'form-custom',
-      formTitle: 'Custom Form',
-      applicantName: 'Charlie',
-      applicantEmail: null,
-      status: 'approved',
-      statusLabel: 'Approved',
-      reference: 'REF-0004',
-      submittedAt: null as any,
-      updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
-      structure: {},
-      data: {},
-      reviews: [],
+  it('renders a non-string answer as JSON rather than dropping it', async () => {
+    mockSubmissionData = {
+      ...mockBasicSubmission,
+      data: { consent: true, contacts: ['a@example.com'] },
     };
-
-    mockSubmissionData = mockFallbackSubmission;
     renderSubmissionDetail(queryClient);
 
-    expect(await screen.findByText('REF-0004')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Test User' })).toBeInTheDocument();
+    expect(screen.getByText('true')).toBeInTheDocument();
+    expect(screen.getByText('["a@example.com"]')).toBeInTheDocument();
   });
 
-  it('Should cover stage pages and page id fallback', async () => {
-    const mockPageFallbackSubmission: SubmissionDetailData = {
-      id: 'sub-page-fallback',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
-      formId: 'form-custom',
-      formTitle: 'Custom Form',
-      applicantName: 'Charlie',
-      applicantEmail: null,
-      status: 'approved',
-      statusLabel: 'Approved',
-      reference: 'REF-0005',
-      submittedAt: null as any,
-      updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
+  it('reads a document-shaped submission back through DocumentView, blanks shown (doc 283 rule 14)', async () => {
+    mockSubmissionData = {
+      ...mockBasicSubmission,
       structure: {
-        stages: [
-          {},
-          {
-            pages: [{}],
-          },
-        ],
+        schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
+        variants: {
+          default: { type: 'Form', label: 'Parking', elements: [] },
+          mobile: { type: 'Form', label: 'Parking (mobile)', elements: [] },
+        },
       },
-      data: {},
-      reviews: [],
     };
-
-    mockSubmissionData = mockPageFallbackSubmission;
     renderSubmissionDetail(queryClient);
 
-    expect(await screen.findByText('REF-0005')).toBeInTheDocument();
+    const view = await screen.findByTestId('document-view');
+    expect(view).toHaveAttribute('data-unanswered', 'show');
+    expect(view).toHaveAttribute('data-answers', JSON.stringify({ parkingType: 'Residential' }));
+    // The DEFAULT variant: submissions record none.
+    expect(view).toHaveTextContent('"label":"Parking"');
+    expect(view).not.toHaveTextContent('mobile');
+    // No raw key/value list beside it.
+    expect(screen.queryByText('parkingType')).toBeNull();
   });
 });

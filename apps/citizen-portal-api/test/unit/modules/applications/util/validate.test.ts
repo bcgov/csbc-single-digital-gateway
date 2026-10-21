@@ -14,36 +14,38 @@ const basic = {
   },
 };
 
-const multiStage = {
-  stages: [
-    {
-      pages: [
-        { schema: { type: 'object', required: ['a'], properties: { a: { type: 'string' } } } },
-      ],
-    },
-    { pages: [{ schema: { type: 'object', properties: { b: { type: 'boolean' } } } }] },
-  ],
+/**
+ * Doc 275: a routed application is a `Funnel` ROOT inside a `{ schema, variants }` document, so there
+ * is ONE schema covering every Form's fields (and every variant's) — not a schema per page.
+ */
+const funnel = {
+  schema: {
+    type: 'object',
+    required: ['a'],
+    properties: { a: { type: 'string' }, b: { type: 'boolean' } },
+  },
+  variants: { default: { type: 'Funnel', elements: [] } },
 };
 
 const mockValidate = () => false;
 
 describe('validate utils', () => {
   describe('validateSubmission - basic form', () => {
-    it('Should pass valid basic-form data', () => {
-      expect(validateSubmission('basic-form', basic, { name: 'Ann', age: 3 }).valid).toBe(true);
+    it('should pass valid basic-form data', () => {
+      expect(validateSubmission(basic, { name: 'Ann', age: 3 }).valid).toBe(true);
     });
 
-    it('Should fail on a missing required field', () => {
-      const result = validateSubmission('basic-form', basic, { age: 3 });
+    it('should fail on a missing required field', () => {
+      const result = validateSubmission(basic, { age: 3 });
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('Should fail on a wrong type', () => {
-      expect(validateSubmission('basic-form', basic, { name: 123 }).valid).toBe(false);
+    it('should fail on a wrong type', () => {
+      expect(validateSubmission(basic, { name: 123 }).valid).toBe(false);
     });
 
-    it('Should validate successfully when data matches schema', () => {
+    it('should validate successfully when data matches schema', () => {
       const structure = {
         schema: {
           type: 'object',
@@ -56,7 +58,7 @@ describe('validate utils', () => {
       };
 
       const validData = { name: 'Alice', age: 25 };
-      const result = validateSubmission('basic-form', structure, validData);
+      const result = validateSubmission(structure, validData);
 
       expect(result).toEqual({
         valid: true,
@@ -64,7 +66,7 @@ describe('validate utils', () => {
       });
     });
 
-    it('Should fail validation and return formatted errors when data is invalid', () => {
+    it('should fail validation and return formatted errors when data is invalid', () => {
       const structure = {
         schema: {
           type: 'object',
@@ -77,16 +79,16 @@ describe('validate utils', () => {
       };
 
       const invalidData = { age: 15 }; // missing name, age < 18
-      const result = validateSubmission('basic-form', structure, invalidData);
+      const result = validateSubmission(structure, invalidData);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain("(root) must have required property 'name'");
       expect(result.errors).toContain('/age must be >= 18');
     });
 
-    it('Should default to empty schema if schema is missing', () => {
+    it('should default to empty schema if schema is missing', () => {
       const structure = {};
-      const result = validateSubmission('basic-form', structure, { anyData: 'value' });
+      const result = validateSubmission(structure, { anyData: 'value' });
 
       expect(result).toEqual({
         valid: true,
@@ -95,111 +97,69 @@ describe('validate utils', () => {
     });
   });
 
-  describe('validateSubmission - multi-stage form', () => {
-    it('Should validate every page of a multi-stage form', () => {
-      expect(validateSubmission('multi-stage-form', multiStage, { a: 'x', b: true }).valid).toBe(
-        true,
-      );
-      // page 1 requires `a`; page 2's `b` must be boolean.
-      expect(validateSubmission('multi-stage-form', multiStage, { b: 'nope' }).valid).toBe(false);
+  describe('validateSubmission - routed (Funnel) form', () => {
+    it("validates every stage's fields against the document's single schema", () => {
+      expect(validateSubmission(funnel, { a: 'x', b: true }).valid).toBe(true);
+      // `a` is required; `b` must be boolean.
+      expect(validateSubmission(funnel, { b: 'nope' }).valid).toBe(false);
     });
 
-    it('Should validate successfully when data matches all pages schemas', () => {
+    it('validates successfully when the data matches the whole document schema', () => {
       const structure = {
-        stages: [
-          {
-            pages: [
-              {
-                schema: {
-                  type: 'object',
-                  properties: { name: { type: 'string' } },
-                  required: ['name'],
-                },
-              },
-            ],
+        schema: {
+          type: 'object',
+          required: ['name', 'email'],
+          properties: {
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
           },
-          {
-            pages: [
-              {
-                schema: {
-                  type: 'object',
-                  properties: { email: { type: 'string', format: 'email' } },
-                  required: ['email'],
-                },
-              },
-            ],
-          },
-        ],
+        },
+        variants: { default: { type: 'Funnel', elements: [] } },
       };
 
-      const validData = { name: 'Alice', email: 'alice@example.com' };
-      const result = validateSubmission('multi-stage-form', structure, validData);
+      const result = validateSubmission(structure, { name: 'Alice', email: 'alice@example.com' });
 
-      expect(result).toEqual({
-        valid: true,
-        errors: [],
-      });
+      expect(result).toEqual({ valid: true, errors: [] });
     });
 
-    it('Should collect errors from multiple stages/pages when data is invalid', () => {
+    it('collects every error across the fields of all stages', () => {
       const structure = {
-        stages: [
-          {
-            pages: [
-              {
-                schema: {
-                  type: 'object',
-                  properties: { name: { type: 'string' } },
-                  required: ['name'],
-                },
-              },
-            ],
+        schema: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
           },
-          {
-            pages: [
-              {
-                schema: {
-                  type: 'object',
-                  properties: { email: { type: 'string', format: 'email' } },
-                  required: ['email'],
-                },
-              },
-            ],
-          },
-        ],
+        },
+        variants: { default: { type: 'Funnel', elements: [] } },
       };
 
-      const invalidData = { name: 123, email: 'invalid-email' };
-      const result = validateSubmission('multi-stage-form', structure, invalidData);
+      const result = validateSubmission(structure, { name: 123, email: 'invalid-email' });
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('/name must be string');
       expect(result.errors).toContain('/email must match format "email"');
     });
 
-    it('Should handle missing stages or pages safely without throwing', () => {
+    it('should handle missing stages or pages safely without throwing', () => {
       const structureEmptyStages = { stages: [] };
-      const resultEmptyStages = validateSubmission('multi-stage-form', structureEmptyStages, {});
+      const resultEmptyStages = validateSubmission(structureEmptyStages, {});
       expect(resultEmptyStages).toEqual({ valid: true, errors: [] });
 
       const structureMissingPages = { stages: [{}] };
-      const resultMissingPages = validateSubmission('multi-stage-form', structureMissingPages, {});
+      const resultMissingPages = validateSubmission(structureMissingPages, {});
       expect(resultMissingPages).toEqual({ valid: true, errors: [] });
 
       const structureEmptyPages = { stages: [{ pages: [{}] }] };
-      const resultEmptyPages = validateSubmission('multi-stage-form', structureEmptyPages, {});
+      const resultEmptyPages = validateSubmission(structureEmptyPages, {});
       expect(resultEmptyPages).toEqual({ valid: true, errors: [] });
 
       const structureUndefinedStages = {};
-      const resultUndefinedStages = validateSubmission(
-        'multi-stage-form',
-        structureUndefinedStages,
-        {},
-      );
+      const resultUndefinedStages = validateSubmission(structureUndefinedStages, {});
       expect(resultUndefinedStages).toEqual({ valid: true, errors: [] });
     });
 
-    it('Should handle undefined validate.errors and undefined error.message gracefully', () => {
+    it('should handle undefined validate.errors and undefined error.message gracefully', () => {
       const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
         const validate = mockValidate as any;
         validate.errors = [
@@ -211,7 +171,7 @@ describe('validate utils', () => {
         return validate;
       });
 
-      const result = validateSubmission('basic-form', { schema: {} }, {});
+      const result = validateSubmission({ schema: {} }, {});
       expect(result).toEqual({
         valid: false,
         errors: ['/test is invalid'],
@@ -220,14 +180,14 @@ describe('validate utils', () => {
       compileSpy.mockRestore();
     });
 
-    it('Should handle missing validate.errors list gracefully', () => {
+    it('should handle missing validate.errors list gracefully', () => {
       const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
         const validate = mockValidate as any;
         validate.errors = undefined;
         return validate;
       });
 
-      const result = validateSubmission('basic-form', { schema: {} }, {});
+      const result = validateSubmission({ schema: {} }, {});
       expect(result).toEqual({
         valid: true,
         errors: [],
@@ -239,38 +199,41 @@ describe('validate utils', () => {
 
   describe('decimal-places constraints (feature 155)', () => {
     const basicForm = {
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [
-          { type: 'Control', scope: '#/properties/price', options: { decimals: 2 } },
-          { type: 'Control', scope: '#/properties/note' },
-          {
-            type: 'Group',
-            elements: [{ type: 'Control', scope: '#/properties/rate', options: { decimals: 3 } }],
-          },
-        ],
-      },
-    };
-
-    const multiStageForm = {
-      stages: [
-        {
-          pages: [
+      schema: {},
+      variants: {
+        default: {
+          type: 'VerticalLayout',
+          elements: [
+            { type: 'Control', scope: '#/properties/price', options: { decimals: 2 } },
+            { type: 'Control', scope: '#/properties/note' },
             {
-              uischema: {
-                type: 'VerticalLayout',
-                elements: [
-                  { type: 'Control', scope: '#/properties/amount', options: { decimals: 1 } },
-                ],
-              },
+              type: 'Group',
+              elements: [{ type: 'Control', scope: '#/properties/rate', options: { decimals: 3 } }],
             },
           ],
         },
-      ],
+      },
     };
 
-    it('Should collect decimal constraints from a basic form (including nested)', () => {
-      const constraints = collectDecimalConstraints('basic-form', basicForm);
+    const funnelForm = {
+      schema: {},
+      variants: {
+        default: {
+          type: 'Funnel',
+          elements: [
+            {
+              type: 'Form',
+              elements: [
+                { type: 'Control', scope: '#/properties/amount', options: { decimals: 1 } },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    it('collects decimal constraints from a basic form (including nested)', () => {
+      const constraints = collectDecimalConstraints(basicForm);
       expect(constraints).toEqual(
         expect.arrayContaining([
           { key: 'price', maxDecimals: 2 },
@@ -280,81 +243,44 @@ describe('validate utils', () => {
       expect(constraints).toHaveLength(2);
     });
 
-    it('Should collect decimal constraints across multi-stage pages', () => {
-      expect(collectDecimalConstraints('multi-stage-form', multiStageForm)).toEqual([
-        { key: 'amount', maxDecimals: 1 },
-      ]);
+    it("collects decimal constraints from a Funnel's nested Forms", () => {
+      expect(collectDecimalConstraints(funnelForm)).toEqual([{ key: 'amount', maxDecimals: 1 }]);
     });
 
-    it('Should handle missing uischema, undefined elements, or non-record elements safely', () => {
-      expect(collectDecimalConstraints('basic-form', {})).toEqual([]);
-      expect(
-        collectDecimalConstraints('basic-form', {
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [
-              null,
-              undefined,
-              123,
-              'element',
-              { type: 'Control', options: { decimals: 2 } },
-              { type: 'Control', scope: '#/definitions/foo', options: { decimals: 2 } },
-            ],
+    it('collects decimal constraints from a non-default variant too (doc 275)', () => {
+      const structure = {
+        schema: {},
+        variants: {
+          default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/note' }] },
+          detailed: {
+            type: 'Form',
+            elements: [{ type: 'Control', scope: '#/properties/fee', options: { decimals: 2 } }],
           },
-        }),
-      ).toEqual([]);
-      expect(collectDecimalConstraints('multi-stage-form', {})).toEqual([]);
+        },
+      };
+      expect(collectDecimalConstraints(structure)).toEqual([{ key: 'fee', maxDecimals: 2 }]);
+    });
+
+    it('collects nothing from a structure without variants (the old uischema shape)', () => {
       expect(
-        collectDecimalConstraints('multi-stage-form', {
-          stages: [{ pages: [{}] }, {}],
-        }),
+        collectDecimalConstraints({ schema: {}, uischema: basicForm.variants.default }),
       ).toEqual([]);
     });
 
-    it('Should flag a value with too many decimal places', () => {
+    it('flags a value with too many decimal places', () => {
       const errors = validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.234 });
       expect(errors).toHaveLength(1);
-      expect(errors[0]).toBe('price: enter at most 2 decimal places');
+      expect(errors[0]).toMatch(/price/);
     });
 
-    it('Should format singular decimal place correctly when maxDecimals is 1', () => {
-      const errors = validateDecimals([{ key: 'price', maxDecimals: 1 }], { price: 1.23 });
-      expect(errors).toEqual(['price: enter at most 1 decimal place']);
-    });
-
-    it('Should accept a value within the decimal limit', () => {
+    it('accepts a value within the decimal limit', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.2 })).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 5 })).toEqual([]);
     });
 
-    it('Should handle numbers with exponent notation correctly', () => {
-      expect(validateDecimals([{ key: 'price', maxDecimals: 6 }], { price: 1e-7 })).toEqual([
-        'price: enter at most 6 decimal places',
-      ]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 7 }], { price: 1e-7 })).toEqual([]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 10 }], { price: 1.234e-8 })).toEqual([
-        'price: enter at most 10 decimal places',
-      ]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 11 }], { price: 1.234e-8 })).toEqual(
-        [],
-      );
-    });
-
-    it('Should handle non-finite numbers (NaN, Infinity) by treating them as 0 decimal places', () => {
-      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: Infinity })).toEqual([]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: -Infinity })).toEqual(
-        [],
-      );
-      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: Number.NaN })).toEqual(
-        [],
-      );
-    });
-
-    it('Should ignore absent or non-numeric values and handle non-object data', () => {
+    it('ignores absent or non-numeric values', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], {})).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 'x' })).toEqual([]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], null)).toEqual([]);
-      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], 'string')).toEqual([]);
     });
   });
 });

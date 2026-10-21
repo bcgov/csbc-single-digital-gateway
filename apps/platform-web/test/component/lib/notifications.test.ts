@@ -202,3 +202,51 @@ describe('Notifications Unit Test Suite', () => {
     expect(() => subscription.close()).not.toThrow();
   });
 });
+
+// 126 B1 / 125 B1.
+describe('subscribeToNotifications — one stream for all tabs', () => {
+  describe('shared', () => {
+    it('subscribes through the shared stream on the BFF notification URL, for the notification event', async () => {
+      const sources: { url: string; init: unknown; emit: () => void; closed: boolean }[] = [];
+      class Source {
+        closed = false;
+        private listener: (() => void) | undefined;
+        constructor(url: string, init: unknown) {
+          sources.push(Object.assign(this, { url, init, emit: () => this.listener?.() }) as never);
+        }
+        addEventListener(name: string, listener: () => void) {
+          if (name === 'notification') this.listener = listener;
+        }
+        close() {
+          this.closed = true;
+        }
+      }
+      // One holder at a time, waiters queued — the browser's Web Locks, reduced to what this needs.
+      let holder: Promise<void> | undefined;
+      const locks = {
+        request: (_n: string, _o: unknown, cb: () => Promise<void>) => {
+          const run = (holder ?? Promise.resolve()).then(cb);
+          holder = run;
+          return run;
+        },
+      };
+      const onEvent = [vi.fn(), vi.fn()];
+      const tabs = onEvent.map((handler) =>
+        subscribeToNotifications(handler, Source as never, {
+          locks: locks as never,
+          BroadcastChannel,
+        }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Two tabs, ONE stream.
+      expect(sources).toHaveLength(1);
+      expect(sources[0]?.url).toBe('http://bff-test/v1/me/notifications/stream');
+      expect(sources[0]?.init).toEqual({ withCredentials: true });
+      sources[0]!.emit();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(onEvent.map((h) => h.mock.calls.length)).toEqual([1, 1]);
+      tabs.forEach((tab) => tab.close());
+    });
+  });
+});

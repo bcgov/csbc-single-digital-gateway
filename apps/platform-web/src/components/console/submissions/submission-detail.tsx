@@ -1,4 +1,5 @@
-import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
+import { variantOf } from '@repo/documents/content';
+import { DocumentView } from '@repo/documents/view';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
@@ -7,6 +8,7 @@ import { Textarea } from '@repo/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
+import { documentContentOf } from '@/lib/studio-content';
 import {
   type ReviewDecision,
   type SubmissionDetail as SubmissionDetailData,
@@ -16,42 +18,39 @@ import {
 
 const REVIEWABLE = new Set(['pending', 'in_review']);
 
-interface StructurePage {
-  id?: string;
-  name?: string;
-  schema?: Record<string, unknown>;
-  uischema?: Record<string, unknown>;
+/**
+ * The submitted answers (doc 283 rule 14): the form the applicant answered — its DEFAULT variant, since a submission
+ * records none and every variant shares the answers — read back through `DocumentView`, blanks shown: a reviewer must
+ * see what was left empty.
+ */
+function Answers({ submission }: { submission: SubmissionDetailData }) {
+  const document = documentContentOf(submission.structure);
+  if (document === null) return <RawAnswers submission={submission} />;
+  return (
+    <DocumentView schema={document.schema} uischema={variantOf(document)} data={submission.data} />
+  );
 }
 
-/** The submitted answers, read-only (disabled form). Basic = one form; multi-stage = one per page. */
-function Answers({ submission }: { submission: SubmissionDetailData }) {
-  const { kind, structure, data } = submission;
-  if (kind === 'multi-stage-form') {
-    const stages = (structure['stages'] as Array<{ pages?: StructurePage[] }> | undefined) ?? [];
-    const pages = stages.flatMap((stage) => stage.pages ?? []);
-    return (
-      <div className="flex flex-col gap-6">
-        {pages.map((page, index) => (
-          <div key={page.id ?? index} className="flex flex-col gap-2">
-            {page.name ? <h3 className="text-sm font-semibold">{page.name}</h3> : null}
-            <JsonForms
-              schema={(page.schema ?? {}) as JsonSchema}
-              uischema={page.uischema as unknown as UISchemaElement}
-              data={data}
-              readonly
-            />
-          </div>
-        ))}
-      </div>
-    );
+/**
+ * A structure that is not a document (feature 217's older shapes): the answers as raw key/value pairs rather than
+ * hidden — a reviewer still needs to see what was submitted to decide on it.
+ */
+function RawAnswers({ submission }: { submission: SubmissionDetailData }) {
+  const entries = Object.entries(submission.data);
+  if (entries.length === 0) {
+    return <p className="text-sm text-muted-foreground">This application has no answers.</p>;
   }
   return (
-    <JsonForms
-      schema={(structure['schema'] ?? {}) as JsonSchema}
-      uischema={structure['uischema'] as unknown as UISchemaElement}
-      data={data}
-      readonly
-    />
+    <dl className="flex flex-col gap-3">
+      {entries.map(([key, value]) => (
+        <div key={key} className="flex flex-col gap-0.5">
+          <dt className="text-xs font-medium text-muted-foreground">{key}</dt>
+          <dd className="text-sm break-words">
+            {typeof value === 'string' ? value : JSON.stringify(value)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -160,9 +159,7 @@ export function SubmissionDetail() {
           <h1 className="font-heading text-xl font-semibold">{submission.applicantName}</h1>
           <Badge color="yellow">{submission.statusLabel}</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {submission.serviceTitle} · {submission.formTitle}
-        </p>
+        <p className="text-sm text-muted-foreground">{submission.formTitle ?? 'Application'}</p>
         <p className="text-xs text-muted-foreground">
           {submission.reference}
           {submission.applicantEmail ? ` · ${submission.applicantEmail}` : ''}

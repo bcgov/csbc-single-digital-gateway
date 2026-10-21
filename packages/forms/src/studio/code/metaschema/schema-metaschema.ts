@@ -1,0 +1,125 @@
+import { deepFreeze } from './deep-freeze';
+
+/**
+ * The studio profile of JSON Schema (doc 191 rule 12): the keywords the Form Studio's controls read, each with hover
+ * docs. Unknown keywords stay allowed — they are neither suggested nor flagged. Registered with Monaco for completion
+ * and markers, and compiled by the apply gate, so a marker-free schema pane is exactly an appliable one.
+ */
+export const SCHEMA_METASCHEMA = deepFreeze({
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  title: 'Form Studio schema',
+  description: 'The data schema of a Form Studio form: one property per field.',
+  type: 'object',
+  properties: {
+    type: {
+      description: 'Always "object" — a form stores its fields as the properties of one object.',
+      const: 'object',
+    },
+    title: { description: 'A name for the form.', type: 'string' },
+    description: { description: 'A longer explanation of the form.', type: 'string' },
+    properties: {
+      description:
+        'The form fields, keyed by property name. A uischema Control binds to one with "scope": "#/properties/<key>".',
+      type: 'object',
+      additionalProperties: { $ref: '#/definitions/property' },
+    },
+    required: {
+      description: 'Property names that must have a value before the form is valid.',
+      type: 'array',
+      items: { type: 'string' },
+      uniqueItems: true,
+    },
+  },
+  definitions: {
+    property: {
+      description: 'A form field.',
+      type: 'object',
+      properties: {
+        type: {
+          description:
+            'The kind of value. "string" renders a text input or textarea, "number" a number input, "integer" the ' +
+            'same input restricted to whole numbers, "boolean" a checkbox or switch; a "oneOf" list renders a ' +
+            'combobox or radio group, and an "array" whose "items" carry a "oneOf" renders a multi-select or a ' +
+            'checkbox group.',
+          enum: ['string', 'number', 'integer', 'boolean', 'array', 'object'],
+        },
+        title: { description: "The field's label.", type: 'string' },
+        description: { description: 'Help text shown under the field.', type: 'string' },
+        default: { description: 'The value the field starts with.' },
+        maxLength: {
+          description:
+            'The most characters a string may have; shows an "n/max" counter under the field.',
+          type: 'integer',
+          minimum: 0,
+        },
+        minimum: { description: 'The smallest number allowed.', type: 'number' },
+        maximum: { description: 'The largest number allowed.', type: 'number' },
+        multipleOf: {
+          description: 'Numbers must be a multiple of this; also the step of the number input.',
+          type: 'number',
+          exclusiveMinimum: 0,
+        },
+        oneOf: {
+          description:
+            'The choices of a choice field, in order. Each "const" must match the field "type".',
+          type: 'array',
+          minItems: 1,
+          items: { $ref: '#/definitions/choice' },
+        },
+        // Doc 205 rule 37: a MULTI-choice field's options live under `items`, and the field is an array of
+        // them. Without this the apply gate refuses every multi-select — the same trap `integer` hit.
+        items: {
+          description:
+            'For an "array" field, what each chosen value is: an object whose "oneOf" lists the options.',
+          type: 'object',
+          properties: {
+            type: {
+              description:
+                'The type of each chosen value. Must match the "const" types in "oneOf".',
+              enum: ['string', 'number', 'integer'],
+            },
+            oneOf: {
+              description: 'The choices, in order.',
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/definitions/choice' },
+            },
+          },
+        },
+        /**
+         * Doc 207 rule 1: a rich text field is `{ type: 'object', required: ['root'] }`. Both signals are
+         * needed, so the gate has to admit the property's own `required` — an "object" property without it
+         * is not a field at all and nothing renders it.
+         */
+        required: {
+          description:
+            'For an "object" field, the keys its value must carry. A rich text field uses ["root"].',
+          type: 'array',
+          items: { type: 'string' },
+        },
+        uniqueItems: {
+          description:
+            'For an "array" field, whether the same option may be chosen twice. Use true.',
+          type: 'boolean',
+        },
+      },
+    },
+    choice: {
+      description: 'One choice of a choice field.',
+      type: 'object',
+      required: ['const'],
+      properties: {
+        const: {
+          description: 'The value stored when this choice is picked.',
+          type: ['string', 'number'],
+        },
+        title: { description: 'The text shown for this choice.', type: 'string' },
+        // Doc 205 rule 38: shown under the label in a checkbox group, and as a second line in a combobox list.
+        description: {
+          description: 'Help text shown with this choice.',
+          type: 'string',
+        },
+      },
+    },
+  },
+} as const);

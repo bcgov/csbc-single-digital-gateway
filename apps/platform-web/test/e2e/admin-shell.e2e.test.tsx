@@ -1,15 +1,24 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp } from '../support/render-app';
+import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
 import '@/routes/admin';
-import '@/routes/admin.document-types';
-import '@/routes/admin.document-types.index';
-import { adminUser, adminWorkspace } from '../support/fixtures';
+import '@/routes/admin.templates';
+import '@/routes/admin.templates.index';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const adminUser = { ...authedUser, roles: ['admin'] };
+
+const riverton: WorkspaceLike = {
+  id: 'w1',
+  slug: 'riverton',
+  name: 'Riverton',
+  role: 'admin',
+  createdAt: '2026-06-01T00:00:00.000Z',
+};
 
 describe('Admin Shell Integration Test Suite', () => {
   it('renders the admin nav + "Back to app" for an admin', async () => {
@@ -20,33 +29,33 @@ describe('Admin Shell Integration Test Suite', () => {
       await screen.findByText(/admin overview is being set up/i, {}, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/admin');
-    expect(screen.getByRole('link', { name: 'Document Types' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Templates' })).toHaveAttribute(
       'href',
-      '/admin/document-types',
+      '/admin/templates',
     );
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
 
-  it('Should render the Document Types placeholder at /admin/document-types', async () => {
+  it('renders the Templates placeholder at /admin/templates', async () => {
     mockAuth(adminUser);
-    renderApp('/admin/document-types');
+    renderApp('/admin/templates');
     expect(
-      await screen.findByText(/No document types yet/i, {}, { timeout: 10000 }),
+      await screen.findByText(/No templates yet/i, {}, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 
-  it('Should redirect a non-admin away from /admin to /app', async () => {
+  it('redirects a non-admin away from /admin to /app', async () => {
     mockAuth(authedUser, { workspaces: [] });
     const { router } = renderApp('/admin');
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
-    expect(screen.queryByRole('link', { name: 'Document Types' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Templates' })).not.toBeInTheDocument();
   });
 });
 
 describe('admin entry in the account menu', () => {
-  it('Should show an Admin link for admins', async () => {
-    mockAuth(adminUser, { workspaces: [adminWorkspace] });
+  it('shows an Admin link for admins', async () => {
+    mockAuth(adminUser, { workspaces: [riverton] });
     renderApp('/app/riverton');
 
     const user = userEvent.setup();
@@ -59,8 +68,8 @@ describe('admin entry in the account menu', () => {
     );
   });
 
-  it('Should hide the Admin link for non-admins', async () => {
-    mockAuth(authedUser, { workspaces: [adminWorkspace] });
+  it('hides the Admin link for non-admins', async () => {
+    mockAuth(authedUser, { workspaces: [riverton] });
     renderApp('/app/riverton');
 
     const user = userEvent.setup();

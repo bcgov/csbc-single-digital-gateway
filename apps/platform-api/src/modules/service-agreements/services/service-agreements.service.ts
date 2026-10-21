@@ -3,23 +3,28 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   type Database,
   type Document,
   type DocumentVersion,
-  documentReferences,
   documentVersions,
   documents,
+  serviceAgreementConsents,
+  workspaceDefaultAgreements,
   workspaceMembers,
   workspaces,
+  DOCUMENT_TYPE,
 } from '@repo/database';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
+import { TemplateResolver } from '../../templates/services/template.resolver';
+import { assertPublishable, validateContent } from '../../templates/services/validate-content';
+import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
-  type AssociatedService,
   type CreateServiceAgreementInput,
+  type ServiceAgreementDeletable,
   type ListServiceAgreementsPageQuery,
   type ListServiceAgreementsQuery,
   type ServiceAgreementDetail,
@@ -31,10 +36,8 @@ import {
   toAgreementDto,
   toAgreementVersionDto,
 } from '../dtos/service-agreement.dtos';
-import { validateData } from '../util/validate-data';
-import { ServiceAgreementTypeResolver } from './service-agreement-type.resolver';
 
-const KIND = 'service-agreement';
+const TYPE = DOCUMENT_TYPE.serviceAgreement;
 
 /** The caller identity + whether they hold the global `admin` role. */
 export interface Actor {
@@ -51,17 +54,19 @@ function summarizeStatus(
   return 'none';
 }
 
-function titleFromData(data: Record<string, unknown>): string {
-  return typeof data.title === 'string' && data.title.trim() !== ''
-    ? data.title
-    : 'Untitled service agreement';
+/**
+ * The version an agreement is currently represented by: the published one if there is one, else
+ * the newest. `versions` must be ordered oldest-first.
+ */
+function currentVersion<T extends { publishedAt: Date | null }>(versions: T[]): T | undefined {
+  return versions.findLast((version) => version.publishedAt !== null) ?? versions.at(-1);
 }
 
 @Injectable()
 export class ServiceAgreementsService {
   constructor(
     @InjectDatabase() private readonly db: Database,
-    private readonly agreementType: ServiceAgreementTypeResolver,
+    private readonly templates: TemplateResolver,
   ) {}
 
   /** Create an agreement + its draft v1. workspaceId → staff (member); no workspaceId → admin (global). */
@@ -79,11 +84,11 @@ export class ServiceAgreementsService {
       }
       workspaceId = null;
     }
-    const type = await this.agreementType.resolve();
+    const template = await this.templates.forCreate(TYPE, input.templateId);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
-        .values({ typeId: type.typeId, workspaceId, kind: KIND, title: titleFromData(input.data) })
+        .values({ type: TYPE, kind: 'document', workspaceId, templateId: template.templateId })
         .returning();
       const doc = insertedDoc[0];
       if (doc === undefined) {
@@ -93,17 +98,19 @@ export class ServiceAgreementsService {
         .insert(documentVersions)
         .values({
           documentId: doc.id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: 1,
-          data: input.data,
+          templateId: template.templateId,
+          templateVersionId: template.templateVersionId,
+          versionNumber: 1,
+          // A copy of the template with the requested title on EVERY variant; the GENERATED title column
+          // reads the default variant's.
+          content: withTitle({ schema: template.schema, variants: template.variants }, input.title),
         })
         .returning();
       const version = insertedVersion[0];
       if (version === undefined) {
         throw new Error('document version insert returned no row');
       }
-      return { agreement: toAgreementDto(doc), version: toAgreementVersionDto(version) };
+      return { agreement: toAgreementDto(doc, version), version: toAgreementVersionDto(version) };
     });
   }
 
@@ -125,12 +132,12 @@ export class ServiceAgreementsService {
     const docs = await this.db
       .select()
       .from(documents)
-      .where(and(eq(documents.kind, KIND), scope, hasPublished))
+      .where(and(eq(documents.type, TYPE), eq(documents.kind, 'document'), scope, hasPublished))
       .orderBy(desc(documents.createdAt));
     return Promise.all(
       docs.map(async (doc) => {
         const versions = await this.versionsOf(doc.id);
-        return Object.assign(toAgreementDto(doc), {
+        return Object.assign(toAgreementDto(doc, currentVersion(versions)), {
           status: summarizeStatus(versions),
           isGlobal: doc.workspaceId === null,
         });
@@ -140,9 +147,14 @@ export class ServiceAgreementsService {
 
   /**
    * Paginated, sortable, searchable agreements list (initiative `staff-list-query`). Workspace scope
-   * lists the workspace's OWN published agreements only (globals excluded — feature 150); admin scope
-   * lists global published agreements. Paging/sort/search run in SQL; the page's status is derived in
-   * one batched follow-up query (not per-row).
+   * lists the workspace's OWN agreements (globals excluded — feature 150); admin scope lists global
+   * ones. Paging/sort/search run in SQL; the page's status is derived in one batched follow-up query
+   * (not per-row).
+   *
+   * EVERY status, published or not (doc 83 B1). This is the MANAGEMENT list — the page an agreement is
+   * created from — so a draft must appear here or it is written to the database and then invisible.
+   * `list` above is the other thing: a picker of agreements to attach, where published-only is right
+   * and stays. The two were once the same query, and that is how the picker's rule reached this one.
    */
   async listPage(
     actor: Actor,
@@ -160,10 +172,13 @@ export class ServiceAgreementsService {
       }
       scope = isNull(documents.workspaceId);
     }
-    const hasPublished = sql`exists (select 1 from ${documentVersions} dv where dv.document_id = ${documents.id} and dv.status = 'published')`;
     const q = query.q?.trim();
-    const search = q !== undefined && q !== '' ? ilike(documents.title, `%${q}%`) : undefined;
-    const where = and(eq(documents.kind, KIND), scope, hasPublished, search);
+    // Feature 217: title moved to the VERSION and became generated, so search and title-sort go
+    // through a correlated subquery over the latest version.
+    const latestTitle = sql<string>`(SELECT dv.title FROM ${documentVersions} dv
+      WHERE dv.document_id = ${documents.id} ORDER BY dv.version_number DESC LIMIT 1)`;
+    const search = q !== undefined && q !== '' ? ilike(latestTitle, `%${q}%`) : undefined;
+    const where = and(eq(documents.type, TYPE), eq(documents.kind, 'document'), scope, search);
     // Derived status precedence for `sort: 'status'` — published(0) → draft(1) → archived(2) → none(3).
     const statusRank = sql`(CASE
       WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'published') THEN 0
@@ -172,7 +187,7 @@ export class ServiceAgreementsService {
       ELSE 3 END)`;
     const sortExpr =
       query.sort === 'title'
-        ? documents.title
+        ? latestTitle
         : query.sort === 'status'
           ? statusRank
           : documents.updatedAt;
@@ -195,17 +210,23 @@ export class ServiceAgreementsService {
       docIds.length === 0
         ? []
         : await this.db
-            .select({ documentId: documentVersions.documentId, status: documentVersions.status })
+            .select({
+              documentId: documentVersions.documentId,
+              status: documentVersions.status,
+              title: documentVersions.title,
+              publishedAt: documentVersions.publishedAt,
+            })
             .from(documentVersions)
-            .where(inArray(documentVersions.documentId, docIds));
-    const statusByDoc = new Map<string, Array<{ status: 'draft' | 'published' | 'archived' }>>();
+            .where(inArray(documentVersions.documentId, docIds))
+            .orderBy(asc(documentVersions.versionNumber));
+    const statusByDoc = new Map<string, Array<(typeof versionRows)[number]>>();
     for (const row of versionRows) {
       const list = statusByDoc.get(row.documentId);
       if (list) list.push(row);
       else statusByDoc.set(row.documentId, [row]);
     }
     const items = docs.map((doc) =>
-      Object.assign(toAgreementDto(doc), {
+      Object.assign(toAgreementDto(doc, currentVersion(statusByDoc.get(doc.id) ?? [])), {
         status: summarizeStatus(statusByDoc.get(doc.id) ?? []),
         isGlobal: doc.workspaceId === null,
       }),
@@ -213,113 +234,191 @@ export class ServiceAgreementsService {
     return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
   }
 
-  /** An agreement + its versions + the type definition to render the editor. */
+  /**
+   * An agreement + its versions + the template each version renders against.
+   *
+   * Doc 221: resolved by the PINNED template version, never `forCreate()`. `forCreate()` returns whichever
+   * template version is published NOW, which the resolver's own comment (`template.resolver.ts:76-87`)
+   * warns makes a version authored before a template reshape render every field empty — and, since
+   * doc 220, would let a template author retroactively re-govern documents already built from an
+   * earlier version. `forCreate()` remains correct for the CREATE path only.
+   */
   async get(actor: Actor, id: string): Promise<ServiceAgreementDetail> {
     const doc = await this.requireAgreementForRead(actor, id);
-    const type = await this.agreementType.resolve();
     const versions = await this.versionsOf(id);
+    const definitions = await this.templates.contentsForVersions(
+      versions.flatMap((version) => (version.templateVersionId ? [version.templateVersionId] : [])),
+    );
     return {
-      agreement: toAgreementDto(doc),
+      agreement: toAgreementDto(doc, currentVersion(versions)),
       versions: versions.map(toAgreementVersionDto),
-      definition: { schema: type.schema, uischema: type.uischema },
-      services: await this.associatedServices(actor, id),
+      definitions,
+      // Doc 225 rule 7: the console renders its delete control from this, never from its own count.
+      deletable: await this.deletableFor(id, versions),
     };
   }
 
-  /** The distinct services this agreement is attached to. Non-admins only see services in a
-   * workspace they belong to (so a global agreement never leaks cross-workspace service titles). */
-  private async associatedServices(
-    actor: Actor,
-    agreementId: string,
-  ): Promise<AssociatedService[]> {
-    const memberScoped = actor.isAdmin
-      ? undefined
-      : sql`exists (select 1 from ${workspaceMembers} wm where wm.workspace_id = ${documents.workspaceId} and wm.user_id = ${actor.id})`;
-    return this.db
-      .selectDistinct({
-        id: documents.id,
-        title: documents.title,
-        workspaceSlug: workspaces.slug,
-      })
-      .from(documentReferences)
-      .innerJoin(
-        documents,
-        and(eq(documents.id, documentReferences.ownerDocumentId), eq(documents.kind, 'service')),
-      )
-      .innerJoin(workspaces, eq(workspaces.id, documents.workspaceId))
-      .where(
-        and(
-          eq(documentReferences.targetDocumentId, agreementId),
-          eq(documentReferences.relation, 'service_agreement'),
-          ...(memberScoped ? [memberScoped] : []),
-        ),
-      )
-      .orderBy(asc(documents.title));
+  /**
+   * Doc 225 rule 1: the version ids that have recorded consents.
+   *
+   * CONSENT is what "someone has used this" means for an agreement (doc 225). Nothing links an
+   * agreement to a submission — `submissions.document_id` is the FORM, and feature 217 removed
+   * `document_references` — while a consent names the exact version a citizen agreed to.
+   */
+  private async consentedVersionIds(documentId: string): Promise<Set<string>> {
+    const rows = await this.db
+      .selectDistinct({ versionId: serviceAgreementConsents.agreementVersionId })
+      .from(serviceAgreementConsents)
+      .where(eq(serviceAgreementConsents.agreementDocumentId, documentId));
+    return new Set(rows.map((row) => row.versionId));
   }
 
-  /** Edit a draft version's authored data (+ optional title sync). Drafts only. */
+  /** Doc 225 rule 3: the workspaces that default to this agreement, by name, for the refusal. */
+  private async defaultingWorkspaces(documentId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ name: workspaces.name })
+      .from(workspaceDefaultAgreements)
+      .innerJoin(workspaces, eq(workspaceDefaultAgreements.workspaceId, workspaces.id))
+      .where(eq(workspaceDefaultAgreements.agreementDocumentId, documentId));
+    return rows.map((row) => row.name);
+  }
+
+  /**
+   * Doc 225 rule 7: what may be deleted and why not, so the console renders from the API's answer
+   * instead of deciding for itself from the versions it happens to hold.
+   */
+  private async deletableFor(
+    documentId: string,
+    versions: DocumentVersion[],
+  ): Promise<ServiceAgreementDeletable> {
+    const [consented, defaulting] = await Promise.all([
+      this.consentedVersionIds(documentId),
+      this.defaultingWorkspaces(documentId),
+    ]);
+    // Rule 4: the last version is never deleted on its own — that is deleting the agreement.
+    const versionIds =
+      versions.length > 1 ? versions.filter((v) => !consented.has(v.id)).map((v) => v.id) : [];
+    const reason = this.deletionBlockedBy(consented.size > 0, defaulting);
+    return {
+      agreement: reason === undefined,
+      versionIds,
+      ...(reason === undefined ? {} : { reason }),
+    };
+  }
+
+  /** The one wording for both guards, so the API and the console never disagree about why. */
+  private deletionBlockedBy(consented: boolean, defaulting: string[]): string | undefined {
+    if (consented)
+      return 'Someone has already consented to this agreement, so it can no longer be deleted.';
+    if (defaulting.length > 0)
+      return `This agreement is a default for ${defaulting.join(', ')}. Remove it there first.`;
+    return undefined;
+  }
+
+  /**
+   * Doc 225 rules 1-5: deletes the whole agreement, cascading its versions, their history and its
+   * members (the schema already does that).
+   *
+   * Refused HERE, with what is in the way — the FK `RESTRICT`s behind this are a backstop, and a
+   * constraint violation is a correct refusal with a useless message.
+   */
+  async remove(actor: Actor, id: string): Promise<void> {
+    await this.requireAgreementForWrite(actor, id);
+    const [consented, defaulting] = await Promise.all([
+      this.consentedVersionIds(id),
+      this.defaultingWorkspaces(id),
+    ]);
+    const reason = this.deletionBlockedBy(consented.size > 0, defaulting);
+    if (reason !== undefined) throw new ConflictException(reason);
+    await this.db.delete(documents).where(eq(documents.id, id));
+  }
+
+  /** Doc 225 rules 1, 4: deletes ONE version, never the last one and never a consented one. */
+  async removeVersion(actor: Actor, id: string, versionId: string): Promise<void> {
+    await this.requireAgreementForWrite(actor, id);
+    const versions = await this.versionsOf(id);
+    const version = versions.find((candidate) => candidate.id === versionId);
+    if (!version) throw new NotFoundException('Service agreement version not found');
+    if (versions.length <= 1)
+      throw new ConflictException(
+        'This is the only version. Delete the service agreement instead.',
+      );
+    const consented = await this.consentedVersionIds(id);
+    if (consented.has(versionId))
+      throw new ConflictException(
+        'Someone has already consented to this version, so it can no longer be deleted.',
+      );
+    await this.db.delete(documentVersions).where(eq(documentVersions.id, versionId));
+  }
+
+  /**
+   * Edit a draft version's content. Drafts only.
+   *
+   * Feature 217 dropped the `requireServiceEditable` gate ("an attached agreement may only be
+   * edited while its service is a draft"): it was derived from `document_references`, so an
+   * agreement no longer knows which services use it.
+   */
   async updateDraft(
     actor: Actor,
     id: string,
     versionId: string,
     input: UpdateServiceAgreementInput,
   ): Promise<ServiceAgreementVersionResponse> {
-    await this.requireAgreementForWrite(actor, id);
+    const doc = await this.requireAgreementForWrite(actor, id);
     const version = await this.requireDraftVersion(id, versionId);
-    await this.requireServiceEditable(version.id);
+    const content = validateContent(doc, input.content);
+    // Doc 222: the governing template has the final say — the studio's gates are UX, and both the
+    // uischema code panel and this endpoint bypass them.
+    assertWithinCapabilities(
+      version.content,
+      content,
+      await this.templates.capabilitiesForVersion(version.templateVersionId),
+    );
     const updated = await this.db
       .update(documentVersions)
-      .set({ data: input.data })
+      .set({ content, revision: sql`${documentVersions.revision} + 1` })
       .where(eq(documentVersions.id, version.id))
       .returning();
-    const title = input.title ?? titleFromData(input.data);
-    await this.db.update(documents).set({ title }).where(eq(documents.id, id));
     return toAgreementVersionDto(this.orThrow(updated[0]));
   }
 
-  /** Add a new draft version, copying the latest version's data. */
+  /** Add a new draft version, copying the latest version's content. */
   async addVersion(actor: Actor, id: string): Promise<ServiceAgreementVersionResponse> {
-    await this.requireAgreementForWrite(actor, id);
-    const type = await this.agreementType.resolve();
+    const agreement = await this.requireAgreementForWrite(actor, id);
+    // Doc 228: the document's OWN template — the version FK requires the same template_id.
+    const template = await this.templates.forDocument(agreement.templateId);
     return this.db.transaction(async (tx) => {
       const existing = await tx
         .select()
         .from(documentVersions)
         .where(eq(documentVersions.documentId, id))
-        .orderBy(desc(documentVersions.version))
+        .orderBy(desc(documentVersions.versionNumber))
         .limit(1);
       const latest = existing[0];
-      const next = (latest?.version ?? 0) + 1;
+      const next = (latest?.versionNumber ?? 0) + 1;
       const inserted = await tx
         .insert(documentVersions)
         .values({
           documentId: id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: next,
-          data: latest?.data ?? {},
+          templateId: template.templateId,
+          templateVersionId: template.templateVersionId,
+          versionNumber: next,
+          content: latest?.content ?? { schema: template.schema, variants: template.variants },
         })
         .returning();
       return toAgreementVersionDto(this.orThrow(inserted[0]));
     });
   }
 
-  /** Validate the draft's data against the type schema (422), then demote-then-promote. */
+  /** Validate the draft's content shape (400), then demote-then-promote. */
   async publish(
     actor: Actor,
     id: string,
     versionId: string,
   ): Promise<ServiceAgreementVersionResponse> {
-    await this.requireAgreementForWrite(actor, id);
+    const doc = await this.requireAgreementForWrite(actor, id);
     const version = await this.requireDraftVersion(id, versionId);
-    const schema = await this.agreementType.schemaForVersion(version.typeVersionId);
-    const result = validateData(schema, version.data);
-    if (!result.valid) {
-      throw new UnprocessableEntityException({
-        message: 'Service agreement data failed validation',
-        errors: result.errors,
-      });
-    }
+    assertPublishable(validateContent(doc, version.content));
     return this.db.transaction(async (tx) => {
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
@@ -342,7 +441,7 @@ export class ServiceAgreementsService {
       .select()
       .from(documentVersions)
       .where(eq(documentVersions.documentId, documentId))
-      .orderBy(asc(documentVersions.version));
+      .orderBy(asc(documentVersions.versionNumber));
   }
 
   private async requireDraftVersion(
@@ -364,29 +463,6 @@ export class ServiceAgreementsService {
     return version;
   }
 
-  /** When an agreement version is referenced by a service version, it may only be edited while that
-   * service version is a draft (the agreement follows the service's lifecycle). Standalone agreements
-   * (no service owner) are unaffected. */
-  private async requireServiceEditable(agreementVersionId: string): Promise<void> {
-    const rows = await this.db
-      .select({ status: documentVersions.status })
-      .from(documentReferences)
-      .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.ownerVersionId))
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, agreementVersionId),
-          eq(documentReferences.relation, 'service_agreement'),
-        ),
-      )
-      .limit(1);
-    const owner = rows[0];
-    if (owner !== undefined && owner.status !== 'draft') {
-      throw new ConflictException(
-        'This agreement can only be edited while its service is in draft',
-      );
-    }
-  }
-
   private orThrow(row: DocumentVersion | undefined): DocumentVersion {
     if (row === undefined) {
       throw new Error('document version mutation returned no row');
@@ -398,7 +474,9 @@ export class ServiceAgreementsService {
     const rows = await this.db
       .select()
       .from(documents)
-      .where(and(eq(documents.id, id), eq(documents.kind, KIND)))
+      .where(
+        and(eq(documents.id, id), and(eq(documents.type, TYPE), eq(documents.kind, 'document'))),
+      )
       .limit(1);
     const doc = rows[0];
     if (doc === undefined) {

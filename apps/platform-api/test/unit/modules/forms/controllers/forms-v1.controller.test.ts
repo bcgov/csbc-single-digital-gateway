@@ -1,32 +1,44 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { FormsV1Controller } from '../../../../../src/modules/forms/controllers/forms-v1.controller';
+import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateFormDto,
-  UpdateFormSchemaDto,
+  UpdateFormContentDto,
 } from '../../../../../src/modules/forms/dtos/form.dtos';
-import { mockUser } from '../../../../utils/fixtures';
 
 describe('FormsV1Controller', () => {
   let controller: FormsV1Controller;
   let formsServiceMock: any;
 
+  const mockUser: AuthUser = {
+    id: 'user-1',
+    roles: ['staff'],
+    claims: {
+      sub: 'user-1-sub',
+      email: 'test@example.com',
+      name: 'Test User',
+    },
+  };
+
   beforeEach(() => {
     formsServiceMock = {
       create: vi.fn(),
       get: vi.fn(),
-      updateSchema: vi.fn(),
+      updateContent: vi.fn(),
     };
 
     controller = new FormsV1Controller(formsServiceMock);
   });
 
   describe('create', () => {
-    it('Should create a form via the forms service', async () => {
+    it('creates a form via the forms service', async () => {
       const body: CreateFormDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-        typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
         title: 'New Form',
-        definition: { schema: {}, uischema: {} },
+        content: {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: 'Form', elements: [] } },
+        },
       };
       const mockResult = {
         id: 'form-1',
@@ -44,7 +56,7 @@ describe('FormsV1Controller', () => {
   });
 
   describe('get', () => {
-    it('Should get a form via the forms service', async () => {
+    it('gets a form via the forms service', async () => {
       const mockResult = {
         id: 'form-1',
         title: 'New Form',
@@ -60,23 +72,26 @@ describe('FormsV1Controller', () => {
     });
   });
 
-  describe('updateSchema', () => {
-    it('Should update a form schema via the forms service', async () => {
-      const body: UpdateFormSchemaDto = {
-        definition: { schema: {}, uischema: {} },
-        title: 'Updated Title',
+  describe('updateContent', () => {
+    it("updates a draft version's content via the forms service", async () => {
+      const body: UpdateFormContentDto = {
+        content: {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: 'Form', elements: [], label: 'Updated Title' } },
+        },
       };
       const mockResult = {
         id: 'v-1',
-        formId: 'form-1',
-        version: 1,
-        definition: { schema: {}, uischema: {} },
+        documentId: 'form-1',
+        versionNumber: 1,
+        title: 'Updated Title',
+        content: body.content,
       };
-      formsServiceMock.updateSchema.mockResolvedValue(mockResult);
+      formsServiceMock.updateContent.mockResolvedValue(mockResult);
 
-      const result = await controller.updateSchema(mockUser, 'form-1', 'v-1', body);
+      const result = await controller.updateContent(mockUser, 'form-1', 'v-1', body);
 
-      expect(formsServiceMock.updateSchema).toHaveBeenCalledWith(
+      expect(formsServiceMock.updateContent).toHaveBeenCalledWith(
         mockUser.id,
         'form-1',
         'v-1',

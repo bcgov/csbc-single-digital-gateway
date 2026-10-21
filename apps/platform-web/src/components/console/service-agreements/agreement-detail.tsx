@@ -15,11 +15,16 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Spinner } from '@repo/ui/spinner';
+import type { DocumentContent } from '@repo/documents/content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, Pencil } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
+import { AgreementDeleteButton } from './agreement-delete-button';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
+import { governingOf, VersionContent } from '@/components/console/version-content';
+import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import {
@@ -30,7 +35,6 @@ import {
   updateAgreementDraft,
 } from '@/lib/service-agreements';
 import { AgreementDefaultToggle } from './agreement-default-toggle';
-import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
 /** Detail page — gates render on the query so the editor mounts WITH the data (memory
@@ -55,22 +59,72 @@ function AgreementBody({
   const { data: user } = useAuth();
   const isAdmin = user?.roles.includes('admin') ?? false;
   const queryClient = useQueryClient();
-  const { versions, definition, agreement, services } = detail;
+  const navigate = useNavigate();
+  const { versions, agreement } = detail;
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
+  const governing = governingOf(
+    selected?.templateVersionId == null
+      ? undefined
+      : detail.definitions[selected.templateVersionId],
+  );
 
-  const [formData, setFormData] = useState<Record<string, unknown>>(selected?.data ?? {});
-  const [baseline, setBaseline] = useState<Record<string, unknown>>(selected?.data ?? {});
-  // Reseed when the SELECTED version identity changes (switch versions, or a new one after add).
-  // Not keyed on the query data, so a save-triggered refetch never clobbers in-progress edits.
-  useEffect(() => {
-    const v = versions.find((x) => x.id === selectedId);
-    setFormData(v?.data ?? {});
-    setBaseline(v?.data ?? {});
-  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  /**
+   * Doc 218 rule 1: the document the studio last reported. `null` until it mounts and emits its
+   * baseline, and reset on every version change so a stale document from the previous version can
+   * never read as an edit to this one.
+   *
+   * This replaces the old `contentText`/`baseline` JSON-text pair: the content is a form document
+   * now, authored as one, so there is no text to reseed and no parse that can fail.
+   */
+  const [live, setLive] = useState<DocumentContent | null>(null);
+  /** An action waiting on the discard confirmation (rule 19). Stored as a thunk, hence the extra arrow. */
+  const [pending, setPending] = useState<(() => void) | null>(null);
 
-  const dirty = JSON.stringify(formData) !== JSON.stringify(baseline);
+  /**
+   * Rule 11: what `dirty` compares against — the content as the server now holds it, rebuilt every
+   * render. After a save the refetch makes it equal to `live` again, which is what turns Save back
+   * off and Publish back on.
+   */
+  const stored = documentContentOf(selected?.content);
+  /**
+   * Rule 12: what the studio is SEEDED with — pinned to the version id, deliberately NOT to the
+   * query data.
+   *
+   * The studio seeds once per mount (doc 276) and `key` remounts it per version; pinning the seed to
+   * the version id as well means a refetch after a save never hands a re-render a new content
+   * identity. Both guards stay.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
+  const seed = useMemo(() => stored, [selected?.id]);
+  // Doc 221: the same order-insensitive comparison the template page needs — the server's zod parse
+  // reorders keys, so a plain JSON.stringify left this page dirty forever after a successful save.
+  const dirty = live !== null && !sameDocumentContent(live, stored);
+  // Rule 20 (feature 177): read at block time through a ref, because a boolean captured at render can
+  // still read stale `true` in the continuation after an awaited save.
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  /**
+   * Doc 225 B1: a deleted agreement has NOTHING to save, so the guard must not ask.
+   *
+   * Deleting makes the page dirty by itself: the refetch empties it, `stored` becomes `null`, and
+   * `sameDocumentContent` reports any document against `null` as changed — so the navigation away
+   * from a delete was blocked by a prompt offering to save the thing just deleted.
+   *
+   * A REF, set synchronously before navigating, for the same reason `isDirty` is a function at all
+   * (rule 20): a state update is not guaranteed to have re-rendered before the next line navigates,
+   * so clearing `live` here would still read stale.
+   */
+  const deleted = useRef(false);
+  const isDirty = useCallback(() => !deleted.current && dirtyRef.current, []);
+
+  const selectVersion = (versionId: string) => {
+    setSelectedId(versionId);
+    setLive(null);
+  };
+  /** Anything that would throw the current edits away asks first (rule 19). */
+  const confirmed = (action: () => void) => (dirty ? setPending(() => action) : action());
   const isGlobal = agreement.workspaceId === null;
   // A global agreement is admin-only to edit; otherwise a draft is editable.
   const editable = selected?.status === 'draft' && (!isGlobal || isAdmin);
@@ -79,21 +133,24 @@ function AgreementBody({
     queryClient.invalidateQueries({ queryKey: ['service-agreements', 'detail', id] });
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: (document: DocumentContent) => {
       if (selected === undefined) {
         throw new Error('No version selected');
       }
-      const title = typeof formData.title === 'string' ? formData.title : undefined;
-      return updateAgreementDraft(id, selected.id, { data: formData, ...(title ? { title } : {}) });
+      return updateAgreementDraft(id, selected.id, { content: document });
     },
     onSuccess: async () => {
-      setBaseline(formData);
       await Promise.all([
         invalidate(),
         queryClient.invalidateQueries({ queryKey: ['service-agreements'] }),
       ]);
     },
   });
+  const saveDraft = async () => {
+    if (live !== null) {
+      await save.mutateAsync(live);
+    }
+  };
 
   const publish = useMutation({
     mutationFn: () => {
@@ -109,7 +166,7 @@ function AgreementBody({
     mutationFn: () => addAgreementVersion(id),
     onSuccess: async (created) => {
       await invalidate();
-      setSelectedId(created.id);
+      selectVersion(created.id);
     },
   });
 
@@ -135,7 +192,7 @@ function AgreementBody({
   // Console breadcrumb bar (workspace scope): Service agreements → this agreement, mirroring the
   // service detail (feature 44). No-ops in admin scope (no PageChromeProvider there).
   useSetPageChrome({
-    title: agreement.title,
+    title: agreement.title ?? 'Untitled',
     breadcrumb:
       scope.kind === 'workspace' ? (
         <Breadcrumb>
@@ -157,10 +214,24 @@ function AgreementBody({
   });
 
   return (
-    <div className="mx-auto flex max-w-[1000px] flex-col gap-4">
-      <UnsavedChangesGuard when={dirty} />
-      <div className="flex items-center gap-3">
-        {backLink}
+    // Doc 218 rule 16: full height — the studio sizes itself to its container, and the console
+    // `<main>` is a flex child with a definite height. The header keeps its own height.
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <UnsavedChangesGuard when={isDirty} onSave={saveDraft} onDiscard={() => setLive(null)} />
+      <ConfirmDiscardDialog
+        open={pending !== null}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          const action = pending;
+          setPending(null);
+          action?.();
+        }}
+      />
+      {backLink === null ? null : <div className="shrink-0">{backLink}</div>}
+      {/* The title shares its row with the actions, directly above the studio. The title is generated from the
+          version content, so it can be absent. */}
+      <div className="flex shrink-0 items-center gap-3">
+        <h1 className="text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
         <div className="ml-auto flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
           {scope.kind === 'workspace' ? (
@@ -171,15 +242,32 @@ function AgreementBody({
               published={publishedAgreement}
             />
           ) : null}
-          <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
+          <VersionPicker
+            versions={versions}
+            selectedId={selectedId}
+            onSelect={(versionId) => confirmed(() => selectVersion(versionId))}
+          />
           {latestPublished && editableContext(isGlobal, isAdmin) ? (
-            <Button size="sm" type="button" disabled={busy} onClick={() => newVersion.mutate()}>
+            <Button
+              size="sm"
+              type="button"
+              disabled={busy}
+              onClick={() => confirmed(() => newVersion.mutate())}
+            >
               <Pencil className="size-4" aria-hidden />
               New version
             </Button>
           ) : null}
           {editable ? (
-            <Button size="sm" type="button" disabled={!dirty || busy} onClick={() => save.mutate()}>
+            <Button
+              size="sm"
+              type="button"
+              disabled={!dirty || busy}
+              // The rejection is CAUGHT here, and only here: the failure is already on screen through the
+              // error banner, and an uncaught one from a click is an unhandled rejection. The guard's `onSave`
+              // deliberately gets the rejecting promise, because its dialog stays open on failure.
+              onClick={() => void saveDraft().catch(() => {})}
+            >
               {save.isPending ? <Spinner className="size-4" /> : null} Save
             </Button>
           ) : null}
@@ -193,48 +281,52 @@ function AgreementBody({
               {publish.isPending ? <Spinner className="size-4" /> : null} Publish
             </Button>
           ) : null}
+          {/* Doc 225 rule 12: ONE control for both pages — this component already serves
+              `admin/service-agreements/:id` and `app/:slug/service-agreements/:id` through `scope`. */}
+          <AgreementDeleteButton
+            id={id}
+            detail={detail}
+            selected={selected}
+            onDeleted={() => {
+              // Before anything else, and synchronously: the refetch below is what makes the page
+              // dirty, and the navigation that follows is what the guard would block.
+              deleted.current = true;
+              void queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
+              void (scope.kind === 'admin'
+                ? navigate({ to: '/admin/service-agreements' })
+                : navigate({ to: '/app/$slug/service-agreements', params: { slug: scope.slug } }));
+            }}
+            onVersionDeleted={() => {
+              // The deleted version may be the one on screen, so the picker resets to the latest.
+              setSelectedId('');
+              setLive(null);
+              void queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
+            }}
+          />
         </div>
       </div>
-      {/* The page owns its title heading now that the console shell no longer renders one. */}
-      <h1 className="text-xl font-semibold">{agreement.title}</h1>
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="shrink-0 text-sm text-destructive">
           {error.message}
         </p>
       ) : null}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <AgreementEditor
-          definition={definition}
-          data={formData}
-          onChange={setFormData}
-          readonly={!editable}
+      <div
+        data-slot="agreement-content"
+        className="min-h-0 flex-1 rounded-xl border border-border bg-background"
+      >
+        <VersionContent
+          key={selected?.id}
+          document={seed}
+          kind="document"
+          type="services.service-agreement"
+          editable={editable}
+          onDocumentChange={setLive}
+          // Doc 221: the template THIS version is pinned to (doc 217), looked up in `definitions` —
+          // never whichever template happens to be published now, or a template author tightening
+          // permissions would retroactively re-govern documents already built from an earlier one.
+          governedBy={governing}
         />
       </div>
-
-      {/* The services that reference this shared agreement (it applies to each at current-published). */}
-      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-        <span className="text-sm font-medium">Associated services</span>
-        {services.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Not attached to any service yet — attach it from a service&apos;s Service agreements
-            tab.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {services.map((service) => (
-              <li key={service.id}>
-                <Link
-                  to="/app/$slug/services/$id"
-                  params={{ slug: service.workspaceSlug, id: service.id }}
-                  className="text-sm font-medium text-foreground hover:underline"
-                >
-                  {service.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
@@ -257,7 +349,7 @@ function VersionPicker({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
-        Version v{selected?.version}
+        Version v{selected?.versionNumber}
         <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
@@ -267,7 +359,7 @@ function VersionPicker({
             className={version.id === selectedId ? 'font-semibold' : undefined}
             onClick={() => onSelect(version.id)}
           >
-            v{version.version}
+            v{version.versionNumber}
             <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
           </DropdownMenuItem>
         ))}

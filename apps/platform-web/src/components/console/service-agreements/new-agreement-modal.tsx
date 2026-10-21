@@ -9,18 +9,22 @@ import {
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Spinner } from '@repo/ui/spinner';
-import { Textarea } from '@repo/ui/textarea';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { TemplateSelect } from '@/components/common/template-select';
 import { createAgreement } from '@/lib/service-agreements';
 import { type AgreementScope, createPayloadFor } from './scope';
 
-/** "New agreement" modal — collects a title + description; the rest is edited on the detail page.
- * Shared by the console (workspace) + admin (global) surfaces; `scope` fixes where it's created. */
+/**
+ * "New agreement" modal — collects a title; everything else is edited on the detail page.
+ *
+ * Feature 217: it also collected a description, which went into the version's `data`. An agreement
+ * is AUTHORED now, and its description is part of the content authored on the detail page.
+ */
 export function NewAgreementModal({ scope }: { scope: AgreementScope }) {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -37,9 +41,10 @@ export function NewAgreementModal({ scope }: { scope: AgreementScope }) {
       if (trimmed === '') {
         throw new Error('A title is required');
       }
-      return createAgreement(
-        createPayloadFor(scope, { title: trimmed, description: description.trim() }),
-      );
+      if (templateId === undefined) {
+        throw new Error('Choose a template');
+      }
+      return createAgreement({ ...createPayloadFor(scope, trimmed), templateId });
     },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
@@ -72,8 +77,7 @@ export function NewAgreementModal({ scope }: { scope: AgreementScope }) {
         <DialogHeader>
           <DialogTitle>New service agreement</DialogTitle>
           <DialogDescription>
-            Give the agreement a title and description — you can write its content and options after
-            it’s created.
+            Give the agreement a title — you can write its content and options after it’s created.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -93,15 +97,12 @@ export function NewAgreementModal({ scope }: { scope: AgreementScope }) {
               onChange={(event) => setTitle(event.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-agreement-description">Description</Label>
-            <Textarea
-              id="new-agreement-description"
-              value={description}
-              rows={3}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </div>
+          <TemplateSelect
+            id="new-agreement-template"
+            type="services.service-agreement"
+            value={templateId}
+            onChange={setTemplateId}
+          />
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
               {create.error.message}
@@ -111,7 +112,7 @@ export function NewAgreementModal({ scope }: { scope: AgreementScope }) {
             <Button type="button" variant="outline" onClick={() => void close()}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending}>
+            <Button type="submit" disabled={create.isPending || templateId === undefined}>
               {create.isPending ? <Spinner className="size-4" /> : null}
               Create agreement
             </Button>

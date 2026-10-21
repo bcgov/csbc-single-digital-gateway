@@ -1,23 +1,14 @@
 /**
- * Browser client + query options for the citizen application flow (feature 63). Talks to the
- * citizen-portal-api: the public form-to-fill read and the private `/v1/me/applications` lifecycle.
+ * Browser client + query options for the citizen application flow (feature 63, doc 292). Talks to the
+ * citizen-portal-api's private `/v1/me/applications` lifecycle; the form to fill comes from the catalog's published
+ * application method (doc 291).
  * Mutations are credentialed cross-origin calls (the browser sends Origin → CSRF-allowlisted).
  */
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 import type { ApplicationStatus } from '@/lib/catalog';
 
-/** The form to render for an application: its kind + structure (`{schema,uischema}` or `{stages,…}`). */
-export interface ApplicationFormToFill {
-  serviceId: string;
-  formId: string;
-  formVersionId: string;
-  kind: string;
-  title: string;
-  structure: Record<string, unknown>;
-}
-
-/** The full view of one application — the submission + the form it was made through + its service. */
+/** One of the citizen's applications in full (`GET /v1/me/applications/:id`) — the answers and the form they fill. */
 export interface ApplicationDetail {
   id: string;
   reference: string;
@@ -25,10 +16,9 @@ export interface ApplicationDetail {
   statusLabel: string;
   formId: string;
   formVersionId: string;
-  formTitle: string;
-  serviceId: string;
-  serviceTitle: string;
-  kind: string;
+  /** The method version's generated title; null when its content has no root label. */
+  formTitle: string | null;
+  /** The form the answers were made on: `{ schema, variants }` (doc 275). */
   structure: Record<string, unknown>;
   data: Record<string, unknown>;
   /** The latest reviewer note, surfaced in the status banner for rejected / action-needed. */
@@ -51,15 +41,31 @@ export interface Submission {
   submittedAt: string | null;
 }
 
-/** A request failure that carries the HTTP status (so callers can branch on e.g. a consent 422). */
+/** A request failure that carries the HTTP status and, for a 422, the API's validation messages (doc 292 rule 6). */
 export class RequestError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly errors: readonly string[] = [],
   ) {
     super(message);
     this.name = 'RequestError';
   }
+}
+
+/** The API's own message and validation errors, when the body carries them. */
+async function failure(res: Response, fallback: string): Promise<RequestError> {
+  let message = fallback;
+  let errors: string[] = [];
+  try {
+    const body = (await res.json()) as { message?: unknown; errors?: unknown };
+    if (typeof body.message === 'string') message = body.message;
+    if (Array.isArray(body.errors))
+      errors = body.errors.filter((e): e is string => typeof e === 'string');
+  } catch {
+    // Not JSON — keep the status line.
+  }
+  return new RequestError(res.status, message, errors);
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -69,17 +75,9 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.body ? { headers: { 'content-type': 'application/json', ...init.headers } } : {}),
   });
   if (!res.ok) {
-    throw new RequestError(res.status, `${init?.method ?? 'GET'} ${path} failed: ${res.status}`);
+    throw await failure(res, `${init?.method ?? 'GET'} ${path} failed: ${res.status}`);
   }
   return (await res.json()) as T;
-}
-
-/** The form a citizen fills to apply for a service (public). */
-export async function getApplicationForm(
-  serviceId: string,
-  formId: string,
-): Promise<ApplicationFormToFill> {
-  return requestJson(`/v1/services/${serviceId}/applications/${formId}`);
 }
 
 /** Start a new application for a form version, or resume the existing draft (auth). */
@@ -122,50 +120,6 @@ export async function reviseApplication(id: string): Promise<Submission> {
   return requestJson(`/v1/me/applications/${id}/revise`, { method: 'POST' });
 }
 
-/** The canonical consent decision (independent of the agreement's authored labels). */
-export type ConsentDecision = 'approve' | 'reject';
-
-/** One service agreement the citizen must decide on before applying + their current decision. */
-export interface ServiceAgreementConsent {
-  agreementVersionId: string;
-  agreementDocumentId: string;
-  /** The authored fields: title, description, content (Lexical), isOptional, approveLabel, rejectLabel. */
-  data: Record<string, unknown>;
-  /** The caller's latest decision on this version, or null = undecided. */
-  decision: ConsentDecision | null;
-}
-
-/** The agreements a service requires + the caller's decisions (auth, `@CurrentUser`-scoped). */
-export async function getServiceAgreements(serviceId: string): Promise<ServiceAgreementConsent[]> {
-  const { items } = await requestJson<{ items: ServiceAgreementConsent[] }>(
-    `/v1/me/services/${serviceId}/agreements`,
-  );
-  return items;
-}
-
-/** Record an approve/reject decision on a published agreement version (append-only; auth). */
-export async function recordConsent(
-  agreementVersionId: string,
-  decision: ConsentDecision,
-): Promise<{ agreementVersionId: string; decision: ConsentDecision }> {
-  return requestJson('/v1/me/agreement-consents', {
-    method: 'POST',
-    body: JSON.stringify({ agreementVersionId, decision }),
-  });
-}
-
-/** Query for a service's agreements + the caller's decisions (auth-gated). */
-export function serviceAgreementsQueryOptions(serviceId: string, enabled: boolean) {
-  return queryOptions({
-    queryKey: ['me', 'serviceAgreements', serviceId] as const,
-    queryFn: () => getServiceAgreements(serviceId),
-    enabled,
-    staleTime: 10 * 1000,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
-}
-
 /** The query-key root for a citizen's applications — invalidated to refresh the detail page. */
 export const APPLICATIONS_KEY = ['me', 'applications'] as const;
 
@@ -175,16 +129,6 @@ export function applicationQueryOptions(id: string) {
     queryKey: [...APPLICATIONS_KEY, id] as const,
     queryFn: () => getApplication(id),
     staleTime: 30 * 1000,
-    retry: false,
-  });
-}
-
-/** Query for the form to fill. */
-export function applicationFormQueryOptions(serviceId: string, formId: string) {
-  return queryOptions({
-    queryKey: ['applicationForm', serviceId, formId] as const,
-    queryFn: () => getApplicationForm(serviceId, formId),
-    staleTime: 60 * 1000,
     retry: false,
   });
 }

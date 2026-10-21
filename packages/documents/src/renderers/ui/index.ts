@@ -1,0 +1,78 @@
+import { accordionGroupEntry } from './accordion-group-renderer';
+import { accordionInputEntry } from './accordion-input';
+import type { RendererSet } from '../renderer-set';
+import { renderersOf } from '../renderer-set';
+import { checkboxControlEntry } from './checkbox-control';
+import { dataTableControlEntry } from './data-table-control';
+import { documentReferenceControlEntry } from './document-reference-control';
+import { headingEntry } from './heading-renderer';
+import { inputControlEntry } from './input-control';
+import { moneyControlEntry } from './money-control';
+import { multiChoiceControlEntry } from './multi-choice-control';
+import { numberInputControlEntry } from './number-input-control';
+import { richContentEntry } from './rich-content-renderer';
+import { recordControlEntry } from './record-control';
+import { richTextControlEntry } from './rich-text-control';
+import { separatorEntry } from './separator-renderer';
+import { singleChoiceControlEntry } from './single-choice-control';
+import { switchControlEntry } from './switch-control';
+import { tableEntry } from './table-renderer';
+import { textareaControlEntry } from './textarea-control';
+
+export type { RendererSet } from '../renderer-set';
+export { headingOptions, type HeadingOptions } from './heading-options';
+export {
+  REFERENCE_POLICY,
+  referencesOf,
+  referenceTypeOf,
+  toReference,
+  type DocumentReference,
+  type ReferenceCandidate,
+  type ReferencePolicy,
+} from './document-reference';
+export {
+  DocumentReferenceProvider,
+  useReferenceSource,
+  type DocumentReferenceSource,
+  type ReferenceTemplate,
+} from './reference-source';
+
+export const cells: RendererSet['cells'] = [];
+export const contentRenderers: RendererSet['contentRenderers'] = [
+  headingEntry,
+  separatorEntry,
+  richContentEntry,
+  tableEntry,
+  // Doc 279: authored title + rich-text items.
+  accordionGroupEntry,
+];
+/**
+ * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls
+ * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
+ * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
+ * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248), or Money
+ * for `options.component: 'money'` (doc 286) — and the rich text field (doc 250) —
+ * and the object array's data table (doc 263) — or its record (doc 271), or its accordion (doc 280), or a document reference (doc 287).
+ */
+export const controlRenderers: RendererSet['controlRenderers'] = [
+  checkboxControlEntry,
+  switchControlEntry,
+  inputControlEntry,
+  textareaControlEntry,
+  singleChoiceControlEntry,
+  multiChoiceControlEntry,
+  numberInputControlEntry,
+  moneyControlEntry,
+  richTextControlEntry,
+  dataTableControlEntry,
+  recordControlEntry,
+  accordionInputEntry,
+  documentReferenceControlEntry,
+];
+export const layoutRenderers: RendererSet['layoutRenderers'] = [];
+export const renderers = renderersOf({
+  cells,
+  contentRenderers,
+  controlRenderers,
+  layoutRenderers,
+});

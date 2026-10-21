@@ -40,7 +40,12 @@ describe('DefaultAgreementsService', () => {
               agreementDocumentId: 'doc-1',
               agreementWorkspaceId: null,
               title: 'Global Agreement',
-              data: { isOptional: true },
+              content: {
+                schema: {},
+                variants: {
+                  default: { type: 'Form', elements: [], options: { isOptional: true } },
+                },
+              },
               createdAt: mockCreatedAt,
             },
           ]),
@@ -76,7 +81,12 @@ describe('DefaultAgreementsService', () => {
             {
               workspaceId: 'other-ws',
               title: 'Other Agreement',
-              data: { isOptional: false },
+              content: {
+                schema: {},
+                variants: {
+                  default: { type: 'Form', elements: [], options: { isOptional: false } },
+                },
+              },
             },
           ]),
         ); // resolvePublishedAgreement
@@ -94,7 +104,12 @@ describe('DefaultAgreementsService', () => {
             {
               workspaceId: 'ws-1',
               title: 'My Agreement',
-              data: { isOptional: false },
+              content: {
+                schema: {},
+                variants: {
+                  default: { type: 'Form', elements: [], options: { isOptional: false } },
+                },
+              },
             },
           ]),
         ) // resolvePublishedAgreement
@@ -123,7 +138,12 @@ describe('DefaultAgreementsService', () => {
             {
               workspaceId: 'ws-1',
               title: 'My Agreement',
-              data: { isOptional: false },
+              content: {
+                schema: {},
+                variants: {
+                  default: { type: 'Form', elements: [], options: { isOptional: false } },
+                },
+              },
             },
           ]),
         ) // resolvePublishedAgreement
@@ -144,7 +164,12 @@ describe('DefaultAgreementsService', () => {
             {
               workspaceId: 'ws-1',
               title: 'My Agreement',
-              data: { isOptional: false },
+              content: {
+                schema: {},
+                variants: {
+                  default: { type: 'Form', elements: [], options: { isOptional: false } },
+                },
+              },
             },
           ]),
         ) // resolvePublishedAgreement

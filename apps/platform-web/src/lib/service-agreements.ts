@@ -13,8 +13,9 @@ export interface ServiceAgreement {
   id: string;
   /** Null for a global (admin-authored) agreement. */
   workspaceId: string | null;
-  title: string;
-  kind: string;
+  /** From the current version's GENERATED title — null when its content carries no root label. */
+  title: string | null;
+  type: 'services.service-agreement';
   createdAt: string;
   updatedAt: string;
 }
@@ -26,47 +27,96 @@ export interface ServiceAgreementSummary extends ServiceAgreement {
 
 export interface ServiceAgreementVersion {
   id: string;
-  version: number;
+  versionNumber: number;
+  revision: number;
   status: VersionStatus;
-  data: Record<string, unknown>;
+  /** GENERATED from `content`; null when its root carries no label. */
+  title: string | null;
+  /** GENERATED from `content`; null for a rich (Lexical) description. */
+  description: string | null;
+  content: Record<string, unknown>;
+  /**
+   * Doc 221: the template version this version is PINNED to (doc 217). Look its template up in
+   * `definitions[templateVersionId]` — a version authored before a template reshape must render
+   * against the template it was authored under, not whichever one is published now.
+   */
+  templateVersionId: string | null;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;
 }
 
-/** A service this agreement is attached to (agreements may be attached to many services). */
-export interface AssociatedService {
-  id: string;
-  title: string;
-  workspaceSlug: string;
+/**
+ * Feature 217 dropped `services` (which services this agreement is attached to): it came from
+ * `document_references`, and linking documents is a later feature.
+ */
+export interface AgreementDefinition {
+  schema: Record<string, unknown>;
+  /** Doc 275: the template's uischemas by variant name; `default` is always present. */
+  variants: Record<string, Record<string, unknown>>;
+  /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
+  capabilities?: Record<string, unknown>;
 }
 
 export interface ServiceAgreementDetail {
   agreement: ServiceAgreement;
   versions: ServiceAgreementVersion[];
-  definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
-  services: AssociatedService[];
+  /**
+   * Doc 221: the template of every version, keyed by `templateVersionId` — feature 174's shape. A
+   * surface MUST look up `definitions[version.templateVersionId]`, never assume one template.
+   */
+  definitions: Record<string, AgreementDefinition>;
+  /**
+   * Doc 225 rule 7: what may be deleted, and why not.
+   *
+   * The API decides. Deletability turns on recorded consents and on workspace defaults, neither of
+   * which the browser can see, so a console working it out from `versions` would be guessing — and
+   * would guess differently from the endpoint that refuses.
+   */
+  deletable: {
+    agreement: boolean;
+    /** Why the agreement may not go, ready to show. Absent exactly when `agreement` is true. */
+    reason?: string;
+    /** Versions deletable on their own — empty when there is only one (rule 4). */
+    versionIds: string[];
+  };
 }
 
 const BASE = `${BFF_ORIGIN}/v1/service-agreements`;
 
-async function ok<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
-    try {
-      const body = (await res.json()) as { message?: unknown; errors?: unknown };
-      if (typeof body.message === 'string') {
-        message = body.message;
-      }
-      if (Array.isArray(body.errors) && body.errors.length > 0) {
-        message = `${message}: ${body.errors.join('; ')}`;
-      }
-    } catch {
-      /* non-JSON error body */
+/**
+ * The server's own message for a failed response, falling back to the status.
+ *
+ * Doc 225 leans on this: a refused delete answers 409 with WHY ("someone has already consented…",
+ * "this agreement is a default for Health…"), and that sentence is the entire value of the refusal.
+ * `services.ts`'s `noContent` throws `Request failed: 409` instead, which is why this is shared here
+ * rather than copied from there.
+ */
+async function errorFrom(res: Response): Promise<Error> {
+  let message = `Request failed: ${res.status}`;
+  try {
+    const body = (await res.json()) as { message?: unknown; errors?: unknown };
+    if (typeof body.message === 'string') {
+      message = body.message;
     }
-    throw new Error(message);
+    if (Array.isArray(body.errors) && body.errors.length > 0) {
+      message = `${message}: ${body.errors.join('; ')}`;
+    }
+  } catch {
+    /* non-JSON error body */
   }
+  return new Error(message);
+}
+
+async function ok<T>(res: Response): Promise<T> {
+  if (!res.ok) throw await errorFrom(res);
   return res.json() as Promise<T>;
+}
+
+/** A 204 response: no body to parse, but a failure still carries its reason. */
+async function noContent(url: string, method: string): Promise<void> {
+  const res = await fetch(url, { method, credentials: 'include' });
+  if (!res.ok) throw await errorFrom(res);
 }
 
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
@@ -142,7 +192,9 @@ export function agreementQueryOptions(id: string) {
 
 export function createAgreement(input: {
   workspaceId?: string;
-  data: Record<string, unknown>;
+  title: string;
+  /** Doc 228: the template to build from. */
+  templateId?: string;
 }): Promise<{ agreement: ServiceAgreement; version: ServiceAgreementVersion }> {
   return send(BASE, 'POST', input);
 }
@@ -150,7 +202,7 @@ export function createAgreement(input: {
 export function updateAgreementDraft(
   id: string,
   versionId: string,
-  input: { data: Record<string, unknown>; title?: string },
+  input: { content: Record<string, unknown> },
 ): Promise<ServiceAgreementVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
@@ -176,10 +228,24 @@ export function publishAgreementVersion(
 // ── Workspace default agreements (feature 96/98) ────────────────────────────────────────────────
 
 /** A workspace's default service agreement, resolved to its current published version. */
+/** Doc 225: deletes the whole agreement. 409 with a reason when something is in the way. */
+export async function deleteAgreement(id: string): Promise<void> {
+  await noContent(`${BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+/** Doc 225: deletes ONE version — never the last, never a consented one. */
+export async function deleteAgreementVersion(id: string, versionId: string): Promise<void> {
+  await noContent(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
+    'DELETE',
+  );
+}
+
 export interface DefaultAgreement {
   id: string;
   agreementDocumentId: string;
-  title: string;
+  /** From the agreement version's GENERATED title — null when it carries no root label. */
+  title: string | null;
   isOptional: boolean;
   isGlobal: boolean;
   createdAt: string;

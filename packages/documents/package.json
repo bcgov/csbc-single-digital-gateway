@@ -1,0 +1,95 @@
+{
+  "name": "@repo/documents",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "type": "module",
+  "exports": {
+    "./content": {
+      "types": "./dist/content.d.ts",
+      "development": "./src/content.ts",
+      "import": "./dist/content.js",
+      "require": "./dist/content.cjs"
+    },
+    "./renderers/default": {
+      "types": "./dist/renderers-default.d.ts",
+      "development": "./src/renderers-default.ts",
+      "import": "./dist/renderers-default.js",
+      "require": "./dist/renderers-default.cjs"
+    },
+    "./renderers/studio": {
+      "types": "./dist/renderers-studio.d.ts",
+      "development": "./src/renderers-studio.ts",
+      "import": "./dist/renderers-studio.js",
+      "require": "./dist/renderers-studio.cjs"
+    },
+    "./renderers/ui": {
+      "types": "./dist/renderers-ui.d.ts",
+      "development": "./src/renderers-ui.ts",
+      "import": "./dist/renderers-ui.js",
+      "require": "./dist/renderers-ui.cjs"
+    },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "development": "./src/runner.ts",
+      "import": "./dist/runner.js",
+      "require": "./dist/runner.cjs"
+    },
+    "./studio": {
+      "types": "./dist/studio.d.ts",
+      "development": "./src/studio.ts",
+      "import": "./dist/studio.js",
+      "require": "./dist/studio.cjs"
+    },
+    "./view": {
+      "types": "./dist/view.d.ts",
+      "development": "./src/view.ts",
+      "import": "./dist/view.js",
+      "require": "./dist/view.cjs"
+    },
+    "./styles.css": {
+      "development": "./src/styles.css",
+      "default": "./dist/styles.css"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jsonforms/core": "3.8.0",
+    "@jsonforms/react": "3.8.0",
+    "@mdi/js": "7.4.47",
+    "@mdi/react": "1.6.1",
+    "@repo/forms": "*",
+    "@repo/ui": "*",
+    "@xyflow/react": "12.11.3",
+    "gridstack": "13.2.0",
+    "nanoid": "^3.3.17"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "jsdom": "29.1.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "vite": "8.0.16",
+    "vite-plugin-dts": "5.0.2"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  }
+}

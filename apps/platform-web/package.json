@@ -13,12 +13,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnd-kit/dom": "^0.5.0",
-    "@dnd-kit/helpers": "^0.5.0",
-    "@dnd-kit/react": "^0.5.0",
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
-    "@monaco-editor/react": "^4.7.0",
+    "@repo/documents": "*",
+    "@repo/forms": "*",
     "@repo/react": "*",
     "@repo/ui": "*",
     "@tanstack/react-query": "5.101.0",

@@ -22,10 +22,11 @@ C4Component
         Component(logger, "Logger", "@repo/nestjs/logger", "pino request logging + redaction")
 
         Component(workspaces, "Workspaces Module", "NestJS feature", "Workspaces, memberships, ownership transfer")
-        Component(services, "Services Module", "NestJS feature", "Service documents, versions, publish, references")
-        Component(forms, "Forms Module", "NestJS feature", "Form & multi-stage definitions")
+        Component(services, "Services Module", "NestJS feature", "Service documents, versions, publish")
+        Component(forms, "Forms Module", "NestJS feature", "Application-method documents (Form or Flow content)")
         Component(reviews, "Reviews Module", "NestJS feature", "Submission review workflow (state machine)")
         Component(agreements, "Agreements Module", "NestJS feature", "Service agreements + consents")
+        Component(templates, "Templates Module", "NestJS feature", "Templates (kind='template') + the shared TemplateResolver")
 
         Component(userSync, "OidcUserSync", "AUTH_USER_SYNC port", "Persists users on first login; stamps role")
         Component(sessionReg, "ValkeySessionRegistry", "SessionRegistry port", "Tracks/revokes sessions (logout-everywhere)")
@@ -38,6 +39,10 @@ C4Component
     Rel(guards, services, "Authorized requests", "")
     Rel(guards, forms, "Authorized requests", "")
     Rel(guards, reviews, "Authorized requests", "")
+    Rel(guards, templates, "Authorized requests", "")
+    Rel(services, templates, "Resolves its template", "")
+    Rel(forms, templates, "Resolves its template", "")
+    Rel(agreements, templates, "Resolves its template", "")
     Rel(guards, agreements, "Authorized requests", "")
 
     Rel(authMod, keycloak, "OIDC discovery/login/refresh", "HTTPS")

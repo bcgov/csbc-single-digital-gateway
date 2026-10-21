@@ -1,4 +1,5 @@
 import type { SubmissionStatus } from '../dtos/submission.dtos';
+import { documentContentOf } from '@repo/documents/content';
 
 const STATUS_LABELS: Record<SubmissionStatus, string> = {
   draft: 'Draft',
@@ -28,27 +29,17 @@ export function submissionReference(submissionId: string, createdAt: Date): stri
   return `${date}-${suffix}`;
 }
 
-/** Coerce a form version's stored `schema` JSONB into a render structure, defaulting missing arrays. */
-export function normalizeFormStructure(
-  kind: string,
-  structure: Record<string, unknown>,
-): Record<string, unknown> {
-  if (kind === 'multi-stage-form') {
-    return {
-      name: typeof structure['name'] === 'string' ? structure['name'] : '',
-      description: typeof structure['description'] === 'string' ? structure['description'] : '',
-      stages: Array.isArray(structure['stages']) ? structure['stages'] : [],
-      edges: Array.isArray(structure['edges']) ? structure['edges'] : [],
-    };
-  }
+/**
+ * Coerce a document version's stored `content` JSONB into a render structure.
+ *
+ * Doc 275: `content` IS `{ schema, variants }` (a `@repo/documents` DocumentContent), so there is no per-kind
+ * shape to branch on — a routed application is a `Funnel` root inside each variant, not a different top-level object.
+ * Malformed content degrades to an empty Form rather than throwing.
+ */
+export function normalizeContent(content: Record<string, unknown>): Record<string, unknown> {
+  const parsed = documentContentOf(content);
   return {
-    schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {
-      type: 'object',
-      properties: {},
-    },
-    uischema: (structure['uischema'] as Record<string, unknown> | undefined) ?? {
-      type: 'VerticalLayout',
-      elements: [],
-    },
+    schema: parsed?.schema ?? { type: 'object', properties: {} },
+    variants: parsed?.variants ?? { default: { type: 'Form', elements: [] } },
   };
 }

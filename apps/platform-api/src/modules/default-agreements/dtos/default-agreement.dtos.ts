@@ -17,7 +17,8 @@ export const defaultAgreementSchema = z.object({
   id: z.string(),
   /** The agreement DOCUMENT — resolved to its current published version for display. */
   agreementDocumentId: z.string(),
-  title: z.string(),
+  // Feature 217: from the version's GENERATED title — NULL when its content carries no label.
+  title: z.string().nullable(),
   isOptional: z.boolean(),
   isGlobal: z.boolean(),
   createdAt: z.string(),

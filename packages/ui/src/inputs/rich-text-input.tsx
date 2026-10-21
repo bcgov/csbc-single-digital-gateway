@@ -9,7 +9,6 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import {
   $getSelection,
@@ -29,10 +28,34 @@ import {
   mdiFormatUnderline,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { Fragment, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { Button } from '@ui/components/ui/button';
 import { cn } from '@ui/lib/utils';
 import { richTextNodes, richTextTheme } from './rich-text/shared';
+import { ValueSyncPlugin } from './rich-text/value-sync-plugin';
+
+/**
+ * The toolbar features an author may ask for, in the order the toolbar draws them (doc 207 rule 11).
+ * `heading` is ONE feature covering H1-H3: they are one decision to an author, not three.
+ *
+ * Exported so `@repo/forms` can sanitise `uischema.options.toolbar` against the SAME list — a second copy
+ * would drift from the one the toolbar actually honours.
+ */
+export const RICH_TEXT_FEATURES = [
+  'bold',
+  'italic',
+  'underline',
+  'heading',
+  'bulletList',
+  'numberedList',
+  'link',
+] as const;
+
+export type RichTextFeature = (typeof RICH_TEXT_FEATURES)[number];
+
+/** The features that report an active state (rule 16). Block-level ones do not — see `Toolbar`. */
+const INLINE_FORMATS = ['bold', 'italic', 'underline'] as const;
+type InlineFormat = (typeof INLINE_FORMATS)[number];
 
 export interface RichTextInputProps {
   id?: string;
@@ -50,17 +73,53 @@ export interface RichTextInputProps {
   'aria-labelledby'?: string;
   'aria-describedby'?: string | undefined;
   className?: string;
+  /**
+   * Which toolbar features to offer. Absent means all of them; an EMPTY array means a toolbar-less
+   * editor, which is a different thing from "the default".
+   */
+  toolbar?: readonly RichTextFeature[];
+  /** Empty-state text. Defaults to "Write…". */
+  placeholder?: string;
+  /** Minimum height in lines. Absent keeps the built-in minimum. */
+  rows?: number;
+  /**
+   * Drops the field chrome — the border, the background, the rounding, the focus ring and the
+   * content's inset — so the editor draws exactly where its text is read.
+   *
+   * For an editor that REPLACES a piece of rendered content in place rather than sitting in a form:
+   * the Form Studio's inline Title and Description (doc 223 rules 8-10, bugs 7-9). Without it the
+   * text jumped down and right by `px-3 py-2` the moment it became editable, inside a box the canvas
+   * had deliberately not drawn. The inset lives on a DESCENDANT, so a `className` override cannot
+   * reach it — which is why this is a prop and not a caller's class.
+   */
+  bare?: boolean;
 }
 
 const theme = richTextTheme;
 
+/**
+ * The content's inset — applied to the editable surface AND to the placeholder that overlays it.
+ *
+ * One constant because they must agree: the placeholder is absolutely positioned over the content,
+ * so a padding on one and not the other shows up as the placeholder sitting off the text it stands
+ * in for. `bare` has no inset at all (doc 223 rule 10), and that agrees too.
+ */
+const CONTENT_INSET = 'px-3 py-2';
+
 function ToolbarButton({
   label,
   onClick,
+  pressed,
   children,
 }: {
   label: string;
   onClick: () => void;
+  /**
+   * Rule 16: only the INLINE formats report an active state. A heading or list button cannot know its
+   * block type without more tracking, and a button reporting a STALE pressed state would be worse than
+   * one reporting none — so those pass `undefined` and expose no `aria-pressed` at all.
+   */
+  pressed?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -70,6 +129,7 @@ function ToolbarButton({
       size="icon"
       className="size-7"
       aria-label={label}
+      {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
       onClick={onClick}
     >
       {children}
@@ -77,11 +137,48 @@ function ToolbarButton({
   );
 }
 
-function Toolbar() {
-  const [editor] = useLexicalComposerContext();
+const ToolbarSeparator = () => (
+  <span data-slot="rich-text-toolbar-separator" className="mx-1 h-5 w-px bg-border" aria-hidden />
+);
 
-  const formatText = (format: 'bold' | 'italic' | 'underline') =>
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
+/** Rule 16: which inline formats the current selection carries. */
+function useActiveFormats(): Record<InlineFormat, boolean> {
+  const [editor] = useLexicalComposerContext();
+  const [active, setActive] = useState<Record<InlineFormat, boolean>>({
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+
+  useEffect(
+    () =>
+      editor.registerUpdateListener(({ editorState }) => {
+        editorState.read(() => {
+          const selection = $getSelection();
+          if (!$isRangeSelection(selection)) return;
+          const next = {
+            bold: selection.hasFormat('bold'),
+            italic: selection.hasFormat('italic'),
+            underline: selection.hasFormat('underline'),
+          };
+          // A new object every update would re-render on every keystroke — React bails out on Object.is only.
+          setActive((current) =>
+            INLINE_FORMATS.every((format) => current[format] === next[format]) ? current : next,
+          );
+        });
+      }),
+    [editor],
+  );
+
+  return active;
+}
+
+function Toolbar({ features }: { features: readonly RichTextFeature[] }) {
+  const [editor] = useLexicalComposerContext();
+  const active = useActiveFormats();
+  const offers = (feature: RichTextFeature) => features.includes(feature);
+
+  const formatText = (format: InlineFormat) => editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
 
   const formatHeading = (tag: HeadingTagType) =>
     editor.update(() => {
@@ -97,67 +194,132 @@ function Toolbar() {
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, url && url.trim() !== '' ? url.trim() : null);
   };
 
+  const inlineIcons: Record<InlineFormat, string> = {
+    bold: mdiFormatBold,
+    italic: mdiFormatItalic,
+    underline: mdiFormatUnderline,
+  };
+  const inlineLabels: Record<InlineFormat, string> = {
+    bold: 'Bold',
+    italic: 'Italic',
+    underline: 'Underline',
+  };
+  const headings: [HeadingTagType, string, string][] = [
+    ['h1', 'Heading 1', mdiFormatHeader1],
+    ['h2', 'Heading 2', mdiFormatHeader2],
+    ['h3', 'Heading 3', mdiFormatHeader3],
+  ];
+
+  /**
+   * Rule 11: drawn in the TOOLBAR's order, not the author's — a toolbar whose buttons move about between
+   * fields would be harder to use, and the author is choosing WHICH features, not where they sit.
+   * Groups are assembled first so a separator is only drawn BETWEEN two groups that both have content.
+   */
+  const groups: ReactNode[][] = [
+    INLINE_FORMATS.filter(offers).map((format) => (
+      <ToolbarButton
+        key={format}
+        label={inlineLabels[format]}
+        pressed={active[format]}
+        onClick={() => formatText(format)}
+      >
+        <Icon path={inlineIcons[format]} size="16px" aria-hidden />
+      </ToolbarButton>
+    )),
+    offers('heading')
+      ? headings.map(([tag, label, icon]) => (
+          <ToolbarButton key={tag} label={label} onClick={() => formatHeading(tag)}>
+            <Icon path={icon} size="16px" aria-hidden />
+          </ToolbarButton>
+        ))
+      : [],
+    [
+      offers('bulletList') ? (
+        <ToolbarButton
+          key="bulletList"
+          label="Bullet list"
+          onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
+        >
+          <Icon path={mdiFormatListBulleted} size="16px" aria-hidden />
+        </ToolbarButton>
+      ) : null,
+      offers('numberedList') ? (
+        <ToolbarButton
+          key="numberedList"
+          label="Numbered list"
+          onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
+        >
+          <Icon path={mdiFormatListNumbered} size="16px" aria-hidden />
+        </ToolbarButton>
+      ) : null,
+    ].filter(Boolean) as ReactNode[],
+    offers('link')
+      ? [
+          <ToolbarButton key="link" label="Link" onClick={insertLink}>
+            <Icon path={mdiLink} size="16px" aria-hidden />
+          </ToolbarButton>,
+        ]
+      : [],
+  ];
+
+  const filled = groups.filter((group) => group.length > 0);
+
   return (
     <div
+      data-slot="rich-text-toolbar"
       className="flex flex-wrap items-center gap-0.5 border-b border-input bg-muted/30 p-1"
       role="toolbar"
       aria-label="Formatting"
     >
-      <ToolbarButton label="Bold" onClick={() => formatText('bold')}>
-        <Icon path={mdiFormatBold} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Italic" onClick={() => formatText('italic')}>
-        <Icon path={mdiFormatItalic} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Underline" onClick={() => formatText('underline')}>
-        <Icon path={mdiFormatUnderline} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton label="Heading 1" onClick={() => formatHeading('h1')}>
-        <Icon path={mdiFormatHeader1} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Heading 2" onClick={() => formatHeading('h2')}>
-        <Icon path={mdiFormatHeader2} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Heading 3" onClick={() => formatHeading('h3')}>
-        <Icon path={mdiFormatHeader3} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton
-        label="Bullet list"
-        onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
-      >
-        <Icon path={mdiFormatListBulleted} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Numbered list"
-        onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
-      >
-        <Icon path={mdiFormatListNumbered} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton label="Link" onClick={insertLink}>
-        <Icon path={mdiLink} size="16px" aria-hidden />
-      </ToolbarButton>
+      {filled.map((group, index) => (
+        // eslint-disable-next-line react/no-array-index-key -- groups are a fixed, ordered set
+        <Fragment key={index}>
+          {index > 0 ? <ToolbarSeparator /> : null}
+          {group}
+        </Fragment>
+      ))}
     </div>
   );
 }
 
-/** Emit `SerializedEditorState` on edits, skipping the initial (mount-time) emit. */
-function ChangePlugin({ onChange }: { onChange?: (value: SerializedEditorState) => void }) {
-  const isFirst = useRef(true);
-  return (
-    <OnChangePlugin
-      ignoreSelectionChange
-      onChange={(editorState) => {
-        if (isFirst.current) {
-          isFirst.current = false;
-          return;
-        }
-        onChange?.(editorState.toJSON());
-      }}
-    />
-  );
+/**
+ * Emit `SerializedEditorState` on edits — only when the content actually differs from what the editor
+ * last held.
+ *
+ * This used to skip "the first emit", on the assumption that Lexical always emits once at mount. When
+ * it does not (measured in jsdom, doc 223 bug 14), the first thing skipped is the author's first real
+ * edit — so an editor whose one edit was a paste or a single change reported nothing. Comparing by
+ * content drops a mount-time emit (it carries the seed) and a selection-only update alike, and never
+ * drops an edit.
+ */
+function ChangePlugin({
+  onChange,
+  syncing,
+}: {
+  onChange?: ((value: SerializedEditorState) => void) | undefined;
+  /** Raised by `ValueSyncPlugin` while it applies a value taken from the parent. */
+  syncing: RefObject<boolean>;
+}) {
+  const [editor] = useLexicalComposerContext();
+  const latest = useRef(onChange);
+  latest.current = onChange;
+
+  useEffect(() => {
+    let last = JSON.stringify(editor.getEditorState().toJSON());
+    return editor.registerUpdateListener(({ editorState }) => {
+      const next = editorState.toJSON();
+      const json = JSON.stringify(next);
+      if (json === last) return;
+      last = json;
+      // A value synced IN from the parent (`ValueSyncPlugin`) is recorded as the new baseline but never
+      // reported back OUT — echoing it is how two editors bound to one value would write to each other
+      // for ever.
+      if (syncing.current) return;
+      latest.current?.(next);
+    });
+  }, [editor, syncing]);
+
+  return null;
 }
 
 /** Keep the editor's editable state in sync with `disabled`. */
@@ -176,6 +338,10 @@ export function RichTextInput({
   onChange,
   disabled = false,
   className,
+  toolbar,
+  placeholder = 'Write…',
+  rows,
+  bare = false,
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
@@ -197,16 +363,31 @@ export function RichTextInput({
     ...(value && value.root ? { editorState: JSON.stringify(value) } : {}),
   };
 
+  const features = toolbar ?? RICH_TEXT_FEATURES;
+  // Doc 223 bug 14: shared by the two plugins below — see `ValueSyncPlugin`.
+  const syncing = useRef(false);
+
   return (
     <div
+      data-slot="rich-text-input"
       className={cn(
-        'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
+        'overflow-hidden',
+        bare
+          ? // Doc 223 rule 10b: `bare` sets NO font-size or line-height, so the editor takes the
+            // container's — the same "put the size back under the container's control" the rich text
+            // theme applies to paragraphs. `text-sm` here would be an explicit size on the element,
+            // which beats what it is standing in for: it shrank a 16px description placeholder to
+            // 14px, and tightened a 14px one's leading from 22.75px to text-sm's 20px. A caller
+            // states the typography of the read view it replaces.
+            'bg-transparent'
+          : 'rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
       )}
       aria-invalid={ariaInvalid}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <Toolbar />
+        {/* Rule 11: an EMPTY list is a toolbar-less editor; ABSENT is all of them. */}
+        {features.length > 0 ? <Toolbar features={features} /> : null}
         <div className="relative">
           <RichTextPlugin
             contentEditable={
@@ -216,12 +397,34 @@ export function RichTextInput({
                 {...(ariaLabel === undefined ? {} : { 'aria-label': ariaLabel })}
                 {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
                 {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
-                className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
+                data-slot="rich-text-content"
+                className={cn(
+                  'outline-none [&_a]:cursor-pointer',
+                  bare ? 'min-h-[1lh]' : `min-h-28 ${CONTENT_INSET}`,
+                )}
+                {...(rows === undefined ? {} : { style: { minHeight: `${rows}lh` } })}
               />
             }
             placeholder={
-              <div className="pointer-events-none absolute left-3 top-2 text-muted-foreground">
-                Write…
+              /*
+               * The placeholder overlays the content EXACTLY: `inset-0` plus the very same inset
+               * constant, so the two can never drift apart.
+               *
+               * It used to carry its own `top-2 left-3`, hard-coded to this component's DEFAULT
+               * padding — so any consumer that repadded the content left the placeholder behind.
+               * Measured in the Form Studio inspector, whose compact density repads the content to
+               * `px-2 py-1`: the placeholder sat 4px lower and 4px further right than the text that
+               * replaced it, which reads as a too-tall first line. `data-slot` so a consumer
+               * overriding the content's padding can reach this in the same breath.
+               */
+              <div
+                data-slot="rich-text-placeholder"
+                className={cn(
+                  'pointer-events-none absolute inset-0 text-muted-foreground',
+                  bare ? undefined : CONTENT_INSET,
+                )}
+              >
+                {placeholder}
               </div>
             }
             ErrorBoundary={LexicalErrorBoundary}
@@ -230,7 +433,8 @@ export function RichTextInput({
         <HistoryPlugin />
         <ListPlugin />
         <LinkPlugin />
-        <ChangePlugin {...(onChange ? { onChange } : {})} />
+        <ChangePlugin onChange={onChange} syncing={syncing} />
+        <ValueSyncPlugin value={value} syncing={syncing} />
         <EditablePlugin editable={!disabled} />
       </LexicalComposer>
     </div>

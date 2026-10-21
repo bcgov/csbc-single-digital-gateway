@@ -109,6 +109,12 @@
       "import": "./dist/checkbox.js",
       "require": "./dist/checkbox.cjs"
     },
+    "./checkbox-group": {
+      "types": "./dist/checkbox-group.d.ts",
+      "development": "./src/checkbox-group.ts",
+      "import": "./dist/checkbox-group.js",
+      "require": "./dist/checkbox-group.cjs"
+    },
     "./collapsible": {
       "types": "./dist/collapsible.d.ts",
       "development": "./src/collapsible.ts",
@@ -132,6 +138,30 @@
       "development": "./src/context-menu.ts",
       "import": "./dist/context-menu.js",
       "require": "./dist/context-menu.cjs"
+    },
+    "./data-table": {
+      "types": "./dist/data-table.d.ts",
+      "development": "./src/data-table.ts",
+      "import": "./dist/data-table.js",
+      "require": "./dist/data-table.cjs"
+    },
+    "./data-table-column-header": {
+      "types": "./dist/data-table-column-header.d.ts",
+      "development": "./src/data-table-column-header.ts",
+      "import": "./dist/data-table-column-header.js",
+      "require": "./dist/data-table-column-header.cjs"
+    },
+    "./data-table-pagination": {
+      "types": "./dist/data-table-pagination.d.ts",
+      "development": "./src/data-table-pagination.ts",
+      "import": "./dist/data-table-pagination.js",
+      "require": "./dist/data-table-pagination.cjs"
+    },
+    "./data-table-view-options": {
+      "types": "./dist/data-table-view-options.d.ts",
+      "development": "./src/data-table-view-options.ts",
+      "import": "./dist/data-table-view-options.js",
+      "require": "./dist/data-table-view-options.cjs"
     },
     "./date-picker": {
       "types": "./dist/date-picker.d.ts",
@@ -186,6 +216,12 @@
       "development": "./src/field.ts",
       "import": "./dist/field.js",
       "require": "./dist/field.cjs"
+    },
+    "./heading": {
+      "types": "./dist/heading.d.ts",
+      "development": "./src/heading.ts",
+      "import": "./dist/heading.js",
+      "require": "./dist/heading.cjs"
     },
     "./hover-card": {
       "types": "./dist/hover-card.d.ts",
@@ -264,6 +300,12 @@
       "development": "./src/navigation-menu.ts",
       "import": "./dist/navigation-menu.js",
       "require": "./dist/navigation-menu.cjs"
+    },
+    "./number-input": {
+      "types": "./dist/number-input.d.ts",
+      "development": "./src/number-input.ts",
+      "import": "./dist/number-input.js",
+      "require": "./dist/number-input.cjs"
     },
     "./page-header": {
       "types": "./dist/page-header.d.ts",
@@ -482,6 +524,7 @@
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "@monaco-editor/react": "^4.7.0",
+    "@tanstack/react-table": "^9.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

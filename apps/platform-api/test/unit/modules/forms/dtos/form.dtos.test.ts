@@ -1,212 +1,202 @@
 import { describe, expect, it } from 'vitest';
 import {
-  definitionSchema,
   createFormSchema,
-  updateFormSchemaSchema,
+  formSchema,
+  formVersionSchema,
+  formWithVersionSchema,
   toFormDto,
   toFormVersionDto,
+  updateFormContentSchema,
 } from '../../../../../src/modules/forms/dtos/form.dtos';
-import type { Document, DocumentVersion } from '@repo/database';
 
-describe('form DTO schemas', () => {
-  describe('definitionSchema', () => {
-    it('Should validate a basic form definition', () => {
-      const basicDef = {
-        schema: { type: 'object', properties: {} },
-        uischema: { type: 'VerticalLayout', elements: [] },
-      };
-      const result = definitionSchema.safeParse(basicDef);
-      expect(result.success).toBe(true);
-    });
+const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
+const FORM_CONTENT = {
+  schema: { type: 'object', properties: { name: { type: 'string' } } },
+  variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
+};
+const FUNNEL_CONTENT = {
+  schema: { type: 'object', properties: {} },
+  variants: { default: { type: 'Funnel', elements: [], label: 'Guided application' } },
+};
 
-    it('Should validate a multi-stage form definition', () => {
-      const multiStageDef = {
-        stages: [
-          {
-            id: 's1',
-            name: 'Stage 1',
-            position: { x: 100, y: 200 },
-            pages: [
-              {
-                id: 'p1',
-                name: 'Page 1',
-                description: 'A test page',
-                schema: { type: 'object' },
-                uischema: { type: 'VerticalLayout' },
-              },
-            ],
-          },
-        ],
-        edges: [
-          {
-            id: 'e1',
-            source: 's1',
-            target: 's2',
-          },
-        ],
-      };
-      const result = definitionSchema.safeParse(multiStageDef);
-      expect(result.success).toBe(true);
-    });
-
-    it('Should reject an invalid definition', () => {
-      const invalidDef = {
-        invalidKey: 'invalidValue',
-      };
-      const result = definitionSchema.safeParse(invalidDef);
-      expect(result.success).toBe(false);
-    });
-  });
-
+describe('form DTO schemas (feature 217)', () => {
   describe('createFormSchema', () => {
-    it('Should validate a valid createForm payload', () => {
-      const payload = {
-        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-        typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-        title: 'Form Title',
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-      };
-      const result = createFormSchema.safeParse(payload);
-      expect(result.success).toBe(true);
-    });
-
-    it('Should reject payload with invalid workspaceId or typeId format', () => {
-      const payload = {
-        workspaceId: 'invalid-uuid',
-        typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-        title: 'Form Title',
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-      };
-      const result = createFormSchema.safeParse(payload);
-      expect(result.success).toBe(false);
-    });
-
-    it('Should reject payload with empty title', () => {
-      const payload = {
-        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-        typeId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-        title: '   ',
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-      };
-      const result = createFormSchema.safeParse(payload);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('updateFormSchemaSchema', () => {
-    it('Should validate a valid updateForm payload', () => {
-      const payload = {
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-        title: 'Updated Title',
-      };
-      const result = updateFormSchemaSchema.safeParse(payload);
-      expect(result.success).toBe(true);
-    });
-
-    it('Should validate a valid updateForm payload without title', () => {
-      const payload = {
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-      };
-      const result = updateFormSchemaSchema.safeParse(payload);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('toFormDto', () => {
-    it('Should correctly map a Document row to FormResponse', () => {
-      const mockBasicForm = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
-        title: 'My Document',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-
-      const mapped = toFormDto(mockBasicForm as unknown as Document);
-
-      expect(mapped).toEqual({
-        id: 'doc-1',
-        workspaceId: 'ws-1',
-        title: 'My Document',
-        kind: 'basic-form',
-        createdAt: '2026-07-12T00:00:00.000Z',
+    it('takes a workspace and a title, with content optional', () => {
+      expect(createFormSchema.parse({ workspaceId: VALID_UUID, title: 'Apply online' })).toEqual({
+        workspaceId: VALID_UUID,
+        title: 'Apply online',
       });
     });
 
-    it('Should throw an error if workspaceId is null', () => {
-      const mockFormError = {
-        id: 'doc-1',
-        workspaceId: null,
-        title: 'My Document',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+    it('accepts an explicit content', () => {
+      const parsed = createFormSchema.parse({
+        workspaceId: VALID_UUID,
+        title: 'Apply online',
+        content: FORM_CONTENT,
+      });
 
-      expect(() => toFormDto(mockFormError as unknown as Document)).toThrow(
-        'form document has no workspace',
+      expect(parsed.content).toEqual(FORM_CONTENT);
+    });
+
+    it('no longer takes a typeId — the three form kinds collapsed into one type', () => {
+      const parsed = createFormSchema.parse({
+        workspaceId: VALID_UUID,
+        title: 'Apply online',
+        typeId: VALID_UUID,
+      });
+
+      expect(parsed).not.toHaveProperty('typeId');
+    });
+
+    it('rejects an empty title', () => {
+      expect(createFormSchema.safeParse({ workspaceId: VALID_UUID, title: ' ' }).success).toBe(
+        false,
       );
     });
   });
 
-  describe('toFormVersionDto', () => {
-    it('Should correctly map a DocumentVersion row with a definition schema to FormVersionResponse', () => {
-      const mockFormVersionPublished = {
-        id: 'v-1',
-        documentId: 'doc-1',
-        version: 2,
-        status: 'published',
-        schema: {
-          schema: { type: 'object' },
-          uischema: { type: 'VerticalLayout' },
-        },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-
-      const mapped = toFormVersionDto(mockFormVersionPublished as unknown as DocumentVersion);
-
-      expect(mapped).toEqual({
-        id: 'v-1',
-        documentId: 'doc-1',
-        version: 2,
-        status: 'published',
-        schema: {
-          schema: { type: 'object' },
-          uischema: { type: 'VerticalLayout' },
-        },
-        createdAt: '2026-07-12T00:00:00.000Z',
-      });
+  describe('updateFormContentSchema', () => {
+    it('accepts both a Form and a Funnel root — the flavour lives in the content', () => {
+      expect(
+        updateFormContentSchema.parse({ content: FORM_CONTENT }).content.variants['default']?.type,
+      ).toBe('Form');
+      expect(
+        updateFormContentSchema.parse({ content: FUNNEL_CONTENT }).content.variants['default']
+          ?.type,
+      ).toBe('Funnel');
     });
 
-    it('Should fall back to default empty schema/uischema when row schema is null or undefined', () => {
-      const mockFormVersionDraft = {
-        id: 'v-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: null,
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
+    it('rejects variants without a default, and the old top-level uischema shape (doc 275)', () => {
+      const uischema = { type: 'Form', elements: [] };
+      expect(
+        updateFormContentSchema.safeParse({
+          content: { schema: FORM_CONTENT.schema, variants: { mobile: uischema } },
+        }).success,
+      ).toBe(false);
+      expect(
+        updateFormContentSchema.safeParse({ content: { schema: FORM_CONTENT.schema, uischema } })
+          .success,
+      ).toBe(false);
+    });
+
+    it('rejects a content missing either half', () => {
+      expect(updateFormContentSchema.safeParse({ content: { schema: {} } }).success).toBe(false);
+      expect(
+        updateFormContentSchema.safeParse({ content: { variants: FORM_CONTENT.variants } }).success,
+      ).toBe(false);
+    });
+
+    it("requires each variant's elements to be an array", () => {
+      expect(
+        updateFormContentSchema.safeParse({
+          content: {
+            schema: { type: 'object', properties: {} },
+            variants: { default: { type: 'Form' } },
+          },
+        }).success,
+      ).toBe(false);
+    });
+  });
+
+  describe('response schemas', () => {
+    it('pins the document type and allows a null title', () => {
+      const form = {
+        id: VALID_UUID,
+        workspaceId: VALID_UUID,
+        title: null,
+        type: 'services.service-application-method',
+        createdAt: '2026-07-28T12:00:00.000Z',
       };
 
-      const mapped = toFormVersionDto(mockFormVersionDraft as unknown as DocumentVersion);
+      expect(formSchema.parse(form)).toEqual(form);
+      expect(formSchema.safeParse({ ...form, type: 'services.service' }).success).toBe(false);
+    });
 
-      expect(mapped.schema).toEqual({
-        schema: {},
-        uischema: {},
+    it('carries content, revision and the generated title/description on a version', () => {
+      const version = {
+        id: VALID_UUID,
+        documentId: VALID_UUID,
+        versionNumber: 1,
+        revision: 2,
+        status: 'draft',
+        title: 'Apply online',
+        description: null,
+        content: FORM_CONTENT,
+        createdAt: '2026-07-28T12:00:00.000Z',
+      };
+
+      expect(formVersionSchema.parse(version)).toEqual(version);
+      expect(
+        formWithVersionSchema.parse({
+          form: {
+            id: VALID_UUID,
+            workspaceId: VALID_UUID,
+            title: 'Apply online',
+            type: 'services.service-application-method',
+            createdAt: '2026-07-28T12:00:00.000Z',
+          },
+          version,
+        }),
+      ).toBeDefined();
+    });
+  });
+
+  describe('row → DTO mappers', () => {
+    const now = new Date('2026-07-28T12:00:00.000Z');
+    const doc = {
+      id: VALID_UUID,
+      templateId: null,
+      workspaceId: VALID_UUID,
+      kind: 'document' as const,
+      type: 'services.service-application-method' as const,
+      templateKind: 'template' as const,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    it('takes the title from the version, not the document row', () => {
+      expect(toFormDto(doc, { title: 'Apply online' }).title).toBe('Apply online');
+      expect(toFormDto(doc).title).toBeNull();
+    });
+
+    it('refuses a workspace-less form document', () => {
+      expect(() => toFormDto({ ...doc, workspaceId: null })).toThrow(/no workspace/);
+    });
+
+    it('refuses a document of the wrong type rather than mislabelling it', () => {
+      expect(() => toFormDto({ ...doc, type: 'services.service' })).toThrow(
+        /not an application method/,
+      );
+    });
+
+    it('maps a version row, serialising dates and passing content through', () => {
+      const dto = toFormVersionDto({
+        id: VALID_UUID,
+        documentId: VALID_UUID,
+        templateId: null,
+        templateVersionId: null,
+        versionNumber: 2,
+        revision: 4,
+        title: 'Apply online',
+        description: 'How to apply',
+        content: FUNNEL_CONTENT,
+        status: 'draft',
+        publishedAt: null,
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      expect(dto).toEqual({
+        id: VALID_UUID,
+        documentId: VALID_UUID,
+        versionNumber: 2,
+        revision: 4,
+        status: 'draft',
+        title: 'Apply online',
+        description: 'How to apply',
+        content: FUNNEL_CONTENT,
+        createdAt: '2026-07-28T12:00:00.000Z',
       });
     });
   });

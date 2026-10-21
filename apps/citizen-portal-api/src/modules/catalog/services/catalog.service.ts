@@ -1,51 +1,44 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  type Database,
-  documentReferences,
-  documentTypeVersions,
-  documentVersions,
-  documents,
-} from '@repo/database';
+import { type Database, documentVersions, documents, DOCUMENT_TYPE } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
-import {
-  type ApplicationForm,
-  type CatalogService as CatalogServiceDto,
-  type CatalogServiceDetail,
-  type CatalogServiceVersion,
-  type ListServicesQuery,
+import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import type {
+  CatalogApplicationMethodDetail,
+  CatalogService as CatalogServiceDto,
+  CatalogServiceDetail,
+  CatalogServiceVersion,
+  ListServicesQuery,
 } from '../dtos/catalog.dtos';
-import { definitionSchemas, serviceDataString } from '../util/format';
+import { contentSchemas } from '../util/format';
+import { publishedMethods } from './catalog-methods';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
- * `documents` of kind `service`; a service is browsable once it has a published version. Nothing
- * here leaks the workspace a service lives in.
+ * `documents` with `type = 'services.service'`; a service is browsable once it has a published version.
+ * Nothing here leaks the workspace a service lives in.
+ *
+ * Feature 217: a service is an AUTHORED document. Title and description are GENERATED columns on
+ * its version, and the version's own `content` is what renders — there is no type template to
+ * resolve and no `data` to fill into it. The "ways to apply" came back with doc 291, read from the published
+ * version's document-reference answers (`catalog-methods.ts`) — workspace-scoped internally, never exposed.
  */
 @Injectable()
 export class CatalogService {
   constructor(@InjectDatabase() private readonly db: Database) {}
 
-  /**
-   * Free-text match across a service's published title/description (which live in the version
-   * `data` JSONB), plus the document title as a fallback.
-   */
+  /** Free-text match across the published version's generated title/description. */
   private searchFilter(q: string) {
     const term = `%${q}%`;
-    return or(
-      ilike(documents.title, term),
-      ilike(sql`${documentVersions.data}->>'title'`, term),
-      ilike(sql`${documentVersions.data}->>'description'`, term),
-    );
+    return or(ilike(documentVersions.title, term), ilike(documentVersions.description, term));
   }
 
   /**
    * List published services across all workspaces, optionally filtered by free-text `q`. The inner
    * join on the published version (one per document) both restricts to published services and
-   * surfaces the version `data` from which title/description are read.
+   * surfaces the generated title/description.
    */
   async listServices(query: ListServicesQuery): Promise<CatalogServiceDto[]> {
-    const filters = [eq(documents.kind, 'service')];
+    const filters = [eq(documents.type, DOCUMENT_TYPE.service), eq(documents.kind, 'document')];
     if (query.q !== undefined && query.q.length > 0) {
       const match = this.searchFilter(query.q);
       if (match !== undefined) {
@@ -55,9 +48,8 @@ export class CatalogService {
     const rows = await this.db
       .select({
         id: documents.id,
-        docTitle: documents.title,
-        docDescription: documents.description,
-        data: documentVersions.data,
+        title: documentVersions.title,
+        description: documentVersions.description,
       })
       .from(documents)
       .innerJoin(
@@ -68,30 +60,79 @@ export class CatalogService {
         ),
       )
       .where(and(...filters))
-      .orderBy(asc(documents.title))
+      // A NULL title sorts last rather than first, so an unlabelled service doesn't head the list.
+      // Written as ONE raw expression: wrapping it in drizzle's `asc()` appends the direction AFTER
+      // the null ordering (`… nulls last asc`), which Postgres rejects.
+      .orderBy(sql`${documentVersions.title} asc nulls last`)
       .limit(query.limit);
     return rows.map((row) => ({
       id: row.id,
-      title: serviceDataString(row.data, 'title', row.docTitle),
-      description: serviceDataString(row.data, 'description', row.docDescription),
+      title: row.title,
+      description: row.description,
     }));
   }
 
   /**
-   * A single published service + its current published version (id/number/data), so the detail page
-   * can render the content and link to the version permalink. 404 when not a published service.
+   * A single published service + its current published version, so the detail page can render the
+   * content and link to the version permalink, plus its published application methods (doc 291). 404 when not a
+   * published service.
    */
   async getService(id: string): Promise<CatalogServiceDetail> {
+    const row = await this.publishedService(id);
+    const methods = await publishedMethods(this.db, row.workspaceId, row.content);
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      publishedVersionId: row.versionId,
+      versionNumber: row.versionNumber,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      ...contentSchemas(row.content),
+      applicationMethods: methods.map(({ id: methodId, title, description }) => ({
+        id: methodId,
+        title,
+        description,
+      })),
+    };
+  }
+
+  /**
+   * Doc 291 rule 7: one application method's PUBLISHED form — only one the service's published version lists (rule 5),
+   * so an id alone never reaches a document. 404 otherwise.
+   */
+  async getApplicationMethod(
+    serviceId: string,
+    methodId: string,
+  ): Promise<CatalogApplicationMethodDetail> {
+    const service = await this.publishedService(serviceId);
+    const method = (await publishedMethods(this.db, service.workspaceId, service.content)).find(
+      (candidate) => candidate.id === methodId,
+    );
+    if (method === undefined) throw new NotFoundException('Application method not found');
+    const { schema, variants } = contentSchemas(method.content);
+    return {
+      id: method.id,
+      // Doc 292: the published version a citizen's draft is created on.
+      versionId: method.versionId,
+      title: method.title,
+      description: method.description,
+      schema,
+      variants,
+    };
+  }
+
+  /** A published service's current published version, with the workspace it lives in (never returned). */
+  private async publishedService(id: string) {
     const rows = await this.db
       .select({
         id: documents.id,
-        docTitle: documents.title,
-        docDescription: documents.description,
+        workspaceId: documents.workspaceId,
+        title: documentVersions.title,
+        description: documentVersions.description,
         versionId: documentVersions.id,
-        version: documentVersions.version,
+        versionNumber: documentVersions.versionNumber,
         publishedAt: documentVersions.publishedAt,
-        data: documentVersions.data,
-        definition: documentTypeVersions.definition,
+        content: documentVersions.content,
       })
       .from(documents)
       .innerJoin(
@@ -101,94 +142,45 @@ export class CatalogService {
           eq(documentVersions.status, 'published'),
         ),
       )
-      .innerJoin(documentTypeVersions, eq(documentTypeVersions.id, documentVersions.typeVersionId))
-      .where(and(eq(documents.id, id), eq(documents.kind, 'service')))
+      .where(
+        and(
+          eq(documents.id, id),
+          eq(documents.type, DOCUMENT_TYPE.service),
+          eq(documents.kind, 'document'),
+        ),
+      )
       .limit(1);
     const row = rows[0];
     if (row === undefined) {
       throw new NotFoundException('Service not found');
     }
-    return {
-      id: row.id,
-      title: serviceDataString(row.data, 'title', row.docTitle),
-      description: serviceDataString(row.data, 'description', row.docDescription),
-      publishedVersionId: row.versionId,
-      version: row.version,
-      publishedAt: row.publishedAt?.toISOString() ?? null,
-      data: row.data,
-      ...definitionSchemas(row.definition),
-      applications: await this.applicationFormsFor(row.versionId),
-    };
-  }
-
-  /** The application methods a service version offers — in-portal forms (`application_form`) AND
-   * external links (`external_application`, feature 131). For an external method the `https`
-   * destination is read from its target version `data.url`; forms carry `url: null`. */
-  private async applicationFormsFor(versionId: string): Promise<ApplicationForm[]> {
-    const rows = await this.db
-      .select({
-        id: documentReferences.id,
-        label: documentReferences.label,
-        title: documents.title,
-        formId: documentReferences.targetDocumentId,
-        formVersionId: documentReferences.targetVersionId,
-        kind: documentReferences.targetKind,
-        targetData: documentVersions.data,
-      })
-      .from(documentReferences)
-      .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
-      .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-      .where(
-        and(
-          eq(documentReferences.ownerVersionId, versionId),
-          inArray(documentReferences.relation, ['application_form', 'external_application']),
-        ),
-      )
-      .orderBy(asc(documentReferences.position));
-    // An application-method reference always pins a version; the narrowing drops any malformed null.
-    return rows
-      .filter((row) => row.formVersionId !== null)
-      .map((row) => {
-        const rawUrl = (row.targetData as { url?: unknown }).url;
-        const url =
-          row.kind === 'external-application' && typeof rawUrl === 'string' ? rawUrl : null;
-        return {
-          id: row.id,
-          label: row.label,
-          title: row.title,
-          formId: row.formId,
-          formVersionId: row.formVersionId as string,
-          kind: row.kind,
-          url,
-        } satisfies ApplicationForm;
-      });
+    return row;
   }
 
   /**
-   * A specific service version — exposed ONLY when published or archived (drafts are staff-internal),
-   * so an application can show the service exactly as it was. 404 otherwise.
+   * A specific service version — exposed ONLY when published or archived (drafts are
+   * staff-internal), so an application can show the service exactly as it was. 404 otherwise.
    */
   async getServiceVersion(serviceId: string, versionId: string): Promise<CatalogServiceVersion> {
     const rows = await this.db
       .select({
         id: documentVersions.id,
-        version: documentVersions.version,
+        versionNumber: documentVersions.versionNumber,
         status: documentVersions.status,
-        data: documentVersions.data,
+        title: documentVersions.title,
+        content: documentVersions.content,
         createdAt: documentVersions.createdAt,
         publishedAt: documentVersions.publishedAt,
         archivedAt: documentVersions.archivedAt,
-        docTitle: documents.title,
-        definition: documentTypeVersions.definition,
       })
       .from(documentVersions)
       .innerJoin(documents, eq(documents.id, documentVersions.documentId))
-      .innerJoin(documentTypeVersions, eq(documentTypeVersions.id, documentVersions.typeVersionId))
       .where(
         and(
           eq(documentVersions.id, versionId),
           eq(documentVersions.documentId, serviceId),
-          eq(documents.kind, 'service'),
+          eq(documents.type, DOCUMENT_TYPE.service),
+          eq(documents.kind, 'document'),
           inArray(documentVersions.status, ['published', 'archived']),
         ),
       )
@@ -200,11 +192,10 @@ export class CatalogService {
     return {
       id: row.id,
       serviceId,
-      version: row.version,
+      versionNumber: row.versionNumber,
       status: row.status,
-      title: serviceDataString(row.data, 'title', row.docTitle),
-      data: row.data,
-      ...definitionSchemas(row.definition),
+      title: row.title,
+      ...contentSchemas(row.content),
       createdAt: row.createdAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString() ?? null,
       archivedAt: row.archivedAt?.toISOString() ?? null,

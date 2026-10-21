@@ -20,6 +20,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:run": "tsx src/migrate.ts",
+    "db:reset-documents": "tsx src/reset-documents.ts && tsx src/seed.ts",
     "db:seed": "tsx src/seed.ts",
     "db:seed:geo": "tsx src/geo/import.ts",
     "db:studio": "drizzle-kit studio",

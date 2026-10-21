@@ -1,4 +1,3 @@
-import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
 import {
   Dialog,
@@ -7,82 +6,62 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/dialog';
+import { Field, FieldLabel } from '@repo/ui/field';
+import { Input } from '@repo/ui/input';
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
+import { TemplateSelect } from '@/components/common/template-select';
 import { createService } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
-/** JSONForms schema/uischema for the new-service fields (name + short description). */
-const schema: JsonSchema = {
-  type: 'object',
-  properties: {
-    title: { type: 'string', maxLength: 64 },
-    description: { type: 'string', maxLength: 96 },
-  },
-  required: ['title'],
-};
-
-const uischema = {
-  type: 'VerticalLayout',
-  elements: [
-    { type: 'Label', text: 'Name & description', options: { format: 'heading', level: 6 } },
-    {
-      type: 'Group',
-      elements: [
-        { type: 'Control', scope: '#/properties/title', label: 'Name of the service' },
-        { type: 'Control', scope: '#/properties/description', label: 'Short description' },
-      ],
-    },
-  ],
-} as unknown as UISchemaElement;
-
-interface ServiceFormData {
-  title?: string;
-  description?: string;
-}
-
-interface NewServiceModalProps {
+/**
+ * "New service" modal — a controlled dialog opened from the Services list "New" button and the
+ * workspace Overview "Create new service" card. On success it navigates to the new service; cancel
+ * or escape closes and resets.
+ *
+ * Feature 217: this collected a name + short description through JSONForms and posted them as the
+ * service's `data`. A service is an AUTHORED document now — create takes only a title, which the
+ * API stamps into the copied template's root label — so the modal is a single plain field, and it
+ * lands on the service console rather than the deleted `/old/edit` editor.
+ */
+export function NewServiceModal({
+  open,
+  onOpenChange,
+}: {
   /** Whether the modal is open (controlled by the parent). */
   open: boolean;
   /** Called to open/close the modal — the parent owns the boolean. */
   onOpenChange: (open: boolean) => void;
-}
-
-/** "New service" modal — a controlled dialog opened from the Services list "New" button and the
- * workspace Overview "Create new service" card. Collects a name + short description via JSONForms;
- * everything else (the form/version config) is done on the service detail afterwards. On success it
- * navigates to the new service; cancel/escape just closes and resets. */
-export function NewServiceModal({ open, onOpenChange }: NewServiceModalProps) {
+}) {
   const { slug } = useParams({ from: '/app/$slug' });
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
-  const [data, setData] = useState<ServiceFormData>({});
+  const [title, setTitle] = useState('');
+  const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const create = useMutation({
     mutationFn: () => {
-      const trimmed = (data.title ?? '').trim();
+      const trimmed = title.trim();
       if (trimmed === '') {
         throw new Error('A title is required');
       }
       if (workspaceId === '') {
         throw new Error('No active workspace');
       }
-      return createService({
-        workspaceId,
-        title: trimmed,
-        data: { title: trimmed, description: (data.description ?? '').trim() },
-        applications: [],
-      });
+      if (templateId === undefined) {
+        throw new Error('Choose a template');
+      }
+      return createService({ workspaceId, title: trimmed, templateId });
     },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       onOpenChange(false);
       await navigate({
-        to: '/app/$slug/services/$id/old/edit',
+        to: '/app/$slug/services/$id',
         params: { slug, id: result.service.id },
         replace: true,
       });
@@ -91,7 +70,8 @@ export function NewServiceModal({ open, onOpenChange }: NewServiceModalProps) {
 
   /** Close and reset the form so a re-open starts clean (the modal stays mounted between opens). */
   const close = () => {
-    setData({});
+    setTitle('');
+    setTemplateId(undefined);
     create.reset();
     onOpenChange(false);
   };
@@ -117,11 +97,20 @@ export function NewServiceModal({ open, onOpenChange }: NewServiceModalProps) {
             create.mutate();
           }}
         >
-          <JsonForms
-            schema={schema}
-            uischema={uischema}
-            data={data}
-            onChange={({ data: next }) => setData(next as ServiceFormData)}
+          <Field>
+            <FieldLabel htmlFor="new-service-title">Name of the service</FieldLabel>
+            <Input
+              id="new-service-title"
+              value={title}
+              maxLength={64}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </Field>
+          <TemplateSelect
+            id="new-service-template"
+            type="services.service"
+            value={templateId}
+            onChange={setTemplateId}
           />
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
@@ -132,7 +121,10 @@ export function NewServiceModal({ open, onOpenChange }: NewServiceModalProps) {
             <Button type="button" variant="outline" onClick={close}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending || workspaceId === ''}>
+            <Button
+              type="submit"
+              disabled={create.isPending || workspaceId === '' || templateId === undefined}
+            >
               {create.isPending ? <Spinner className="size-4" /> : null}
               Create service
             </Button>

@@ -12,6 +12,7 @@ import { Button } from '@repo/ui/button';
 import { useBlocker } from '@tanstack/react-router';
 import { X } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { ConfirmDiscardDialog } from './confirm-discard-dialog';
 
 export interface UnsavedChangesGuardProps {
   /**
@@ -93,6 +94,19 @@ export function UnsavedChangesGuard({
     }
   };
 
+  // Doc 218 rule 19: the no-save variant IS `ConfirmDiscardDialog`, which the version-switch confirmation on the
+  // template and agreement detail pages also renders — the guard cannot see an in-page switch, because it changes
+  // no route. One question, asked the same way, wherever unsaved edits are about to go.
+  if (onSave === undefined) {
+    return (
+      <ConfirmDiscardDialog
+        open={blocker.status === 'blocked'}
+        onCancel={close}
+        onConfirm={discard}
+      />
+    );
+  }
+
   return (
     <AlertDialog
       open={blocker.status === 'blocked'}
@@ -106,23 +120,21 @@ export function UnsavedChangesGuard({
           control anchors to it), and `cn`'s tailwind-merge would treat `relative` as the winning
           member of the same position group — dropping `fixed` and un-centering the whole dialog. */}
       <AlertDialogContent>
-        {/* Only in the save variant, where cancelling has left the footer: three buttons overflow
-            the dialog's max-width. Base UI's alert dialog disables POINTER dismissal (no backdrop
-            click), so this control — and Escape — are how "keep editing" is reached. Labelled for
-            what it does, not for the glyph; the no-save variant keeps its footer button instead, so
-            the two never coexist and the name is never ambiguous. */}
-        {onSave === undefined ? null : (
-          <AlertDialogCancel
-            variant="ghost"
-            size="icon-sm"
-            className="absolute top-2 right-2"
-            onClick={close}
-          >
-            <X aria-hidden />
-            <span className="sr-only">Keep editing</span>
-          </AlertDialogCancel>
-        )}
-        <AlertDialogHeader className={onSave === undefined ? undefined : 'pr-8'}>
+        {/* Cancelling has left the footer here — three buttons overflow the dialog's max-width. Base
+            UI's alert dialog disables POINTER dismissal (no backdrop click), so this control — and
+            Escape — are how "keep editing" is reached. Labelled for what it does, not for the glyph;
+            `ConfirmDiscardDialog` keeps its footer button instead, so the two never coexist and the
+            name is never ambiguous. */}
+        <AlertDialogCancel
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-2 right-2"
+          onClick={close}
+        >
+          <X aria-hidden />
+          <span className="sr-only">Keep editing</span>
+        </AlertDialogCancel>
+        <AlertDialogHeader className="pr-8">
           <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
           <AlertDialogDescription>
             Your changes haven’t been saved and will be lost if you leave this page.
@@ -133,41 +145,25 @@ export function UnsavedChangesGuard({
             {error}
           </p>
         )}
-        {onSave !== undefined && saveDisabled && saveDisabledReason !== undefined ? (
+        {saveDisabled && saveDisabledReason !== undefined ? (
           <p className="text-sm text-muted-foreground">{saveDisabledReason}</p>
         ) : null}
         <AlertDialogFooter>
-          {onSave === undefined ? (
-            // Without a save to offer, the original pairing stands: an explicit Keep editing beside
-            // a solid destructive Discard. Two buttons fit, and the three pages that render this
-            // shape are unchanged.
-            <>
-              <AlertDialogCancel onClick={close}>Keep editing</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-white hover:bg-destructive/90"
-                onClick={discard}
-              >
-                Discard changes
-              </AlertDialogAction>
-            </>
-          ) : (
-            <>
-              {/* Discarding is the quiet option when saving is available — a ghost button that says
-                  what it costs in red, rather than a solid destructive block competing with Save. */}
-              <AlertDialogAction
-                variant="ghost"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={discard}
-              >
-                Discard changes
-              </AlertDialogAction>
-              {/* A plain Button, NOT AlertDialogAction: the affirmative-action parts close the
-                  dialog on click, and a failed save has to be able to keep it open. */}
-              <Button type="button" disabled={saveDisabled || saving} onClick={() => void save()}>
-                Save changes
-              </Button>
-            </>
-          )}
+          {/* Discarding is the quiet option when saving is available — a ghost button that says
+              what it costs in red, rather than a solid destructive block competing with Save. The
+              no-save pairing lives in `ConfirmDiscardDialog`, returned above. */}
+          <AlertDialogAction
+            variant="ghost"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={discard}
+          >
+            Discard changes
+          </AlertDialogAction>
+          {/* A plain Button, NOT AlertDialogAction: the affirmative-action parts close the
+              dialog on click, and a failed save has to be able to keep it open. */}
+          <Button type="button" disabled={saveDisabled || saving} onClick={() => void save()}>
+            Save changes
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

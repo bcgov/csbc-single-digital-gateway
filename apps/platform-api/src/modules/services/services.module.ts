@@ -1,20 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ServiceReferencesV1Controller } from './controllers/service-references-v1.controller';
+import { TemplatesModule } from '../templates/templates.module';
 import { ServicesV1Controller } from './controllers/services-v1.controller';
-import { AgreementRefsService } from './services/agreement-refs.service';
-import { ReferencesService } from './services/references.service';
-import { ServiceTypeResolver } from './services/service-type.resolver';
+import { ReferenceableServicesService } from './services/referenceable-services.service';
+import { ServiceMethodLifecycle } from './services/service-method-lifecycle.service';
+import { ServiceMethodsService } from './services/service-methods.service';
 import { ServiceVersionsService } from './services/service-versions.service';
 import { ServicesService } from './services/services.service';
 
 @Module({
-  controllers: [ServicesV1Controller, ServiceReferencesV1Controller],
+  imports: [TemplatesModule],
+  controllers: [ServicesV1Controller],
   providers: [
     ServicesService,
     ServiceVersionsService,
-    ServiceTypeResolver,
-    ReferencesService,
-    AgreementRefsService,
+    ServiceMethodsService,
+    ServiceMethodLifecycle,
+    ReferenceableServicesService,
   ],
 })
 export class ServicesModule {}

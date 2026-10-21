@@ -1,40 +1,27 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
-  getApplicationForm,
   createOrResumeDraft,
   saveDraft,
   submitApplication,
   getApplication,
   reviseApplication,
   applicationQueryOptions,
-  applicationFormQueryOptions,
   draftQueryOptions,
 } from '@/lib/applications';
 import { BFF_ORIGIN } from '@/lib/bff';
-import { createMockSpy } from '../../support/create-mock-spy';
 
-describe('Applications Library Test Suite', () => {
+describe('applications lib', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   describe('requestJson API functions', () => {
-    it('Should fetch form from the correct endpoint using getApplicationForm', async () => {
-      const mockForm = { id: 'form1', title: 'Test Form' };
-      const fetchSpy = createMockSpy(mockForm);
-
-      const result = await getApplicationForm('service-123', 'form-abc');
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BFF_ORIGIN}/v1/services/service-123/applications/form-abc`,
-        { credentials: 'include' },
-      );
-      expect(result).toEqual(mockForm);
-    });
-
-    it('Should send POST to applications endpoint using createOrResumeDraft', async () => {
+    it('createOrResumeDraft sends POST to applications endpoint', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
-      const fetchSpy = createMockSpy(mockSubmission);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSubmission,
+      } as Response);
 
       const result = await createOrResumeDraft('v-99');
 
@@ -47,9 +34,12 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('Should send PATCH with data to correct endpoint using saveDraft', async () => {
+    it('saveDraft sends PATCH with data to correct endpoint', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
-      const fetchSpy = createMockSpy(mockSubmission);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSubmission,
+      } as Response);
 
       const data = { field: 'value' };
       const result = await saveDraft('sub-1', data);
@@ -63,9 +53,12 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('Should send POST with data to submit endpoint using submitApplication', async () => {
+    it('submitApplication sends POST with data to submit endpoint', async () => {
       const mockSubmission = { id: 'sub-1', status: 'pending' };
-      const fetchSpy = createMockSpy(mockSubmission);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSubmission,
+      } as Response);
 
       const data = { field: 'value' };
       const result = await submitApplication('sub-1', data);
@@ -79,21 +72,27 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('Should fetch application detail by ID using getApplication', async () => {
-      const mockResult = { id: 'app-1', reference: 'REF-123' };
-      const fetchSpy = createMockSpy(mockResult);
+    it('getApplication fetches application detail by ID', async () => {
+      const mockDetail = { id: 'app-1', reference: 'REF-123' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockDetail,
+      } as Response);
 
       const result = await getApplication('app-1');
 
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/applications/app-1`, {
         credentials: 'include',
       });
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(mockDetail);
     });
 
-    it('Should send POST to revise endpoint using reviseApplication', async () => {
+    it('reviseApplication sends POST to revise endpoint', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
-      const fetchSpy = createMockSpy(mockSubmission);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSubmission,
+      } as Response);
 
       const result = await reviseApplication('app-1');
 
@@ -104,7 +103,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('Should throw error when response is not ok', async () => {
+    it('throws error when response is not ok', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
         status: 400,
@@ -122,9 +121,12 @@ describe('Applications Library Test Suite', () => {
   });
 
   describe('query options configuration', () => {
-    it('Should create correct options object in applicationQueryOptions', async () => {
-      const mockResult = { id: 'app-1', reference: 'REF-123' };
-      const fetchSpy = createMockSpy(mockResult);
+    it('applicationQueryOptions creates correct options object', async () => {
+      const mockDetail = { id: 'app-1', reference: 'REF-123' };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockDetail,
+      } as Response);
 
       const options = applicationQueryOptions('app-1');
       expect(options.queryKey).toEqual(['me', 'applications', 'app-1']);
@@ -136,29 +138,15 @@ describe('Applications Library Test Suite', () => {
         `${BFF_ORIGIN}/v1/me/applications/app-1`,
         expect.any(Object),
       );
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(mockDetail);
     });
 
-    it('Should create correct options object in applicationFormQueryOptions', async () => {
-      const mockForm = { id: 'form1', title: 'Test Form' };
-      const fetchSpy = createMockSpy(mockForm);
-
-      const options = applicationFormQueryOptions('service-1', 'form-1');
-      expect(options.queryKey).toEqual(['applicationForm', 'service-1', 'form-1']);
-      expect(options.staleTime).toBe(60000);
-      expect(options.retry).toBe(false);
-
-      const result = await options.queryFn!({} as any);
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BFF_ORIGIN}/v1/services/service-1/applications/form-1`,
-        expect.any(Object),
-      );
-      expect(result).toEqual(mockForm);
-    });
-
-    it('Should create correct options object when formVersionId is provided in draftQueryOptions', async () => {
+    it('draftQueryOptions creates correct options object when formVersionId is provided', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
-      const fetchSpy = createMockSpy(mockSubmission);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => mockSubmission,
+      } as Response);
 
       const options = draftQueryOptions('v-1');
       expect(options.queryKey).toEqual(['applicationDraft', 'v-1']);
@@ -172,7 +160,7 @@ describe('Applications Library Test Suite', () => {
       expect(result).toEqual(mockSubmission);
     });
 
-    it('Should disable query when formVersionId is undefined in draftQueryOptions', () => {
+    it('draftQueryOptions disables query when formVersionId is undefined', () => {
       const options = draftQueryOptions(undefined);
       expect(options.enabled).toBe(false);
     });

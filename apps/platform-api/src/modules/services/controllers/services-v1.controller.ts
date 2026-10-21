@@ -5,20 +5,25 @@ import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateServiceDto,
   DefinitionDto,
-  FormCatalogListDto,
   ListServicesPageQueryDto,
-  ListServicesQueryDto,
+  PublishCheckDto,
+  ReferenceableServiceListDto,
+  ReferenceableServicesQueryDto,
+  ServiceDefinitionQueryDto,
   ServiceDetailDto,
   ServiceListDto,
   ServiceVersionDto,
   ServiceWithVersionsDto,
-  UpdateVersionDataDto,
+  UpdateVersionContentDto,
 } from '../dtos/service.dtos';
+import { FormWithVersionDto } from '../../forms/dtos/form.dtos';
+import { ReferenceableServicesService } from '../services/referenceable-services.service';
+import { ServiceMethodsService } from '../services/service-methods.service';
 import { ServiceVersionsService } from '../services/service-versions.service';
 import { ServicesService } from '../services/services.service';
 
 /**
- * `/v1/services` — staff-facing service documents (instances of the seeded Service type).
+ * `/v1/services` — staff-facing service documents (`type = 'services.service'`, feature 217).
  * Protected-by-default (session); per-workspace membership authz lives in the service.
  */
 @ApiTags('Services')
@@ -27,6 +32,8 @@ export class ServicesV1Controller {
   constructor(
     private readonly services: ServicesService,
     private readonly versions: ServiceVersionsService,
+    private readonly referenceable: ReferenceableServicesService,
+    private readonly methods: ServiceMethodsService,
   ) {}
 
   @Get()
@@ -44,14 +51,15 @@ export class ServicesV1Controller {
   // Declared before `:id` so the static segments win route matching.
   @Get('definition')
   @ZodSerializerDto(DefinitionDto)
-  getDefinition() {
-    return this.services.getServiceDefinition();
+  getDefinition(@Query() query: ServiceDefinitionQueryDto) {
+    return this.services.getServiceDefinition(query.templateId);
   }
 
-  @Get('forms')
-  @ZodSerializerDto(FormCatalogListDto)
-  async listForms(@CurrentUser() user: AuthUser, @Query() query: ListServicesQueryDto) {
-    return { items: await this.services.listForms(user.id, query.workspaceId) };
+  /** Doc 287: services a document-reference control may link to. Declared before `:id`. */
+  @Get('referenceable')
+  @ZodSerializerDto(ReferenceableServiceListDto)
+  listReferenceable(@CurrentUser() user: AuthUser, @Query() query: ReferenceableServicesQueryDto) {
+    return this.referenceable.list(user.id, query);
   }
 
   @Get(':id')
@@ -84,9 +92,32 @@ export class ServicesV1Controller {
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Param('versionId') versionId: string,
-    @Body() body: UpdateVersionDataDto,
+    @Body() body: UpdateVersionContentDto,
   ) {
     return this.versions.updateDraft(user.id, id, versionId, body);
+  }
+
+  /** Doc 289: what publishing this version would check — its application methods. */
+  @Get(':id/versions/:versionId/publish-check')
+  @ZodSerializerDto(PublishCheckDto)
+  publishCheck(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.methods.publishCheck(user.id, id, versionId);
+  }
+
+  /** Doc 289 rule 16: an application method as this service version uses it (same shape as `GET /v1/forms/:id`). */
+  @Get(':id/versions/:versionId/application-methods/:methodId')
+  @ZodSerializerDto(FormWithVersionDto)
+  applicationMethod(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Param('methodId') methodId: string,
+  ) {
+    return this.methods.methodFor(user.id, id, versionId, methodId);
   }
 
   @Post(':id/versions/:versionId/publish')

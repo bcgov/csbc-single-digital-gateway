@@ -16,20 +16,22 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
+import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
+import { Route as AdminStudioRouteImport } from './routes/admin.studio'
 import { Route as AdminServiceAgreementsRouteImport } from './routes/admin.service-agreements'
-import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
+import { Route as AdminDocumentStudioRouteImport } from './routes/admin.document-studio'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
+import { Route as AdminTemplatesIndexRouteImport } from './routes/admin.templates.index'
 import { Route as AdminServiceAgreementsIndexRouteImport } from './routes/admin.service-agreements.index'
-import { Route as AdminDocumentTypesIndexRouteImport } from './routes/admin.document-types.index'
 import { Route as AppSlugTeamRouteImport } from './routes/app.$slug.team'
 import { Route as AppSlugSubmissionsRouteImport } from './routes/app.$slug.submissions'
 import { Route as AppSlugSharedResourcesRouteImport } from './routes/app.$slug.shared-resources'
 import { Route as AppSlugSettingsRouteImport } from './routes/app.$slug.settings'
 import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services'
 import { Route as AppSlugServiceAgreementsRouteImport } from './routes/app.$slug.service-agreements'
+import { Route as AdminTemplatesIdRouteImport } from './routes/admin.templates.$id'
 import { Route as AdminServiceAgreementsNewRouteImport } from './routes/admin.service-agreements.new'
 import { Route as AdminServiceAgreementsIdRouteImport } from './routes/admin.service-agreements.$id'
-import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
 import { Route as AppSlugTeamIndexRouteImport } from './routes/app.$slug.team.index'
 import { Route as AppSlugSubmissionsIndexRouteImport } from './routes/app.$slug.submissions.index'
 import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
@@ -41,22 +43,13 @@ import { Route as AppSlugServiceAgreementsNewRouteImport } from './routes/app.$s
 import { Route as AppSlugServiceAgreementsIdRouteImport } from './routes/app.$slug.service-agreements.$id'
 import { Route as AppSlugServicesIdConsoleRouteImport } from './routes/app.$slug.services.$id._console'
 import { Route as AppSlugServicesIdConsoleIndexRouteImport } from './routes/app.$slug.services.$id._console.index'
-import { Route as AppSlugServicesIdOldEditRouteImport } from './routes/app.$slug.services.$id.old.edit'
 import { Route as AppSlugServicesIdConsoleSettingsRouteImport } from './routes/app.$slug.services.$id._console.settings'
 import { Route as AppSlugServicesIdConsoleRequestsRouteImport } from './routes/app.$slug.services.$id._console.requests'
 import { Route as AppSlugServicesIdConsoleDetailsRouteImport } from './routes/app.$slug.services.$id._console.details'
 import { Route as AppSlugServicesIdConsoleAnalyticsRouteImport } from './routes/app.$slug.services.$id._console.analytics'
-import { Route as AppSlugServicesIdOldEditIndexRouteImport } from './routes/app.$slug.services.$id.old.edit.index'
-import { Route as AppSlugServicesIdOldEditServiceAgreementsRouteImport } from './routes/app.$slug.services.$id.old.edit.service-agreements'
-import { Route as AppSlugServicesIdOldEditApplicationMethodsRouteImport } from './routes/app.$slug.services.$id.old.edit.application-methods'
-import { Route as AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125RouteImport } from './routes/app.$slug.services.$id.details.edit.$sectionId.{-$stepId}'
+import { Route as AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.application-methods.$methodId'
+import { Route as AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport } from './routes/app.$slug.services.$id._console.versions.$versionId.edit'
 import { Route as AppSlugServicesIdConsoleVersionsVersionIdDetailsRouteImport } from './routes/app.$slug.services.$id._console.versions.$versionId.details'
-import { Route as AppSlugServicesIdOldEditVersionsVersionIdIndexRouteImport } from './routes/app.$slug.services.$id.old.edit.versions.$versionId.index'
-import { Route as AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRouteImport } from './routes/app.$slug.services.$id.old.edit.versions.$versionId.service-agreements.index'
-import { Route as AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRouteImport } from './routes/app.$slug.services.$id.old.edit.versions.$versionId.application-methods.index'
-import { Route as AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125RouteImport } from './routes/app.$slug.services.$id.versions.$versionId.details.edit.$sectionId.{-$stepId}'
-import { Route as AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRouteImport } from './routes/app.$slug.services.$id.old.edit.versions.$versionId.application-methods.new'
-import { Route as AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRouteImport } from './routes/app.$slug.services.$id.old.edit.versions.$versionId.application-methods.$applicationMethodId'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -93,14 +86,24 @@ const AppSlugRoute = AppSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminTemplatesRoute = AdminTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStudioRoute = AdminStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminServiceAgreementsRoute = AdminServiceAgreementsRouteImport.update({
   id: '/service-agreements',
   path: '/service-agreements',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
-  id: '/document-types',
-  path: '/document-types',
+const AdminDocumentStudioRoute = AdminDocumentStudioRouteImport.update({
+  id: '/document-studio',
+  path: '/document-studio',
   getParentRoute: () => AdminRoute,
 } as any)
 const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
@@ -108,17 +111,17 @@ const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AdminTemplatesIndexRoute = AdminTemplatesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminTemplatesRoute,
+} as any)
 const AdminServiceAgreementsIndexRoute =
   AdminServiceAgreementsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminServiceAgreementsRoute,
   } as any)
-const AdminDocumentTypesIndexRoute = AdminDocumentTypesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminDocumentTypesRoute,
-} as any)
 const AppSlugTeamRoute = AppSlugTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -150,6 +153,11 @@ const AppSlugServiceAgreementsRoute =
     path: '/service-agreements',
     getParentRoute: () => AppSlugRoute,
   } as any)
+const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminTemplatesRoute,
+} as any)
 const AdminServiceAgreementsNewRoute =
   AdminServiceAgreementsNewRouteImport.update({
     id: '/new',
@@ -162,11 +170,6 @@ const AdminServiceAgreementsIdRoute =
     path: '/$id',
     getParentRoute: () => AdminServiceAgreementsRoute,
   } as any)
-const AdminDocumentTypesIdRoute = AdminDocumentTypesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminDocumentTypesRoute,
-} as any)
 const AppSlugTeamIndexRoute = AppSlugTeamIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -226,12 +229,6 @@ const AppSlugServicesIdConsoleIndexRoute =
     path: '/',
     getParentRoute: () => AppSlugServicesIdConsoleRoute,
   } as any)
-const AppSlugServicesIdOldEditRoute =
-  AppSlugServicesIdOldEditRouteImport.update({
-    id: '/old/edit',
-    path: '/old/edit',
-    getParentRoute: () => AppSlugServicesIdRoute,
-  } as any)
 const AppSlugServicesIdConsoleSettingsRoute =
   AppSlugServicesIdConsoleSettingsRouteImport.update({
     id: '/settings',
@@ -256,29 +253,19 @@ const AppSlugServicesIdConsoleAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AppSlugServicesIdConsoleRoute,
   } as any)
-const AppSlugServicesIdOldEditIndexRoute =
-  AppSlugServicesIdOldEditIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppSlugServicesIdOldEditRoute,
-  } as any)
-const AppSlugServicesIdOldEditServiceAgreementsRoute =
-  AppSlugServicesIdOldEditServiceAgreementsRouteImport.update({
-    id: '/service-agreements',
-    path: '/service-agreements',
-    getParentRoute: () => AppSlugServicesIdOldEditRoute,
-  } as any)
-const AppSlugServicesIdOldEditApplicationMethodsRoute =
-  AppSlugServicesIdOldEditApplicationMethodsRouteImport.update({
-    id: '/application-methods',
-    path: '/application-methods',
-    getParentRoute: () => AppSlugServicesIdOldEditRoute,
-  } as any)
-const AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route =
-  AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125RouteImport.update({
-    id: '/details/edit/$sectionId/{-$stepId}',
-    path: '/details/edit/$sectionId/{-$stepId}',
-    getParentRoute: () => AppSlugServicesIdRoute,
+const AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute =
+  AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRouteImport.update(
+    {
+      id: '/versions/$versionId/application-methods/$methodId',
+      path: '/versions/$versionId/application-methods/$methodId',
+      getParentRoute: () => AppSlugServicesIdRoute,
+    } as any,
+  )
+const AppSlugServicesIdConsoleVersionsVersionIdEditRoute =
+  AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport.update({
+    id: '/versions/$versionId/edit',
+    path: '/versions/$versionId/edit',
+    getParentRoute: () => AppSlugServicesIdConsoleRoute,
   } as any)
 const AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute =
   AppSlugServicesIdConsoleVersionsVersionIdDetailsRouteImport.update({
@@ -286,74 +273,30 @@ const AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute =
     path: '/versions/$versionId/details',
     getParentRoute: () => AppSlugServicesIdConsoleRoute,
   } as any)
-const AppSlugServicesIdOldEditVersionsVersionIdIndexRoute =
-  AppSlugServicesIdOldEditVersionsVersionIdIndexRouteImport.update({
-    id: '/versions/$versionId/',
-    path: '/versions/$versionId/',
-    getParentRoute: () => AppSlugServicesIdOldEditRoute,
-  } as any)
-const AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute =
-  AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRouteImport.update(
-    {
-      id: '/versions/$versionId/service-agreements/',
-      path: '/versions/$versionId/service-agreements/',
-      getParentRoute: () => AppSlugServicesIdOldEditRoute,
-    } as any,
-  )
-const AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute =
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRouteImport.update(
-    {
-      id: '/versions/$versionId/application-methods/',
-      path: '/versions/$versionId/application-methods/',
-      getParentRoute: () => AppSlugServicesIdOldEditRoute,
-    } as any,
-  )
-const AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route =
-  AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125RouteImport.update(
-    {
-      id: '/versions/$versionId/details/edit/$sectionId/{-$stepId}',
-      path: '/versions/$versionId/details/edit/$sectionId/{-$stepId}',
-      getParentRoute: () => AppSlugServicesIdRoute,
-    } as any,
-  )
-const AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute =
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRouteImport.update(
-    {
-      id: '/versions/$versionId/application-methods/new',
-      path: '/versions/$versionId/application-methods/new',
-      getParentRoute: () => AppSlugServicesIdOldEditRoute,
-    } as any,
-  )
-const AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute =
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRouteImport.update(
-    {
-      id: '/versions/$versionId/application-methods/$applicationMethodId',
-      path: '/versions/$versionId/application-methods/$applicationMethodId',
-      getParentRoute: () => AppSlugServicesIdOldEditRoute,
-    } as any,
-  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
-  '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
+  '/admin/templates': typeof AdminTemplatesRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
   '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsRouteWithChildren
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/shared-resources': typeof AppSlugSharedResourcesRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRouteWithChildren
   '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
-  '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/admin/service-agreements/': typeof AdminServiceAgreementsIndexRoute
+  '/admin/templates/': typeof AdminTemplatesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
@@ -368,32 +311,25 @@ export interface FileRoutesByFullPath {
   '/app/$slug/services/$id/details': typeof AppSlugServicesIdConsoleDetailsRoute
   '/app/$slug/services/$id/requests': typeof AppSlugServicesIdConsoleRequestsRoute
   '/app/$slug/services/$id/settings': typeof AppSlugServicesIdConsoleSettingsRoute
-  '/app/$slug/services/$id/old/edit': typeof AppSlugServicesIdOldEditRouteWithChildren
   '/app/$slug/services/$id/': typeof AppSlugServicesIdConsoleIndexRoute
-  '/app/$slug/services/$id/old/edit/application-methods': typeof AppSlugServicesIdOldEditApplicationMethodsRoute
-  '/app/$slug/services/$id/old/edit/service-agreements': typeof AppSlugServicesIdOldEditServiceAgreementsRoute
-  '/app/$slug/services/$id/old/edit/': typeof AppSlugServicesIdOldEditIndexRoute
   '/app/$slug/services/$id/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
-  '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId/': typeof AppSlugServicesIdOldEditVersionsVersionIdIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute
-  '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/': typeof AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute
+  '/app/$slug/services/$id/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
+  '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
+  '/admin/studio': typeof AdminStudioRoute
   '/app/account': typeof AppAccountRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
   '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/shared-resources': typeof AppSlugSharedResourcesRoute
-  '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/admin/service-agreements': typeof AdminServiceAgreementsIndexRoute
+  '/admin/templates': typeof AdminTemplatesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
@@ -408,40 +344,34 @@ export interface FileRoutesByTo {
   '/app/$slug/services/$id/details': typeof AppSlugServicesIdConsoleDetailsRoute
   '/app/$slug/services/$id/requests': typeof AppSlugServicesIdConsoleRequestsRoute
   '/app/$slug/services/$id/settings': typeof AppSlugServicesIdConsoleSettingsRoute
-  '/app/$slug/services/$id/old/edit/application-methods': typeof AppSlugServicesIdOldEditApplicationMethodsRoute
-  '/app/$slug/services/$id/old/edit/service-agreements': typeof AppSlugServicesIdOldEditServiceAgreementsRoute
-  '/app/$slug/services/$id/old/edit': typeof AppSlugServicesIdOldEditIndexRoute
   '/app/$slug/services/$id/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
-  '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId': typeof AppSlugServicesIdOldEditVersionsVersionIdIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute
-  '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements': typeof AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute
+  '/app/$slug/services/$id/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
+  '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
-  '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
+  '/admin/templates': typeof AdminTemplatesRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
   '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsRouteWithChildren
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/shared-resources': typeof AppSlugSharedResourcesRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRouteWithChildren
   '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
-  '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/admin/service-agreements/': typeof AdminServiceAgreementsIndexRoute
+  '/admin/templates/': typeof AdminTemplatesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
@@ -457,19 +387,10 @@ export interface FileRoutesById {
   '/app/$slug/services/$id/_console/details': typeof AppSlugServicesIdConsoleDetailsRoute
   '/app/$slug/services/$id/_console/requests': typeof AppSlugServicesIdConsoleRequestsRoute
   '/app/$slug/services/$id/_console/settings': typeof AppSlugServicesIdConsoleSettingsRoute
-  '/app/$slug/services/$id/old/edit': typeof AppSlugServicesIdOldEditRouteWithChildren
   '/app/$slug/services/$id/_console/': typeof AppSlugServicesIdConsoleIndexRoute
-  '/app/$slug/services/$id/old/edit/application-methods': typeof AppSlugServicesIdOldEditApplicationMethodsRoute
-  '/app/$slug/services/$id/old/edit/service-agreements': typeof AppSlugServicesIdOldEditServiceAgreementsRoute
-  '/app/$slug/services/$id/old/edit/': typeof AppSlugServicesIdOldEditIndexRoute
   '/app/$slug/services/$id/_console/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
-  '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId/': typeof AppSlugServicesIdOldEditVersionsVersionIdIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute
-  '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}': typeof AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route
-  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/': typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute
-  '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/': typeof AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute
+  '/app/$slug/services/$id/_console/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
+  '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -477,23 +398,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
-    | '/admin/document-types'
+    | '/admin/document-studio'
     | '/admin/service-agreements'
+    | '/admin/studio'
+    | '/admin/templates'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
     | '/app/'
-    | '/admin/document-types/$id'
     | '/admin/service-agreements/$id'
     | '/admin/service-agreements/new'
+    | '/admin/templates/$id'
     | '/app/$slug/service-agreements'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/shared-resources'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
-    | '/admin/document-types/'
     | '/admin/service-agreements/'
+    | '/admin/templates/'
     | '/app/$slug/'
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
@@ -508,32 +431,25 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/details'
     | '/app/$slug/services/$id/requests'
     | '/app/$slug/services/$id/settings'
-    | '/app/$slug/services/$id/old/edit'
     | '/app/$slug/services/$id/'
-    | '/app/$slug/services/$id/old/edit/application-methods'
-    | '/app/$slug/services/$id/old/edit/service-agreements'
-    | '/app/$slug/services/$id/old/edit/'
     | '/app/$slug/services/$id/versions/$versionId/details'
-    | '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new'
-    | '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/'
+    | '/app/$slug/services/$id/versions/$versionId/edit'
+    | '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/document-studio'
+    | '/admin/studio'
     | '/app/account'
     | '/admin'
     | '/app'
-    | '/admin/document-types/$id'
     | '/admin/service-agreements/$id'
     | '/admin/service-agreements/new'
+    | '/admin/templates/$id'
     | '/app/$slug/settings'
     | '/app/$slug/shared-resources'
-    | '/admin/document-types'
     | '/admin/service-agreements'
+    | '/admin/templates'
     | '/app/$slug'
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
@@ -548,39 +464,33 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/details'
     | '/app/$slug/services/$id/requests'
     | '/app/$slug/services/$id/settings'
-    | '/app/$slug/services/$id/old/edit/application-methods'
-    | '/app/$slug/services/$id/old/edit/service-agreements'
-    | '/app/$slug/services/$id/old/edit'
     | '/app/$slug/services/$id/versions/$versionId/details'
-    | '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new'
-    | '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements'
+    | '/app/$slug/services/$id/versions/$versionId/edit'
+    | '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/app'
-    | '/admin/document-types'
+    | '/admin/document-studio'
     | '/admin/service-agreements'
+    | '/admin/studio'
+    | '/admin/templates'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
     | '/app/'
-    | '/admin/document-types/$id'
     | '/admin/service-agreements/$id'
     | '/admin/service-agreements/new'
+    | '/admin/templates/$id'
     | '/app/$slug/service-agreements'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/shared-resources'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
-    | '/admin/document-types/'
     | '/admin/service-agreements/'
+    | '/admin/templates/'
     | '/app/$slug/'
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
@@ -596,19 +506,10 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/_console/details'
     | '/app/$slug/services/$id/_console/requests'
     | '/app/$slug/services/$id/_console/settings'
-    | '/app/$slug/services/$id/old/edit'
     | '/app/$slug/services/$id/_console/'
-    | '/app/$slug/services/$id/old/edit/application-methods'
-    | '/app/$slug/services/$id/old/edit/service-agreements'
-    | '/app/$slug/services/$id/old/edit/'
     | '/app/$slug/services/$id/_console/versions/$versionId/details'
-    | '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new'
-    | '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/'
-    | '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/'
+    | '/app/$slug/services/$id/_console/versions/$versionId/edit'
+    | '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -668,6 +569,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/templates': {
+      id: '/admin/templates'
+      path: '/templates'
+      fullPath: '/admin/templates'
+      preLoaderRoute: typeof AdminTemplatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/studio': {
+      id: '/admin/studio'
+      path: '/studio'
+      fullPath: '/admin/studio'
+      preLoaderRoute: typeof AdminStudioRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/service-agreements': {
       id: '/admin/service-agreements'
       path: '/service-agreements'
@@ -675,11 +590,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminServiceAgreementsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/document-types': {
-      id: '/admin/document-types'
-      path: '/document-types'
-      fullPath: '/admin/document-types'
-      preLoaderRoute: typeof AdminDocumentTypesRouteImport
+    '/admin/document-studio': {
+      id: '/admin/document-studio'
+      path: '/document-studio'
+      fullPath: '/admin/document-studio'
+      preLoaderRoute: typeof AdminDocumentStudioRouteImport
       parentRoute: typeof AdminRoute
     }
     '/app/$slug/': {
@@ -689,19 +604,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugIndexRouteImport
       parentRoute: typeof AppSlugRoute
     }
+    '/admin/templates/': {
+      id: '/admin/templates/'
+      path: '/'
+      fullPath: '/admin/templates/'
+      preLoaderRoute: typeof AdminTemplatesIndexRouteImport
+      parentRoute: typeof AdminTemplatesRoute
+    }
     '/admin/service-agreements/': {
       id: '/admin/service-agreements/'
       path: '/'
       fullPath: '/admin/service-agreements/'
       preLoaderRoute: typeof AdminServiceAgreementsIndexRouteImport
       parentRoute: typeof AdminServiceAgreementsRoute
-    }
-    '/admin/document-types/': {
-      id: '/admin/document-types/'
-      path: '/'
-      fullPath: '/admin/document-types/'
-      preLoaderRoute: typeof AdminDocumentTypesIndexRouteImport
-      parentRoute: typeof AdminDocumentTypesRoute
     }
     '/app/$slug/team': {
       id: '/app/$slug/team'
@@ -745,6 +660,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServiceAgreementsRouteImport
       parentRoute: typeof AppSlugRoute
     }
+    '/admin/templates/$id': {
+      id: '/admin/templates/$id'
+      path: '/$id'
+      fullPath: '/admin/templates/$id'
+      preLoaderRoute: typeof AdminTemplatesIdRouteImport
+      parentRoute: typeof AdminTemplatesRoute
+    }
     '/admin/service-agreements/new': {
       id: '/admin/service-agreements/new'
       path: '/new'
@@ -758,13 +680,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/service-agreements/$id'
       preLoaderRoute: typeof AdminServiceAgreementsIdRouteImport
       parentRoute: typeof AdminServiceAgreementsRoute
-    }
-    '/admin/document-types/$id': {
-      id: '/admin/document-types/$id'
-      path: '/$id'
-      fullPath: '/admin/document-types/$id'
-      preLoaderRoute: typeof AdminDocumentTypesIdRouteImport
-      parentRoute: typeof AdminDocumentTypesRoute
     }
     '/app/$slug/team/': {
       id: '/app/$slug/team/'
@@ -843,13 +758,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdConsoleIndexRouteImport
       parentRoute: typeof AppSlugServicesIdConsoleRoute
     }
-    '/app/$slug/services/$id/old/edit': {
-      id: '/app/$slug/services/$id/old/edit'
-      path: '/old/edit'
-      fullPath: '/app/$slug/services/$id/old/edit'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditRouteImport
-      parentRoute: typeof AppSlugServicesIdRoute
-    }
     '/app/$slug/services/$id/_console/settings': {
       id: '/app/$slug/services/$id/_console/settings'
       path: '/settings'
@@ -878,33 +786,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdConsoleAnalyticsRouteImport
       parentRoute: typeof AppSlugServicesIdConsoleRoute
     }
-    '/app/$slug/services/$id/old/edit/': {
-      id: '/app/$slug/services/$id/old/edit/'
-      path: '/'
-      fullPath: '/app/$slug/services/$id/old/edit/'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditIndexRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/old/edit/service-agreements': {
-      id: '/app/$slug/services/$id/old/edit/service-agreements'
-      path: '/service-agreements'
-      fullPath: '/app/$slug/services/$id/old/edit/service-agreements'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditServiceAgreementsRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/old/edit/application-methods': {
-      id: '/app/$slug/services/$id/old/edit/application-methods'
-      path: '/application-methods'
-      fullPath: '/app/$slug/services/$id/old/edit/application-methods'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditApplicationMethodsRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}': {
-      id: '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}'
-      path: '/details/edit/$sectionId/{-$stepId}'
-      fullPath: '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}'
-      preLoaderRoute: typeof AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125RouteImport
+    '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId': {
+      id: '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId'
+      path: '/versions/$versionId/application-methods/$methodId'
+      fullPath: '/app/$slug/services/$id/versions/$versionId/application-methods/$methodId'
+      preLoaderRoute: typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRouteImport
       parentRoute: typeof AppSlugServicesIdRoute
+    }
+    '/app/$slug/services/$id/_console/versions/$versionId/edit': {
+      id: '/app/$slug/services/$id/_console/versions/$versionId/edit'
+      path: '/versions/$versionId/edit'
+      fullPath: '/app/$slug/services/$id/versions/$versionId/edit'
+      preLoaderRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport
+      parentRoute: typeof AppSlugServicesIdConsoleRoute
     }
     '/app/$slug/services/$id/_console/versions/$versionId/details': {
       id: '/app/$slug/services/$id/_console/versions/$versionId/details'
@@ -913,63 +807,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRouteImport
       parentRoute: typeof AppSlugServicesIdConsoleRoute
     }
-    '/app/$slug/services/$id/old/edit/versions/$versionId/': {
-      id: '/app/$slug/services/$id/old/edit/versions/$versionId/'
-      path: '/versions/$versionId'
-      fullPath: '/app/$slug/services/$id/old/edit/versions/$versionId/'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdIndexRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/': {
-      id: '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/'
-      path: '/versions/$versionId/service-agreements'
-      fullPath: '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/': {
-      id: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/'
-      path: '/versions/$versionId/application-methods'
-      fullPath: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}': {
-      id: '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-      path: '/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-      fullPath: '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}'
-      preLoaderRoute: typeof AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125RouteImport
-      parentRoute: typeof AppSlugServicesIdRoute
-    }
-    '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new': {
-      id: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new'
-      path: '/versions/$versionId/application-methods/new'
-      fullPath: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
-    '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId': {
-      id: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId'
-      path: '/versions/$versionId/application-methods/$applicationMethodId'
-      fullPath: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId'
-      preLoaderRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRouteImport
-      parentRoute: typeof AppSlugServicesIdOldEditRoute
-    }
   }
 }
-
-interface AdminDocumentTypesRouteChildren {
-  AdminDocumentTypesIdRoute: typeof AdminDocumentTypesIdRoute
-  AdminDocumentTypesIndexRoute: typeof AdminDocumentTypesIndexRoute
-}
-
-const AdminDocumentTypesRouteChildren: AdminDocumentTypesRouteChildren = {
-  AdminDocumentTypesIdRoute: AdminDocumentTypesIdRoute,
-  AdminDocumentTypesIndexRoute: AdminDocumentTypesIndexRoute,
-}
-
-const AdminDocumentTypesRouteWithChildren =
-  AdminDocumentTypesRoute._addFileChildren(AdminDocumentTypesRouteChildren)
 
 interface AdminServiceAgreementsRouteChildren {
   AdminServiceAgreementsIdRoute: typeof AdminServiceAgreementsIdRoute
@@ -989,15 +828,33 @@ const AdminServiceAgreementsRouteWithChildren =
     AdminServiceAgreementsRouteChildren,
   )
 
+interface AdminTemplatesRouteChildren {
+  AdminTemplatesIdRoute: typeof AdminTemplatesIdRoute
+  AdminTemplatesIndexRoute: typeof AdminTemplatesIndexRoute
+}
+
+const AdminTemplatesRouteChildren: AdminTemplatesRouteChildren = {
+  AdminTemplatesIdRoute: AdminTemplatesIdRoute,
+  AdminTemplatesIndexRoute: AdminTemplatesIndexRoute,
+}
+
+const AdminTemplatesRouteWithChildren = AdminTemplatesRoute._addFileChildren(
+  AdminTemplatesRouteChildren,
+)
+
 interface AdminRouteChildren {
-  AdminDocumentTypesRoute: typeof AdminDocumentTypesRouteWithChildren
+  AdminDocumentStudioRoute: typeof AdminDocumentStudioRoute
   AdminServiceAgreementsRoute: typeof AdminServiceAgreementsRouteWithChildren
+  AdminStudioRoute: typeof AdminStudioRoute
+  AdminTemplatesRoute: typeof AdminTemplatesRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminDocumentTypesRoute: AdminDocumentTypesRouteWithChildren,
+  AdminDocumentStudioRoute: AdminDocumentStudioRoute,
   AdminServiceAgreementsRoute: AdminServiceAgreementsRouteWithChildren,
+  AdminStudioRoute: AdminStudioRoute,
+  AdminTemplatesRoute: AdminTemplatesRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -1028,6 +885,7 @@ interface AppSlugServicesIdConsoleRouteChildren {
   AppSlugServicesIdConsoleSettingsRoute: typeof AppSlugServicesIdConsoleSettingsRoute
   AppSlugServicesIdConsoleIndexRoute: typeof AppSlugServicesIdConsoleIndexRoute
   AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
+  AppSlugServicesIdConsoleVersionsVersionIdEditRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
 }
 
 const AppSlugServicesIdConsoleRouteChildren: AppSlugServicesIdConsoleRouteChildren =
@@ -1042,6 +900,8 @@ const AppSlugServicesIdConsoleRouteChildren: AppSlugServicesIdConsoleRouteChildr
     AppSlugServicesIdConsoleIndexRoute: AppSlugServicesIdConsoleIndexRoute,
     AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute:
       AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute,
+    AppSlugServicesIdConsoleVersionsVersionIdEditRoute:
+      AppSlugServicesIdConsoleVersionsVersionIdEditRoute,
   }
 
 const AppSlugServicesIdConsoleRouteWithChildren =
@@ -1049,55 +909,15 @@ const AppSlugServicesIdConsoleRouteWithChildren =
     AppSlugServicesIdConsoleRouteChildren,
   )
 
-interface AppSlugServicesIdOldEditRouteChildren {
-  AppSlugServicesIdOldEditApplicationMethodsRoute: typeof AppSlugServicesIdOldEditApplicationMethodsRoute
-  AppSlugServicesIdOldEditServiceAgreementsRoute: typeof AppSlugServicesIdOldEditServiceAgreementsRoute
-  AppSlugServicesIdOldEditIndexRoute: typeof AppSlugServicesIdOldEditIndexRoute
-  AppSlugServicesIdOldEditVersionsVersionIdIndexRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdIndexRoute
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute
-  AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute
-  AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute: typeof AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute
-}
-
-const AppSlugServicesIdOldEditRouteChildren: AppSlugServicesIdOldEditRouteChildren =
-  {
-    AppSlugServicesIdOldEditApplicationMethodsRoute:
-      AppSlugServicesIdOldEditApplicationMethodsRoute,
-    AppSlugServicesIdOldEditServiceAgreementsRoute:
-      AppSlugServicesIdOldEditServiceAgreementsRoute,
-    AppSlugServicesIdOldEditIndexRoute: AppSlugServicesIdOldEditIndexRoute,
-    AppSlugServicesIdOldEditVersionsVersionIdIndexRoute:
-      AppSlugServicesIdOldEditVersionsVersionIdIndexRoute,
-    AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute:
-      AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsApplicationMethodIdRoute,
-    AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute:
-      AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsNewRoute,
-    AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute:
-      AppSlugServicesIdOldEditVersionsVersionIdApplicationMethodsIndexRoute,
-    AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute:
-      AppSlugServicesIdOldEditVersionsVersionIdServiceAgreementsIndexRoute,
-  }
-
-const AppSlugServicesIdOldEditRouteWithChildren =
-  AppSlugServicesIdOldEditRoute._addFileChildren(
-    AppSlugServicesIdOldEditRouteChildren,
-  )
-
 interface AppSlugServicesIdRouteChildren {
   AppSlugServicesIdConsoleRoute: typeof AppSlugServicesIdConsoleRouteWithChildren
-  AppSlugServicesIdOldEditRoute: typeof AppSlugServicesIdOldEditRouteWithChildren
-  AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route: typeof AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route
-  AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route: typeof AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route
+  AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute: typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute
 }
 
 const AppSlugServicesIdRouteChildren: AppSlugServicesIdRouteChildren = {
   AppSlugServicesIdConsoleRoute: AppSlugServicesIdConsoleRouteWithChildren,
-  AppSlugServicesIdOldEditRoute: AppSlugServicesIdOldEditRouteWithChildren,
-  AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route:
-    AppSlugServicesIdDetailsEditSectionIdChar123StepIdChar125Route,
-  AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route:
-    AppSlugServicesIdVersionsVersionIdDetailsEditSectionIdChar123StepIdChar125Route,
+  AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute:
+    AppSlugServicesIdVersionsVersionIdApplicationMethodsMethodIdRoute,
 }
 
 const AppSlugServicesIdRouteWithChildren =

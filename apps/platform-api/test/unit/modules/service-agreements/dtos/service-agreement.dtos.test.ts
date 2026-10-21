@@ -1,194 +1,292 @@
 import { describe, expect, it } from 'vitest';
 import {
+  agreementDefinitionSchema,
   createServiceAgreementSchema,
-  updateServiceAgreementSchema,
+  listServiceAgreementsPageSchema,
   listServiceAgreementsSchema,
+  serviceAgreementDetailSchema,
   serviceAgreementSchema,
+  serviceAgreementSummarySchema,
   serviceAgreementVersionSchema,
   serviceAgreementWithVersionSchema,
-  agreementDefinitionSchema,
-  associatedServiceSchema,
-  serviceAgreementDetailSchema,
-  serviceAgreementSummarySchema,
+  toAgreementDto,
+  toAgreementVersionDto,
+  updateServiceAgreementSchema,
 } from '../../../../../src/modules/service-agreements/dtos/service-agreement.dtos';
 
 const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
+const CONTENT = {
+  schema: { type: 'object', properties: {} },
+  variants: { default: { type: 'Form', elements: [], label: 'Terms' } },
+};
 
-describe('service-agreement DTO schemas', () => {
+describe('service-agreement DTO schemas (feature 217)', () => {
   describe('createServiceAgreementSchema', () => {
-    it('Should accept correct payloads with optional workspaceId', () => {
-      const payload = {
+    it('accepts a workspace-scoped create', () => {
+      const parsed = createServiceAgreementSchema.parse({
         workspaceId: VALID_UUID,
-        data: { schema: { type: 'object' } },
-      };
-      const parsed = createServiceAgreementSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-
-      const parsedNoWorkspace = createServiceAgreementSchema.parse({
-        data: { schema: {} },
+        title: 'Terms',
       });
-      expect(parsedNoWorkspace).toEqual({ data: { schema: {} } });
+
+      expect(parsed).toEqual({ workspaceId: VALID_UUID, title: 'Terms' });
     });
 
-    it('Should reject invalid workspaceId UUID format', () => {
-      const payload = {
-        workspaceId: 'invalid-uuid',
-        data: {},
-      };
-      expect(createServiceAgreementSchema.safeParse(payload).success).toBe(false);
+    it('accepts a global create (no workspaceId)', () => {
+      expect(createServiceAgreementSchema.parse({ title: 'Terms' })).toEqual({ title: 'Terms' });
     });
 
-    it('Should reject when data record is missing', () => {
-      expect(createServiceAgreementSchema.safeParse({ workspaceId: VALID_UUID }).success).toBe(
-        false,
-      );
+    it('requires a non-empty title and trims it', () => {
+      expect(createServiceAgreementSchema.parse({ title: '  Terms  ' }).title).toBe('Terms');
+      expect(createServiceAgreementSchema.safeParse({ title: '   ' }).success).toBe(false);
+      expect(createServiceAgreementSchema.safeParse({}).success).toBe(false);
+    });
+
+    it('no longer accepts a `data` payload — an agreement is authored, not filled', () => {
+      const parsed = createServiceAgreementSchema.safeParse({ data: { title: 'Terms' } });
+
+      expect(parsed.success).toBe(false);
     });
   });
 
   describe('updateServiceAgreementSchema', () => {
-    it('Should accept valid updates containing data and optional title', () => {
-      const payload = {
-        title: 'New Policy Agreement',
-        data: { optional: true },
-      };
-      const parsed = updateServiceAgreementSchema.parse(payload);
-      expect(parsed).toEqual(payload);
+    it('accepts a DocumentContent content', () => {
+      expect(updateServiceAgreementSchema.parse({ content: CONTENT })).toEqual({
+        content: CONTENT,
+      });
     });
 
-    it('Should reject empty title strings or too long titles', () => {
-      expect(updateServiceAgreementSchema.safeParse({ title: '', data: {} }).success).toBe(false);
+    it('rejects a content missing either half', () => {
+      expect(updateServiceAgreementSchema.safeParse({ content: { schema: {} } }).success).toBe(
+        false,
+      );
       expect(
-        updateServiceAgreementSchema.safeParse({ title: 'a'.repeat(256), data: {} }).success,
+        updateServiceAgreementSchema.safeParse({ content: { variants: CONTENT.variants } }).success,
       ).toBe(false);
+    });
+
+    it('preserves unknown keys inside schema and each variant', () => {
+      const parsed = updateServiceAgreementSchema.parse({
+        content: {
+          schema: { type: 'object', properties: {}, $id: 'x' },
+          variants: { default: { type: 'Form', elements: [], options: { gap: 'lg' } } },
+        },
+      });
+
+      expect(parsed.content.schema['$id']).toBe('x');
+      expect(parsed.content.variants['default']?.['options']).toEqual({ gap: 'lg' });
     });
   });
 
-  describe('listServiceAgreementsSchema', () => {
-    it('Should accept optional workspaceId filter', () => {
+  describe('list queries', () => {
+    it('makes workspaceId optional on the simple list', () => {
+      expect(listServiceAgreementsSchema.parse({})).toEqual({});
       expect(listServiceAgreementsSchema.parse({ workspaceId: VALID_UUID })).toEqual({
         workspaceId: VALID_UUID,
       });
-      expect(listServiceAgreementsSchema.parse({})).toEqual({});
+    });
+
+    it('defaults the paged list to updated/desc/20/0', () => {
+      expect(listServiceAgreementsPageSchema.parse({})).toEqual({
+        sort: 'updated',
+        order: 'desc',
+        limit: 20,
+        offset: 0,
+      });
     });
   });
 
-  describe('serviceAgreementSchema', () => {
-    it('Should validate a correct service agreement payload', () => {
-      const payload = {
+  describe('response schemas', () => {
+    it('allows a null title and requires the service-agreement type', () => {
+      const agreement = {
         id: VALID_UUID,
         workspaceId: null,
-        title: 'Global Terms of Service',
-        kind: 'service-agreement',
+        title: null,
+        type: 'services.service-agreement',
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
       };
-      const parsed = serviceAgreementSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-    });
-  });
 
-  describe('serviceAgreementVersionSchema', () => {
-    it('Should validate correct version details', () => {
-      const payload = {
+      expect(serviceAgreementSchema.parse(agreement)).toEqual(agreement);
+      expect(
+        serviceAgreementSchema.safeParse({ ...agreement, type: 'services.service' }).success,
+      ).toBe(false);
+    });
+
+    it('carries content, revision and generated title/description on a version', () => {
+      const version = {
         id: VALID_UUID,
-        version: 1,
-        status: 'draft' as const,
-        data: { text: 'Draft Terms' },
+        versionNumber: 1,
+        revision: 3,
+        status: 'draft',
+        title: 'Terms',
+        description: null,
+        content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
         createdAt: '2026-07-28T12:00:00.000Z',
         publishedAt: null,
         archivedAt: null,
       };
-      const parsed = serviceAgreementVersionSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-    });
-  });
 
-  describe('serviceAgreementWithVersionSchema', () => {
-    it('Should validate nested document and version properties', () => {
-      const payload = {
-        agreement: {
-          id: VALID_UUID,
-          workspaceId: null,
-          title: 'Terms',
-          kind: 'service-agreement',
-          createdAt: '2026-07-28T12:00:00.000Z',
-          updatedAt: '2026-07-28T12:00:00.000Z',
-        },
-        version: {
-          id: VALID_UUID,
-          version: 1,
-          status: 'draft' as const,
-          data: {},
-          createdAt: '2026-07-28T12:00:00.000Z',
-          publishedAt: null,
-          archivedAt: null,
-        },
-      };
-      const parsed = serviceAgreementWithVersionSchema.parse(payload);
-      expect(parsed).toEqual(payload);
+      expect(serviceAgreementVersionSchema.parse(version)).toEqual(version);
     });
-  });
 
-  describe('agreementDefinitionSchema', () => {
-    it('Should validate schemas and uischemas records', () => {
-      const payload = {
-        schema: { type: 'object' },
-        uischema: { type: 'VerticalLayout' },
-      };
-      const parsed = agreementDefinitionSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-    });
-  });
-
-  describe('associatedServiceSchema', () => {
-    it('Should validate associated service details', () => {
-      const payload = {
-        id: 'srv-1',
-        title: 'Waste Management Permit',
-        workspaceSlug: 'waste-permit',
-      };
-      const parsed = associatedServiceSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-    });
-  });
-
-  describe('serviceAgreementDetailSchema', () => {
-    it('Should validate details containing versions, schemas, and services list', () => {
-      const payload = {
-        agreement: {
-          id: VALID_UUID,
-          workspaceId: null,
-          title: 'Terms',
-          kind: 'service-agreement',
-          createdAt: '2026-07-28T12:00:00.000Z',
-          updatedAt: '2026-07-28T12:00:00.000Z',
-        },
-        versions: [],
-        definition: {
-          schema: {},
-          uischema: {},
-        },
-        services: [],
-      };
-      const parsed = serviceAgreementDetailSchema.parse(payload);
-      expect(parsed).toEqual(payload);
-    });
-  });
-
-  describe('serviceAgreementSummarySchema', () => {
-    it('Should validate summary containing status and isGlobal boolean flag', () => {
-      const payload = {
+    it('composes the with-version and summary envelopes', () => {
+      const agreement = {
         id: VALID_UUID,
         workspaceId: null,
-        title: 'Global Terms',
-        kind: 'service-agreement',
+        title: 'Terms',
+        type: 'services.service-agreement' as const,
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
-        status: 'published' as const,
-        isGlobal: true,
       };
-      const parsed = serviceAgreementSummarySchema.parse(payload);
-      expect(parsed).toEqual(payload);
+      const version = {
+        id: VALID_UUID,
+        versionNumber: 1,
+        revision: 1,
+        status: 'published' as const,
+        title: 'Terms',
+        description: null,
+        content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
+        createdAt: '2026-07-28T12:00:00.000Z',
+        publishedAt: '2026-07-28T12:00:00.000Z',
+        archivedAt: null,
+      };
+
+      expect(serviceAgreementWithVersionSchema.parse({ agreement, version })).toBeDefined();
+      expect(
+        serviceAgreementSummarySchema.parse({ ...agreement, status: 'published', isGlobal: true }),
+      ).toBeDefined();
+      expect(
+        serviceAgreementDetailSchema.parse({
+          agreement,
+          versions: [version],
+          definitions: { [VALID_UUID]: { schema: {}, variants: { default: {} } } },
+          // Doc 225 rule 7: REQUIRED, not optional — the API always answers what may be deleted, and
+          // an optional field would let a surface quietly render a delete control from its own guess.
+          deletable: { agreement: true, versionIds: [] },
+        }),
+      ).toBeDefined();
+    });
+
+    it('no longer carries the attached-services list', () => {
+      // Feature 217: `services` was derived from document_references.
+      const parsed = serviceAgreementDetailSchema.parse({
+        agreement: {
+          id: VALID_UUID,
+          workspaceId: null,
+          title: 'Terms',
+          type: 'services.service-agreement',
+          createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
+        },
+        deletable: { agreement: true, versionIds: [] },
+        versions: [],
+        definitions: { [VALID_UUID]: { schema: {}, variants: { default: {} } } },
+        services: [{ id: 'srv-1', title: 'A service', workspaceSlug: 'ws' }],
+      });
+
+      expect(parsed).not.toHaveProperty('services');
+    });
+
+    it('keeps the definition envelope opaque', () => {
+      expect(agreementDefinitionSchema.parse({ schema: {}, variants: { default: {} } })).toEqual({
+        schema: {},
+        variants: { default: {} },
+      });
+    });
+  });
+
+  describe('row → DTO mappers', () => {
+    const now = new Date('2026-07-28T12:00:00.000Z');
+
+    it('takes title from the CURRENT VERSION, not the document row', () => {
+      const dto = toAgreementDto(
+        {
+          id: VALID_UUID,
+          templateId: null,
+          workspaceId: null,
+          kind: 'document',
+          type: 'services.service-agreement',
+          templateKind: 'template',
+          createdAt: now,
+          updatedAt: now,
+        },
+        { title: 'Terms' },
+      );
+
+      expect(dto.title).toBe('Terms');
+      expect(dto.type).toBe('services.service-agreement');
+    });
+
+    it('yields a null title when there is no current version', () => {
+      const dto = toAgreementDto({
+        id: VALID_UUID,
+        templateId: null,
+        workspaceId: null,
+        kind: 'document',
+        type: 'services.service-agreement',
+        templateKind: 'template',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      expect(dto.title).toBeNull();
+    });
+
+    it('refuses a document of the wrong type rather than mislabelling it', () => {
+      expect(() =>
+        toAgreementDto({
+          id: VALID_UUID,
+          templateId: null,
+          workspaceId: null,
+          kind: 'document',
+          type: 'services.service',
+          templateKind: 'template',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ).toThrow(/not a service agreement/);
+    });
+
+    it('maps a version row, serialising dates and passing content through', () => {
+      const dto = toAgreementVersionDto({
+        id: VALID_UUID,
+        documentId: VALID_UUID,
+        templateId: VALID_UUID,
+        // Doc 221: the mapper must CARRY the pinned id through, so the row under test has one.
+        templateVersionId: VALID_UUID,
+        versionNumber: 2,
+        revision: 5,
+        title: 'Terms',
+        description: null,
+        content: CONTENT,
+        status: 'published',
+        publishedAt: now,
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      expect(dto).toEqual({
+        id: VALID_UUID,
+        versionNumber: 2,
+        revision: 5,
+        status: 'published',
+        title: 'Terms',
+        description: null,
+        content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
+        createdAt: '2026-07-28T12:00:00.000Z',
+        publishedAt: '2026-07-28T12:00:00.000Z',
+        archivedAt: null,
+      });
     });
   });
 });

@@ -13,10 +13,15 @@ export function scopeWorkspaceId(scope: AgreementScope): string | null {
   return scope.kind === 'admin' ? null : scope.workspaceId;
 }
 
-/** The create payload for the scope: workspace/service agreements carry `workspaceId`; global omits it. */
+/**
+ * The create payload for the scope: workspace agreements carry `workspaceId`; global omits it.
+ *
+ * Feature 217: create takes a TITLE, which the API stamps into the copied template's root label
+ * (the generated title column reads exactly that path) — not a `data` bag of filled values.
+ */
 export function createPayloadFor(
   scope: AgreementScope,
-  data: Record<string, unknown>,
-): { workspaceId?: string; data: Record<string, unknown> } {
-  return scope.kind === 'admin' ? { data } : { workspaceId: scope.workspaceId, data };
+  title: string,
+): { workspaceId?: string; title: string } {
+  return scope.kind === 'admin' ? { title } : { workspaceId: scope.workspaceId, title };
 }

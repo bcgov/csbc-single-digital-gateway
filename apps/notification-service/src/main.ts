@@ -4,13 +4,14 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from '@repo/nestjs/logger';
 import { AppModule } from './app.module';
+import { APP_OPTIONS } from './app-options';
 import type { Env } from './config/env.schema';
 import { setupSwagger } from './swagger';
 
 async function bootstrap(): Promise<void> {
   // Buffer bootstrap logs until pino is installed as the app logger, so ordering/format
   // is consistent from the very first line.
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, APP_OPTIONS);
   app.useLogger(app.get(Logger));
   // URI versioning, no global prefix: feature controllers opt into a version
   // (`@Controller({ path, version: '1' })` -> /v1/...); unversioned controllers

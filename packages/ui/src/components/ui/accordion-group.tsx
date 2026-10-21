@@ -12,7 +12,8 @@ interface AccordionGroupProps extends Omit<
   'value' | 'onValueChange' | 'multiple'
 > {
   title?: string;
-  description?: string;
+  /** Plain text, or block content such as a rich text view — drawn in a `div`, never a `p`. */
+  description?: React.ReactNode;
   /** All possible item values — required for expand/collapse all to work */
   values?: AccordionValue;
   defaultValue?: AccordionValue;
@@ -41,13 +42,13 @@ function AccordionGroup({
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             {title && <p className="text-h6 font-bold leading-none">{title}</p>}
-            {description && <p className="text-sm">{description}</p>}
+            {description && <div className="text-sm">{description}</div>}
           </div>
           {values.length > 0 && (
             <button
               type="button"
               onClick={toggleAll}
-              aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections in ${title}`}
+              aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections${title ? ` in ${title}` : ''}`}
               className="shrink-0 cursor-pointer hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center items-center"
             >
               {allExpanded ? (

@@ -6,7 +6,11 @@ import type { MyApplication } from '@/lib/catalog';
 // Mock Link from @tanstack/react-router to avoid router context setup
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, params, ...props }: any) => {
-    const href = to.replace('$id', params?.id || '');
+    // Doc 292 rule 7: fill in whichever params the route takes.
+    const href = Object.entries(params ?? {}).reduce(
+      (path: string, [key, value]) => path.replace(`$${key}`, String(value)),
+      to,
+    );
     return (
       <a href={href} {...props}>
         {children}
@@ -19,9 +23,9 @@ describe('TrackApplications Component', () => {
   const mockApplications: MyApplication[] = [
     {
       id: 'app-1',
-      serviceId: 'svc-1',
-      serviceVersionId: 'ver-1',
-      serviceTitle: 'Income Assistance',
+      serviceId: null,
+      formId: 'form-1',
+      formVersionId: 'ver-1',
       formTitle: 'Income Assistance Application',
       reference: '20260708-0001',
       status: 'pending',
@@ -30,9 +34,9 @@ describe('TrackApplications Component', () => {
     },
     {
       id: 'app-2',
-      serviceId: 'svc-2',
-      serviceVersionId: 'ver-2',
-      serviceTitle: 'Child Care Benefit',
+      serviceId: null,
+      formId: 'form-2',
+      formVersionId: 'ver-2',
       formTitle: 'Child Care Benefit Application',
       reference: '20260708-0002',
       status: 'approved',
@@ -77,18 +81,19 @@ describe('TrackApplications Component', () => {
     // Assert both applications are rendered with details
     expect(screen.getByText(/Income Assistance Application/)).toBeInTheDocument();
     expect(screen.getByText('Submitted')).toBeInTheDocument();
-    expect(screen.getAllByText(/Income Assistance/).length).toBeGreaterThanOrEqual(2);
+    // Feature 217: the row shows the FORM title once; the owning service's name is gone.
+    expect(screen.getAllByText(/Income Assistance/).length).toBe(1);
     expect(screen.getByText(/20260708-0001/)).toBeInTheDocument();
 
     expect(screen.getByText(/Child Care Benefit Application/)).toBeInTheDocument();
     expect(screen.getByText('Approved')).toBeInTheDocument();
-    expect(screen.getAllByText(/Child Care Benefit/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Child Care Benefit/).length).toBe(1);
     expect(screen.getByText(/20260708-0002/)).toBeInTheDocument();
 
-    // Verify links are rendered correctly pointing to details
-    const links = screen.getAllByRole('link');
-    expect(links[0]).toHaveAttribute('href', '/applications/app-1');
-    expect(links[1]).toHaveAttribute('href', '/applications/app-2');
+    // Doc 292 rule 7: each row links to its application page again.
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
+      mockApplications.map((application) => `/applications/${application.id}`),
+    );
 
     // Should not render empty state
     expect(screen.queryByText('You have no applications to track')).not.toBeInTheDocument();

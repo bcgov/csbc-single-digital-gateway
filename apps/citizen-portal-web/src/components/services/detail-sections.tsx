@@ -1,9 +1,5 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@repo/ui/accordion';
-import { Button } from '@repo/ui/button';
-import { Card, CardContent } from '@repo/ui/card';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { Clock, ExternalLink, Send, Wallet } from 'lucide-react';
+import type { DocumentReferenceSource } from '@repo/documents/studio';
+import { DocumentView, viewSections, type DocumentViewProps } from '@repo/documents/view';
 import {
   mdiCardAccountDetailsOutline,
   mdiClipboardCheckOutline,
@@ -11,302 +7,86 @@ import {
   mdiHelpCircleOutline,
   mdiPulse,
   mdiSend,
+  mdiTextBoxOutline,
 } from '@mdi/js';
-import type { ReactNode } from 'react';
-import { ApplicationRow } from '@/components/services/application-row';
-import { ContactSection } from '@/components/services/contact-section';
-import { ServiceContent } from '@/components/services/service-content';
-import { OnThisPageLayout } from '@/components/layout/on-this-page';
-import { myApplicationsQueryOptions } from '@/lib/catalog';
+import { useMemo } from 'react';
+import { OnThisPageLayout, type OnThisPageItem } from '@/components/layout/on-this-page';
+
+/** The variant a service authors for citizens; matched case-insensitively (authored as `Citizen`). */
+export const CITIZEN_VARIANT = 'citizen';
 
 /**
- * Read the service's contact methods from `data`, tolerating BOTH shapes (feature 174): services
- * authored against the reshaped Service type nest them under the `service_description` group, while
- * services still pinned to the older type version keep them flat at the root. Prefer the nested
- * path — a service on the new template is the current shape.
+ * The uischema the citizen page renders: the service's citizen variant, else `default`. The root Form's title and
+ * description are dropped — the page header already shows the service's own, and a second `h1` would repeat it.
  */
-export function readContactMethods(data: Record<string, unknown>): unknown {
-  const group = data.service_description;
-  if (group !== null && typeof group === 'object' && 'contact_methods' in group) {
-    return (group as { contact_methods: unknown }).contact_methods;
-  }
-  return data.contact_methods;
-}
-
-/** The anchor targets shown in the left "On this page" nav and used as section ids. */
-export const DETAIL_SECTIONS = [
-  { id: 'overview', label: 'Overview', icon: mdiFileDocumentOutline },
-  { id: 'eligibility', label: 'Eligibility criteria', icon: mdiClipboardCheckOutline },
-  { id: 'how-to-apply', label: 'How to apply', icon: mdiSend },
-  { id: 'your-activity', label: 'Your activity', icon: mdiPulse },
-  { id: 'help', label: 'Help and information', icon: mdiHelpCircleOutline },
-  { id: 'contact', label: 'Contact information', icon: mdiCardAccountDetailsOutline },
-] as const;
-
-/** A titled content section with an anchor id for the side nav. */
-export function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section id={id} className="scroll-mt-6 flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <h2 className="section-heading">{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-const GLANCE = [
-  { icon: Wallet, label: 'Cost', value: 'Free' },
-  { icon: Clock, label: 'Processing time', value: '2–4 weeks' },
-  { icon: Send, label: 'How to apply', value: 'Online' },
-];
-
-/** The "in a glance" stat strip near the top of the overview. */
-export function InAGlance() {
-  return (
-    <Card>
-      <CardContent className="grid gap-4 py-4 sm:grid-cols-3">
-        {GLANCE.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="size-4" aria-hidden />
-              </span>
-              <div className="flex flex-col">
-                <span className="text-[11px] text-muted-foreground">{item.label}</span>
-                <span className="text-sm font-medium text-foreground">{item.value}</span>
-              </div>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
-}
-
-const ELIGIBILITY = [
-  {
-    id: 'age',
-    title: 'Age',
-    body: 'You must be 19 years of age or older to apply on your own behalf.',
-  },
-  {
-    id: 'income',
-    title: 'Income',
-    body: 'Your household income and assets must be below the program thresholds.',
-  },
-  {
-    id: 'residency',
-    title: 'Residency',
-    body: 'You must be a resident of British Columbia and eligible to work in Canada.',
-  },
-];
-
-/** Eligibility criteria as an expandable accordion (placeholder copy). */
-export function EligibilityCriteria() {
-  return (
-    <Accordion>
-      {ELIGIBILITY.map((item) => (
-        <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger>{item.title}</AccordionTrigger>
-          <AccordionContent>{item.body}</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-  );
-}
-
-/** One application method for a service: an in-portal form or an external link (feature 131). For an
- * external method (`kind` === 'external-application'), `url` is the site the citizen visits. */
-export interface ApplicationMethod {
-  id: string;
-  label: string | null;
-  title: string;
-  formId: string;
-  kind?: string;
-  url?: string | null;
+export function citizenUischema(
+  variants: Readonly<Record<string, Record<string, unknown>>>,
+): Record<string, unknown> {
+  const name = Object.keys(variants).find((key) => key.toLowerCase() === CITIZEN_VARIANT);
+  const root = (name === undefined ? undefined : variants[name]) ?? variants['default'] ?? {};
+  const { label: _label, ...rest } = root;
+  const options = root['options'];
+  if (typeof options !== 'object' || options === null || Array.isArray(options)) return rest;
+  const { description: _description, ...keptOptions } = options as Record<string, unknown>;
+  return { ...rest, options: keptOptions };
 }
 
 /**
- * "How to apply" — one card per application-method form the service references, each linking to the
- * apply flow. Falls back to a muted message when the service has no online application form.
+ * Icons for the section titles the service template ships with; any other title gets a generic page icon, so a
+ * collapsed rail still shows one per entry.
  */
-export function HowToApply({
-  serviceId,
-  applications,
-}: {
-  serviceId: string;
-  applications: readonly ApplicationMethod[];
-}) {
-  if (applications.length === 0) {
-    return (
-      <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-        This service isn’t available to apply for online yet.
-      </p>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-3">
-      {applications.map((form) => {
-        // An external method links out to another site ("Visit site"); a form starts an in-portal
-        // application (feature 131).
-        const isExternal = form.kind === 'external-application' && Boolean(form.url);
-        const Icon = isExternal ? ExternalLink : Send;
-        return (
-          <Card key={form.id}>
-            <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="size-5" aria-hidden />
-                </span>
-                <div className="flex flex-col">
-                  <span className="font-heading text-sm font-semibold text-foreground">
-                    {form.title}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {isExternal
-                      ? 'Apply on an external site.'
-                      : 'Apply through the Single Digital Gateway.'}
-                  </span>
-                </div>
-              </div>
-              {isExternal ? (
-                <Button
-                  render={
-                    // Opens the external site in a new tab; rel prevents tab-nabbing + referrer leak.
-                    <a href={form.url ?? undefined} target="_blank" rel="noopener noreferrer" />
-                  }
-                >
-                  Visit site
-                </Button>
-              ) : (
-                <Button
-                  render={
-                    <Link
-                      to="/services/$serviceId/apply/$formId"
-                      params={{ serviceId, formId: form.formId }}
-                    />
-                  }
-                >
-                  {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
+const SECTION_ICONS: Readonly<Record<string, string>> = {
+  overview: mdiFileDocumentOutline,
+  'eligibility criteria': mdiClipboardCheckOutline,
+  'how to apply': mdiSend,
+  'your activity': mdiPulse,
+  'help and information': mdiHelpCircleOutline,
+  'contact information': mdiCardAccountDetailsOutline,
+};
+
+function sectionIcon(label: string): string {
+  return SECTION_ICONS[label.toLowerCase()] ?? mdiTextBoxOutline;
 }
 
 /**
- * "Your activity" — the citizen's applications for THIS service (pulled from the API and filtered to
- * `serviceId`). Empty/anonymous shows an informational callout.
- */
-export function YourActivity({ serviceId }: { serviceId: string }) {
-  const { data } = useQuery(myApplicationsQueryOptions());
-  const mine = (data ?? []).filter((application) => application.serviceId === serviceId);
-  if (mine.length === 0) {
-    return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-6">
-        <span className="text-sm font-semibold text-foreground">No applications yet</span>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          When you apply for this service, you’ll see your applications and their status here.
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-3">
-      {mine.map((application) => (
-        <ApplicationRow key={application.id} application={application} titleBy="application" />
-      ))}
-    </div>
-  );
-}
-
-const HELP = [
-  {
-    id: 'guides',
-    title: 'Guides and resources',
-    body: 'Step-by-step guides and frequently asked questions for this service.',
-  },
-  {
-    id: 'policy',
-    title: 'Policy and legislation',
-    body: 'The policies and legislation that govern this service.',
-  },
-];
-
-/** "Help and information" accordion (placeholder copy). */
-export function HelpAndInformation() {
-  return (
-    <Accordion>
-      {HELP.map((item) => (
-        <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger>{item.title}</AccordionTrigger>
-          <AccordionContent>{item.body}</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-  );
-}
-
-/**
- * The shared two-column body of a service page: the "On this page" rail + all sections, with the
- * overview rendering the given `schema`/`uischema`/`data`. Used by both the live service detail and
- * the historical version page, so they're laid out identically.
+ * The body of a service page: the service's citizen variant read back (unanswered fields and the sections left empty
+ * are hidden), with an "On this page" rail built from the outermost Section titles it shows. The rail's links and the
+ * Sections' ids come from the same `viewSections` call, so they always agree.
  */
 export function ServiceSections({
-  serviceId,
   schema,
-  uischema,
+  variants,
   data,
-  applications,
+  references,
 }: {
-  serviceId: string;
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  variants: Readonly<Record<string, Record<string, unknown>>>;
   data: Record<string, unknown>;
-  applications: readonly ApplicationMethod[];
+  /** Doc 291 rule 8: links the read-back's application-method cards to their apply page. */
+  references?: DocumentReferenceSource | undefined;
 }) {
+  const uischema = useMemo(() => citizenUischema(variants), [variants]);
+  const items = useMemo<OnThisPageItem[]>(
+    () =>
+      viewSections({ schema, uischema, data, unanswered: 'hide' }).map((section) => ({
+        id: section.anchor,
+        label: section.label,
+        icon: sectionIcon(section.label),
+      })),
+    [schema, uischema, data],
+  );
   return (
-    <OnThisPageLayout items={DETAIL_SECTIONS}>
-      <div className="flex min-w-0 flex-1 flex-col gap-10">
-        <Section id="overview" title="Overview">
-          <InAGlance />
-          <ServiceContent
-            schema={schema}
-            uischema={uischema}
-            data={data}
-            // `omitControls` recurses, so this drops `contact_methods` at either path (feature 174).
-            omit={['title', 'description', 'contact_methods']}
-          />
-        </Section>
-        <Section id="eligibility" title="Eligibility criteria">
-          <EligibilityCriteria />
-        </Section>
-        <Section id="how-to-apply" title="How to apply">
-          <HowToApply serviceId={serviceId} applications={applications} />
-        </Section>
-        <Section id="your-activity" title="Your activity">
-          <YourActivity serviceId={serviceId} />
-        </Section>
-        <Section id="help" title="Help and information">
-          <HelpAndInformation />
-        </Section>
-        <Section id="contact" title="Contact information">
-          <ContactSection value={readContactMethods(data)} />
-        </Section>
+    <OnThisPageLayout items={items}>
+      {/* Scroll margin so a jumped-to Section's heading isn't flush with the viewport top. */}
+      <div className="flex min-w-0 flex-1 flex-col [&_[data-slot=section][id]]:scroll-mt-6">
+        <DocumentView
+          schema={schema as DocumentViewProps['schema']}
+          uischema={uischema}
+          data={data}
+          unanswered="hide"
+          anchorSections
+          {...(references !== undefined && { references })}
+        />
       </div>
     </OnThisPageLayout>
   );

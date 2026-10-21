@@ -57,13 +57,13 @@ C4Container
 
 ## Containers
 
-| Container                  | Tech                                               | Responsibility                                                                                                                             |
-| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **platform-web**           | React 19, Vite, TanStack Router/Query, Tailwind v4 | Staff console (`/app` workspace-scoped) + admin shell (`/admin`). Consumes `@repo/ui` + `@repo/react`.                                     |
-| **citizen-portal-web**     | React 19, Vite, TanStack                           | Public service catalogue + `/me` application flow.                                                                                         |
-| **platform-api**           | NestJS 11, CJS, SWC                                | Staff BFF: workspaces, services/forms authoring, reviews, service agreements, admin. OIDC BFF session against `sdg` realm.                 |
-| **citizen-portal-api**     | NestJS 11                                          | Citizen BFF: `@Public` catalogue + auth-only `/me/applications` lifecycle, server-side submit validation (Ajv).                            |
-| **notification-service**   | NestJS 11 (m2m only)                               | Server-to-server notification ingestion (idempotent inbox), per-channel fan-out (outbox), in-app feed + email worker. No browser sessions. |
-| **Main Database**          | PostgreSQL 16 + Drizzle                            | Shared staff/citizen data. Layered drizzle-kit migrations; generated status columns; composite-FK cross-table enforcement.                 |
-| **Notifications Database** | PostgreSQL 16 + Drizzle                            | Isolated notification store; `user_id` is an opaque uuid (no cross-DB FK).                                                                 |
-| **Session Store**          | Valkey                                             | `connect-redis` session store; per-app key prefix (`sdg:` / `cpa:`) + user-session index for logout-everywhere.                            |
+| Container                  | Tech                                               | Responsibility                                                                                                                                      |
+| -------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **platform-web**           | React 19, Vite, TanStack Router/Query, Tailwind v4 | Staff console (`/app` workspace-scoped) + admin shell (`/admin`). Consumes `@repo/ui`, `@repo/forms`, and `@repo/react` (notification-center only). |
+| **citizen-portal-web**     | React 19, Vite, TanStack                           | Public service catalogue + `/me` application flow.                                                                                                  |
+| **platform-api**           | NestJS 11, CJS, SWC                                | Staff BFF: workspaces, services/forms authoring, reviews, service agreements, admin. OIDC BFF session against `sdg` realm.                          |
+| **citizen-portal-api**     | NestJS 11                                          | Citizen BFF: `@Public` catalogue + auth-only `/me/applications` lifecycle, server-side submit validation (Ajv).                                     |
+| **notification-service**   | NestJS 11 (m2m only)                               | Server-to-server notification ingestion (idempotent inbox), per-channel fan-out (outbox), in-app feed + email worker. No browser sessions.          |
+| **Main Database**          | PostgreSQL 16 + Drizzle                            | Shared staff/citizen data. Layered drizzle-kit migrations; generated status columns; composite-FK cross-table enforcement.                          |
+| **Notifications Database** | PostgreSQL 16 + Drizzle                            | Isolated notification store; `user_id` is an opaque uuid (no cross-DB FK).                                                                          |
+| **Session Store**          | Valkey                                             | `connect-redis` session store; per-app key prefix (`sdg:` / `cpa:`) + user-session index for logout-everywhere.                                     |

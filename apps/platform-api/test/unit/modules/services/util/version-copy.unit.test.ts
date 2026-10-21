@@ -1,20 +1,35 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { documentVersions } from '@repo/database';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  reactivateServiceTx,
   discardVersionTx,
-  copyReferences,
-  dedupCopiedForms,
+  reactivateServiceTx,
 } from '../../../../../src/modules/services/util/version-copy';
-import { documents, documentVersions, documentReferences } from '@repo/database';
-import { createMockQuery } from '../../../../utils/create-mock-query';
+
+/**
+ * Feature 217 cut `copyReferences` and `dedupCopiedForms` from this module — both existed to
+ * deep-copy and de-duplicate the application-method documents a service version referenced, and
+ * `document_references` is gone. What remains is the two version-lifecycle helpers.
+ */
+
+const mockQuery = (resolvedValue: unknown) => {
+  const qb = Promise.resolve(resolvedValue);
+  return Object.assign(qb, {
+    from: vi.fn().mockReturnValue(qb),
+    innerJoin: vi.fn().mockReturnValue(qb),
+    leftJoin: vi.fn().mockReturnValue(qb),
+    limit: vi.fn().mockReturnValue(qb),
+    orderBy: vi.fn().mockReturnValue(qb),
+    where: vi.fn().mockReturnValue(qb),
+  });
+};
 
 describe('version-copy utility tests', () => {
   let txMock: any;
 
   beforeEach(() => {
     txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
+      select: vi.fn().mockImplementation(() => mockQuery([])),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
@@ -26,12 +41,10 @@ describe('version-copy utility tests', () => {
   });
 
   describe('reactivateServiceTx', () => {
-    it('Should reactivate a service and its references successfully', async () => {
-      txMock.select
-        // 1. latest version query
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1', status: 'archived', version: 2 }]))
-        // 2. target form version ids query
-        .mockReturnValueOnce(createMockQuery([{ vid: 'form-version-1' }]));
+    it('clears archived_at on the latest version', async () => {
+      txMock.select.mockReturnValueOnce(
+        mockQuery([{ id: 'version-1', status: 'archived', versionNumber: 2 }]),
+      );
 
       await reactivateServiceTx(txMock, 'service-1');
 
@@ -39,15 +52,26 @@ describe('version-copy utility tests', () => {
       expect(txMock.set).toHaveBeenCalledWith({ archivedAt: null });
     });
 
-    it('Should throw NotFoundException if service version does not exist', async () => {
-      txMock.select.mockReturnValueOnce(createMockQuery([]));
+    it('reads the latest version with ONE query — it no longer looks up form versions', async () => {
+      // The second query was the referenced application-form version ids (feature 217: gone).
+      txMock.select.mockReturnValueOnce(
+        mockQuery([{ id: 'version-1', status: 'archived', versionNumber: 2 }]),
+      );
+
+      await reactivateServiceTx(txMock, 'service-1');
+
+      expect(txMock.select).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws NotFoundException if the service has no versions', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([]));
 
       await expect(reactivateServiceTx(txMock, 'service-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('Should throw ConflictException if service is not archived', async () => {
+    it('throws ConflictException if the latest version is not archived', async () => {
       txMock.select.mockReturnValueOnce(
-        createMockQuery([{ id: 'version-1', status: 'published', version: 1 }]),
+        mockQuery([{ id: 'version-1', status: 'published', versionNumber: 1 }]),
       );
 
       await expect(reactivateServiceTx(txMock, 'service-1')).rejects.toThrow(ConflictException);
@@ -55,395 +79,39 @@ describe('version-copy utility tests', () => {
   });
 
   describe('discardVersionTx', () => {
-    it('Should successfully discard draft version and delete orphaned forms', async () => {
-      txMock.select
-        // 1. counts query (needs count > 1)
-        .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
-        // 2. target form ids query
-        .mockReturnValueOnce(createMockQuery([{ formId: 'form-1' }]))
-        // 3. remaining counts query (0 remaining references)
-        .mockReturnValueOnce(createMockQuery([{ n: 0 }]));
+    it('deletes the version when the service has more than one', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([{ n: 3 }]));
 
       await discardVersionTx(txMock, 'service-1', 'version-1');
 
-      expect(txMock.delete).toHaveBeenNthCalledWith(1, documentVersions);
-      expect(txMock.delete).toHaveBeenNthCalledWith(2, documents); // orphaned form deleted
-    });
-
-    it('Should throw ConflictException if discarding the only version of a service', async () => {
-      txMock.select.mockReturnValueOnce(createMockQuery([{ n: 1 }]));
-
-      await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
-        ConflictException,
-      );
-    });
-
-    it('Should throw ConflictException if counts query returns empty', async () => {
-      txMock.select.mockReturnValueOnce(createMockQuery([]));
-
-      await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
-        ConflictException,
-      );
-    });
-
-    it('Should not delete form document if it is still referenced elsewhere (remaining count > 0)', async () => {
-      txMock.select
-        // 1. counts query (needs count > 1)
-        .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
-        // 2. target form ids query
-        .mockReturnValueOnce(createMockQuery([{ formId: 'form-1' }]))
-        // 3. remaining counts query (1 remaining reference)
-        .mockReturnValueOnce(createMockQuery([{ n: 1 }]));
-
-      await discardVersionTx(txMock, 'service-1', 'version-1');
-
+      expect(txMock.delete).toHaveBeenCalledTimes(1);
       expect(txMock.delete).toHaveBeenCalledWith(documentVersions);
-      expect(txMock.delete).not.toHaveBeenCalledWith(documents);
     });
 
-    it('Should delete form document if remaining count query returns empty when discarding version', async () => {
-      txMock.select
-        // 1. counts query (needs count > 1)
-        .mockReturnValueOnce(createMockQuery([{ n: 3 }]))
-        // 2. target form ids query
-        .mockReturnValueOnce(createMockQuery([{ formId: 'form-1' }]))
-        // 3. remaining counts query (empty result)
-        .mockReturnValueOnce(createMockQuery([]));
+    it('no longer deletes orphaned application-method documents', async () => {
+      // Feature 217: a version owned no method documents to orphan.
+      txMock.select.mockReturnValueOnce(mockQuery([{ n: 3 }]));
 
       await discardVersionTx(txMock, 'service-1', 'version-1');
 
-      expect(txMock.delete).toHaveBeenNthCalledWith(1, documentVersions);
-      expect(txMock.delete).toHaveBeenNthCalledWith(2, documents); // orphaned form deleted
-    });
-  });
-
-  describe('copyReferences', () => {
-    const source = {
-      sourceVersionId: 'src-v-1',
-      newVersionId: 'new-v-1',
-      serviceId: 'service-1',
-      workspaceId: 'ws-1',
-    };
-
-    it('Should copy references and deep-copies application forms', async () => {
-      txMock.select.mockReturnValueOnce(
-        createMockQuery([
-          {
-            relation: 'application_form',
-            label: 'Apply',
-            position: 0,
-            targetKind: 'basic-form',
-            targetDocumentId: 'form-1',
-            targetVersionId: 'form-v-1',
-            formTitle: 'Apply Form',
-            formKind: 'basic-form',
-            formTypeId: 't-1',
-            formTypeVersionId: 'tv-1',
-            formSchema: { type: 'object' },
-          },
-          {
-            relation: 'related_service',
-            label: 'Related',
-            position: 1,
-            targetKind: 'service',
-            targetDocumentId: 'service-2',
-            targetVersionId: 'service-2-v-1',
-          },
-        ]),
-      );
-
-      txMock.returning
-        .mockResolvedValueOnce([{ id: 'new-form-1' }]) // inserted form doc
-        .mockResolvedValueOnce([{ id: 'new-form-v-1' }]); // inserted form version
-
-      await copyReferences(txMock, source);
-
-      // Verify copies:
-      // Form document copy
-      expect(txMock.insert).toHaveBeenNthCalledWith(1, documents);
-      // Form version copy
-      expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
-      // New form reference
-      expect(txMock.insert).toHaveBeenNthCalledWith(3, documentReferences);
-      // Related service reference copied as-is
-      expect(txMock.insert).toHaveBeenNthCalledWith(4, documentReferences);
+      expect(txMock.select).toHaveBeenCalledTimes(1);
+      expect(txMock.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('Should throw error if one helper returns no rows during copy', async () => {
-      txMock.select.mockReturnValueOnce(
-        createMockQuery([
-          {
-            relation: 'application_form',
-            label: 'Apply',
-            position: 0,
-            targetKind: 'basic-form',
-            targetDocumentId: 'form-1',
-            targetVersionId: 'form-v-1',
-            formTitle: 'Apply Form',
-            formKind: 'basic-form',
-            formTypeId: 't-1',
-            formTypeVersionId: 'tv-1',
-            formSchema: {},
-          },
-        ]),
-      );
+    it('throws ConflictException when discarding the only version of a service', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([{ n: 1 }]));
 
-      txMock.returning.mockResolvedValueOnce([]); // doc returning empty
-
-      await expect(copyReferences(txMock, source)).rejects.toThrow(
-        'method document copy returned no row',
+      await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
+        ConflictException,
       );
     });
 
-    it('Should throw error if form version copy returns no rows during copy', async () => {
-      txMock.select.mockReturnValueOnce(
-        createMockQuery([
-          {
-            relation: 'application_form',
-            label: 'Apply',
-            position: 0,
-            targetKind: 'basic-form',
-            targetDocumentId: 'form-1',
-            targetVersionId: 'form-v-1',
-            formTitle: 'Apply Form',
-            formKind: 'basic-form',
-            formTypeId: 't-1',
-            formTypeVersionId: 'tv-1',
-            formSchema: {},
-          },
-        ]),
+    it('throws ConflictException when the count query returns nothing', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([]));
+
+      await expect(discardVersionTx(txMock, 'service-1', 'version-1')).rejects.toThrow(
+        ConflictException,
       );
-
-      txMock.returning
-        .mockResolvedValueOnce([{ id: 'new-form-1' }]) // doc succeeds
-        .mockResolvedValueOnce([]); // version fails
-
-      await expect(copyReferences(txMock, source)).rejects.toThrow(
-        'method version copy returned no row',
-      );
-    });
-
-    it('Should throw error if formTypeId is missing during copy', async () => {
-      txMock.select.mockReturnValueOnce(
-        createMockQuery([
-          {
-            relation: 'application_form',
-            label: 'Apply',
-            position: 0,
-            targetKind: 'basic-form',
-            targetDocumentId: 'form-1',
-            targetVersionId: 'form-v-1',
-            formTitle: 'Apply Form',
-            formKind: 'basic-form',
-            formTypeId: null, // missing typeId triggers req() throw
-            formTypeVersionId: 'tv-1',
-            formSchema: {},
-          },
-        ]),
-      );
-
-      await expect(copyReferences(txMock, source)).rejects.toThrow(
-        'method typeId is unexpectedly null',
-      );
-    });
-  });
-
-  describe('dedupCopiedForms', () => {
-    it('Should exit early if no published version is found', async () => {
-      txMock.select.mockReturnValueOnce(createMockQuery([])); // pubRows is empty
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      expect(txMock.update).not.toHaveBeenCalled();
-    });
-
-    it('Should deduplicate deep-copied forms if schemas are identical', async () => {
-      txMock.select
-        // 1. pubRows query -> returns previous published id
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
-        // 2. previous references/schemas
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              label: 'Apply',
-              targetDocumentId: 'form-original',
-              targetVersionId: 'form-v-original',
-              schema: { type: 'object', properties: { field: { type: 'string' } } },
-            },
-          ]),
-        )
-        // 3. current references/schemas
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              refId: 'ref-current',
-              label: 'Apply',
-              targetDocumentId: 'form-copy',
-              schema: { type: 'object', properties: { field: { type: 'string' } } }, // identical schema
-            },
-          ]),
-        );
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      // Should update the current reference to point back to the original form
-      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
-      expect(txMock.set).toHaveBeenCalledWith({
-        targetDocumentId: 'form-original',
-        targetVersionId: 'form-v-original',
-      });
-      // Should delete the redundant form copy document
-      expect(txMock.delete).toHaveBeenCalledWith(documents);
-    });
-
-    it('Should not deduplicate if schemas are different', async () => {
-      txMock.select
-        // 1. pubRows query -> returns previous published id
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
-        // 2. previous references/schemas
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              label: 'Apply',
-              targetDocumentId: 'form-original',
-              targetVersionId: 'form-v-original',
-              schema: { type: 'object', properties: { field: { type: 'string' } } },
-            },
-          ]),
-        )
-        // 3. current references/schemas
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              refId: 'ref-current',
-              label: 'Apply',
-              targetDocumentId: 'form-copy',
-              schema: { type: 'object', properties: { field: { type: 'number' } } }, // different type
-            },
-          ]),
-        );
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      expect(txMock.update).not.toHaveBeenCalled();
-      expect(txMock.delete).not.toHaveBeenCalled();
-    });
-
-    it('Should exit early if the published version is the same as the version being published', async () => {
-      txMock.select.mockReturnValueOnce(createMockQuery([{ id: 'version-1' }])); // publishedId === versionId
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-1');
-
-      expect(txMock.update).not.toHaveBeenCalled();
-    });
-
-    it('Should not deduplicate if no previous form matches current form by label', async () => {
-      txMock.select
-        // 1. pubRows query -> returns previous published id
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
-        // 2. previous references/schemas (label is 'Apply')
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              label: 'Apply',
-              targetDocumentId: 'form-original',
-              targetVersionId: 'form-v-original',
-              schema: { type: 'object' },
-            },
-          ]),
-        )
-        // 3. current references/schemas (label is 'Apply-New')
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              refId: 'ref-current',
-              label: 'Apply-New',
-              targetDocumentId: 'form-copy',
-              schema: { type: 'object' },
-            },
-          ]),
-        );
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      expect(txMock.update).not.toHaveBeenCalled();
-      expect(txMock.delete).not.toHaveBeenCalled();
-    });
-
-    it('Should deduplicate deep-copied forms with null labels if schemas are identical', async () => {
-      txMock.select
-        // 1. pubRows query -> returns previous published id
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
-        // 2. previous references/schemas with null label
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              label: null,
-              targetDocumentId: 'form-original',
-              targetVersionId: 'form-v-original',
-              schema: { type: 'object' },
-            },
-          ]),
-        )
-        // 3. current references/schemas with null label
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              refId: 'ref-current',
-              label: null,
-              targetDocumentId: 'form-copy',
-              schema: { type: 'object' },
-            },
-          ]),
-        );
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
-      expect(txMock.set).toHaveBeenCalledWith({
-        targetDocumentId: 'form-original',
-        targetVersionId: 'form-v-original',
-      });
-      expect(txMock.delete).toHaveBeenCalledWith(documents);
-    });
-
-    it('Should deduplicate deep-copied external applications if data is identical', async () => {
-      txMock.select
-        // 1. pubRows query -> returns previous published id
-        .mockReturnValueOnce(createMockQuery([{ id: 'version-1' }]))
-        // 2. previous references/data
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              relation: 'external_application',
-              label: 'External Apply',
-              targetDocumentId: 'ext-original',
-              targetVersionId: 'ext-v-original',
-              data: { label: 'External Apply', url: 'https://example.com' },
-            },
-          ]),
-        )
-        // 3. current references/data
-        .mockReturnValueOnce(
-          createMockQuery([
-            {
-              refId: 'ref-current',
-              relation: 'external_application',
-              label: 'External Apply',
-              targetDocumentId: 'ext-copy',
-              data: { label: 'External Apply', url: 'https://example.com' }, // identical data
-            },
-          ]),
-        );
-
-      await dedupCopiedForms(txMock, 'service-1', 'version-2');
-
-      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
-      expect(txMock.set).toHaveBeenCalledWith({
-        targetDocumentId: 'ext-original',
-        targetVersionId: 'ext-v-original',
-      });
-      expect(txMock.delete).toHaveBeenCalledWith(documents);
     });
   });
 });

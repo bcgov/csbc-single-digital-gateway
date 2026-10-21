@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   applicationReference,
-  normalizeFormStructure,
+  normalizeContent,
   submissionStatusLabel,
 } from '../../../../../src/modules/applications/util/format';
 import type { SubmissionStatus } from '../../../../../src/modules/applications/dtos/application.dtos';
 
 describe('format utils', () => {
   describe('submissionStatusLabel', () => {
-    it('Should map each SubmissionStatus to its correct human-facing label', () => {
+    it('should map each SubmissionStatus to its correct human-facing label', () => {
       const cases: Record<SubmissionStatus, string> = {
         draft: 'Draft',
         pending: 'Submitted',
@@ -26,7 +26,7 @@ describe('format utils', () => {
   });
 
   describe('applicationReference', () => {
-    it('Should format creation date and last 4 chars of submission ID into stable reference', () => {
+    it('should format creation date and last 4 chars of submission ID into stable reference', () => {
       const createdAt = new Date('2026-07-08T11:52:11-07:00');
       // toISOString of 2026-07-08T11:52:11-07:00 is 2026-07-08T18:52:11.000Z.
       // slice(0, 10) is "2026-07-08", replaceAll('-', '') is "20260708".
@@ -37,7 +37,7 @@ describe('format utils', () => {
       expect(ref).toBe('20260708-7890');
     });
 
-    it('Should convert the suffix to uppercase', () => {
+    it('should convert the suffix to uppercase', () => {
       const createdAt = new Date('2026-01-01T00:00:00Z');
       const submissionId = 'some-uuid-with-abcdef';
 
@@ -47,70 +47,49 @@ describe('format utils', () => {
     });
   });
 
-  describe('normalizeFormStructure', () => {
-    describe('multi-stage-form kind', () => {
-      it('Should return valid structure with fields preserved when they are of correct types', () => {
-        const structure = {
-          name: 'My Form',
-          description: 'A test form',
-          stages: [{ id: 'stage-1' }],
-          edges: [{ from: 'stage-1', to: 'stage-2' }],
-        };
+  describe('normalizeContent', () => {
+    // Doc 275: `content` IS `{ schema, variants }` (a `@repo/documents` DocumentContent), so there is no
+    // per-kind branch left — a routed application is a `Funnel` root inside each variant.
+    it('passes a present schema and variants through verbatim', () => {
+      const content = {
+        schema: { type: 'object', properties: { name: { type: 'string' } } },
+        variants: {
+          default: { type: 'Funnel', elements: [{ type: 'Form', elements: [] }] },
+          short: { type: 'Form', elements: [] },
+        },
+      };
 
-        const result = normalizeFormStructure('multi-stage-form', structure);
-        expect(result).toEqual({
-          name: 'My Form',
-          description: 'A test form',
-          stages: [{ id: 'stage-1' }],
-          edges: [{ from: 'stage-1', to: 'stage-2' }],
-        });
-      });
+      expect(normalizeContent(content)).toEqual(content);
+    });
 
-      it('Should default missing or incorrectly typed fields to empty strings/arrays', () => {
-        const structure = {
-          name: 123, // wrong type
-          description: null, // wrong type
-          stages: 'not-an-array', // wrong type
-          edges: {}, // wrong type
-        } as any;
-
-        const result = normalizeFormStructure('multi-stage-form', structure);
-        expect(result).toEqual({
-          name: '',
-          description: '',
-          stages: [],
-          edges: [],
-        });
+    it('defaults an empty content to an empty object schema and an empty Form default variant', () => {
+      expect(normalizeContent({})).toEqual({
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
       });
     });
 
-    describe('other kinds (e.g., basic-form)', () => {
-      it('Should preserve custom schema and uischema if they exist', () => {
-        const structure = {
-          schema: { type: 'object', properties: { test: { type: 'string' } } },
-          uischema: { type: 'VerticalLayout', elements: [{ type: 'Control' }] },
-        };
+    it('falls back whole when either half is missing, including the old { schema, uischema } shape', () => {
+      const fallback = {
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
+      };
 
-        const result = normalizeFormStructure('basic-form', structure);
-        expect(result).toEqual({
-          schema: { type: 'object', properties: { test: { type: 'string' } } },
-          uischema: { type: 'VerticalLayout', elements: [{ type: 'Control' }] },
-        });
-      });
+      expect(normalizeContent({ schema: { type: 'object', properties: { a: {} } } })).toEqual(
+        fallback,
+      );
+      expect(
+        normalizeContent({
+          schema: { type: 'object', properties: { a: {} } },
+          uischema: { type: 'Form', elements: [] },
+        }),
+      ).toEqual(fallback);
+    });
 
-      it('Should return default schema and uischema if they are missing', () => {
-        const result = normalizeFormStructure('basic-form', {});
-        expect(result).toEqual({
-          schema: {
-            type: 'object',
-            properties: {},
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        });
-      });
+    it('ignores keys that are neither schema nor variants', () => {
+      const result = normalizeContent({ stages: [{ id: 's1' }] });
+
+      expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
     });
   });
 });

@@ -1,14 +1,12 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
 import {
-  ISO,
-  serviceAgreement,
-  serviceAgreementsDetailResponse,
-} from '../../../../support/fixtures';
-import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
-import * as authModule from '@/lib/auth';
+  authedUser,
+  mockAuth,
+  renderApp,
+  type WorkspaceLike,
+} from '../../../../support/render-app';
 
 let capturedOptionsList: any[] = [];
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -22,6 +20,25 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
   };
 });
 
+let mockUser: any = {
+  id: 'u1',
+  roles: ['admin'],
+  claims: {
+    sub: 'subject-1',
+    name: 'Maya Reyes',
+    email: 'maya.reyes@riverton.gov',
+    preferred_username: 'maya',
+  },
+};
+
+vi.mock('@/lib/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth')>();
+  return {
+    ...actual,
+    useAuth: vi.fn(() => ({ data: mockUser })),
+  };
+});
+
 // Explicitly import routes to register in the router
 import '@/routes/admin.service-agreements.$id';
 import '@/routes/app';
@@ -30,38 +47,58 @@ import '@/routes/app.$slug.service-agreements';
 import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.$id';
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
-    <div data-testid="mock-json-forms">
-      <label htmlFor="title-input">Title</label>
-      <input
-        id="title-input"
-        type="text"
-        value={data?.title ?? ''}
-        disabled={readonly}
-        onChange={(e) => {
-          onChange({ data: { ...data, title: e.target.value } });
-        }}
-      />
-    </div>
-  )),
-}));
+// Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
+// is a JSON content editor now, not a JSONForms form).
+// Docs 218, 276: the page opens a version's content in the Document Studio — editable, or read-only otherwise.
+// jsdom cannot run it — see `test/support/mock-documents.tsx`.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
+);
 
 afterEach(() => {
+  mockUser = adminUser;
   capturedOptionsList = [];
   vi.restoreAllMocks();
 });
 
-const serviceResponse = {
-  ...serviceAgreementsDetailResponse,
+const ISO = '2026-07-07T00:00:00.000Z';
+const adminUser = { ...authedUser, roles: ['admin'] };
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+const initialDetailResponse = {
+  agreement: {
+    id: 'g1',
+    workspaceId: null,
+    title: 'Global Privacy Policy',
+    type: 'services.service-agreement',
+    createdAt: ISO,
+  },
+  // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+  deletable: { agreement: true, versionIds: [] },
   versions: [
     {
       id: 'v1',
-      version: 1,
+      versionNumber: 1,
+      revision: 1,
       status: 'published',
-      data: {
-        title: 'Global Privacy Policy V1',
-        body: 'V1 published agreement content.',
+      title: 'Global Privacy Policy V1',
+      description: null,
+      content: {
+        schema: {},
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Global Privacy Policy V1',
+            elements: [],
+            options: { body: 'V1 published agreement content.' },
+          },
+        },
       },
       createdAt: ISO,
       publishedAt: ISO,
@@ -69,32 +106,107 @@ const serviceResponse = {
     },
     {
       id: 'v2',
-      version: 2,
+      versionNumber: 2,
+      revision: 1,
       status: 'draft',
-      data: {
-        title: 'Global Privacy Policy V2 Draft',
-        body: 'V2 draft agreement content.',
+      title: 'Global Privacy Policy V2 Draft',
+      description: null,
+      content: {
+        schema: {},
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Global Privacy Policy V2 Draft',
+            elements: [],
+            options: { body: 'V2 draft agreement content.' },
+          },
+        },
       },
       createdAt: ISO,
       publishedAt: null,
       archivedAt: null,
     },
   ],
-  services: [
-    {
-      id: 's1',
-      title: 'Service One',
-      workspaceSlug: 'w1-slug',
-    },
-  ],
+  // Doc 221: each version's template, by `templateVersionId`. These versions pin none, so nothing governs them.
+  definitions: {},
 };
 
+const riverton: WorkspaceLike = {
+  id: 'w1',
+  slug: 'riverton',
+  name: 'Riverton Workspace',
+  role: 'admin',
+  createdAt: ISO,
+};
+
+function setupMocks(detailData: any = initialDetailResponse) {
+  const base = mockAuth(adminUser, { workspaces: [riverton] });
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = (init?.method ?? 'GET').toUpperCase();
+
+    if (url.includes('/v1/service-agreements/g1')) {
+      if (method === 'PATCH' && url.includes('/versions/v2')) {
+        const body = init?.body ? JSON.parse(String(init.body)) : {};
+        const updatedVersion = {
+          id: 'v2',
+          versionNumber: 2,
+          revision: 2,
+          status: 'draft',
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: body.content,
+          createdAt: ISO,
+          publishedAt: null,
+          archivedAt: null,
+        };
+        return json(updatedVersion);
+      }
+
+      if (method === 'POST' && url.includes('/versions/v2/publish')) {
+        const publishedVersion = {
+          id: 'v2',
+          versionNumber: 2,
+          revision: 1,
+          status: 'published',
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: detailData.versions[1].content,
+          createdAt: ISO,
+          publishedAt: ISO,
+          archivedAt: null,
+        };
+        return json(publishedVersion);
+      }
+
+      if (method === 'POST' && url.includes('/versions')) {
+        const newVersion = {
+          id: 'v3',
+          versionNumber: 3,
+          revision: 1,
+          status: 'draft',
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: detailData.versions[1].content,
+          createdAt: ISO,
+          publishedAt: null,
+          archivedAt: null,
+        };
+        return json(newVersion);
+      }
+
+      return json(detailData);
+    }
+
+    return (base as any)(input, init);
+  });
+  globalThis.fetch = fetchMock as any;
+  return fetchMock;
+}
+
 describe('AgreementDetail Component Test Suite', () => {
-  it('Should render details of a service agreement, switches versions, and list associated services', async () => {
-    mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse,
-    });
+  it('renders details of a service agreement and switches versions', async () => {
+    setupMocks();
     renderApp('/admin/service-agreements/g1');
 
     // Wait for the auth/me query to load and the draft to become editable (indicated by Publish button)
@@ -102,16 +214,21 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    // Check title & version and associated services are rendered
+    // Feature 217: the "Associated services" list came from document_references and is gone.
     expect(screen.getByText('Global Privacy Policy')).toBeInTheDocument();
-    expect(screen.getByText('Service One')).toBeInTheDocument();
+    expect(screen.queryByText('Service One')).toBeNull();
 
     // Check default picker is on version 2 (the latest one)
     expect(screen.getByText(/Version v2/)).toBeInTheDocument();
 
-    // The fields for version 2 should be populated in the inputs
-    const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
-    expect(titleInput.value).toBe('Global Privacy Policy V2 Draft');
+    // v2 is a draft, so it opens in the studio, editable, holding that version's document.
+    const studio = screen.getByLabelText('document') as HTMLTextAreaElement;
+    expect(studio.value).toContain('Global Privacy Policy V2 Draft');
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    expect(studio).toHaveAttribute('data-kind', 'document');
+    expect(studio).toHaveAttribute('data-type', 'services.service-agreement');
+    // No pinned template → ungoverned.
+    expect(studio).not.toHaveAttribute('data-governed-by');
 
     // 2. Switch to version 1 using picker
     const pickerButton = screen.getByRole('button', { name: /Version v2/i });
@@ -120,16 +237,61 @@ describe('AgreementDetail Component Test Suite', () => {
     const v1Item = await screen.findByRole('menuitem', { name: /v1/i });
     await userEvent.click(v1Item);
 
-    // Verify picker text changed and fields updated
+    // v1 is published, so it is READ in a read-only studio rather than authored (doc 218 rules 5-9, doc 276).
     expect(await screen.findByText(/Version v1/, {}, { timeout: 10000 })).toBeInTheDocument();
-    expect(titleInput.value).toBe('Global Privacy Policy V1');
+    await waitFor(() =>
+      expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true'),
+    );
+    const shown = screen.getByTestId('document-studio') as HTMLTextAreaElement;
+    expect(shown.value).toContain('Global Privacy Policy V1');
+    expect(shown.value).not.toContain('V2 Draft');
   });
 
-  it('Should allow editing and saving a draft version', async () => {
-    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse,
+  it('hands the studio the template a version is pinned to (doc 221, doc 276)', async () => {
+    const governedResponse = {
+      ...initialDetailResponse,
+      versions: [
+        initialDetailResponse.versions[0],
+        { ...initialDetailResponse.versions[1], templateVersionId: 'tv-1' },
+      ],
+      definitions: {
+        'tv-1': {
+          schema: {},
+          variants: { default: { type: 'Form', label: 'Standard agreement', elements: [] } },
+          capabilities: { elements: { h1: { edit: 'none' } } },
+        },
+      },
+    };
+    setupMocks(governedResponse);
+    renderApp('/admin/service-agreements/g1');
+
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 10000 });
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    expect(studio).toHaveAttribute('data-governed-by', 'Standard agreement');
+  });
+
+  it('leaves a version ungoverned when its template has no rules', async () => {
+    setupMocks({
+      ...initialDetailResponse,
+      versions: [
+        initialDetailResponse.versions[0],
+        { ...initialDetailResponse.versions[1], templateVersionId: 'tv-1' },
+      ],
+      definitions: {
+        'tv-1': {
+          schema: {},
+          variants: { default: { type: 'Form', label: 'Standard agreement', elements: [] } },
+        },
+      },
     });
+    renderApp('/admin/service-agreements/g1');
+
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 10000 });
+    expect(studio).not.toHaveAttribute('data-governed-by');
+  });
+
+  it('allows editing and saving a draft version', async () => {
+    const fetchMock = setupMocks();
     renderApp('/admin/service-agreements/g1');
 
     // Wait for Publish button to ensure editable state
@@ -137,41 +299,38 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
+    const editor = screen.getByLabelText('document') as HTMLTextAreaElement;
 
-    // Initially Save should be disabled because it's not dirty
+    // Initially Save should be disabled because it's not dirty — the studio's baseline emit is not an edit
+    // (doc 218 rule 2).
     const saveBtn = screen.getByRole('button', { name: /save/i });
     expect(saveBtn).toBeDisabled();
 
-    // Modify a field to make it dirty
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'Global Privacy Policy V2 Updated');
-    expect(saveBtn).not.toBeDisabled();
+    // Feature 217: a save writes the whole authored content, not a filled `data` bag.
+    const updated = {
+      schema: {},
+      variants: {
+        default: { type: 'Form', label: 'Global Privacy Policy V2 Updated', elements: [] },
+      },
+    };
+    fireEvent.change(editor, { target: { value: JSON.stringify(updated, null, 2) } });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
 
-    // Click Save
     await userEvent.click(saveBtn);
 
-    // Verify PATCH request was sent
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({
-          data: {
-            title: 'Global Privacy Policy V2 Updated',
-            body: 'V2 draft agreement content.',
-          },
-          title: 'Global Privacy Policy V2 Updated',
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ content: updated }),
         }),
-      }),
+      ),
     );
   });
 
-  it('Should allow publishing a draft version', async () => {
-    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse,
-    });
+  it('allows publishing a draft version', async () => {
+    const fetchMock = setupMocks();
     renderApp('/admin/service-agreements/g1');
 
     // Wait for Publish button to ensure editable state
@@ -190,19 +349,18 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('Should allow creating a new version draft from a published version', async () => {
+  it('allows creating a new version draft from a published version', async () => {
     // Mock where version 2 is already published so we can create a new version (v3)
     const publishedResponse = {
-      ...serviceResponse,
+      ...initialDetailResponse,
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
       versions: [
-        serviceResponse.versions[0],
-        { ...serviceResponse.versions[1], status: 'published', publishedAt: ISO },
+        initialDetailResponse.versions[0],
+        { ...initialDetailResponse.versions[1], status: 'published', publishedAt: ISO },
       ],
     };
-    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse: publishedResponse,
-    });
+    const fetchMock = setupMocks(publishedResponse);
     renderApp('/admin/service-agreements/g1');
 
     // Wait for "New version" button to ensure view has loaded in non-editable published state
@@ -225,12 +383,15 @@ describe('AgreementDetail Component Test Suite', () => {
     );
   });
 
-  it('Should cover save and publish error branches when no version is selected', async () => {
+  it('covers save and publish error branches when no version is selected', async () => {
     // Render with empty versions list
-    mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse: { ...serviceResponse, versions: [] },
+    setupMocks({
+      ...initialDetailResponse,
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
+      versions: [],
     });
+
     renderApp('/admin/service-agreements/g1');
 
     // Wait for the render/query to load
@@ -247,25 +408,22 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(saveOpt).toBeDefined();
     expect(publishOpt).toBeDefined();
 
-    expect(() => saveOpt.mutationFn()).toThrow('No version selected');
+    expect(() => saveOpt.mutationFn(null)).toThrow('No version selected');
     expect(() => publishOpt.mutationFn()).toThrow('No version selected');
   });
 
-  it('Should render workspace scoped agreement details without global badge', async () => {
+  it('renders workspace scoped agreement details without global badge', async () => {
     const workspaceResponse = {
-      ...serviceResponse,
+      ...initialDetailResponse,
       agreement: {
         id: 'g1',
         workspaceId: 'w1',
         title: 'Workspace TOS',
-        kind: 'service-agreement',
+        type: 'services.service-agreement',
         createdAt: ISO,
       },
     };
-    mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse: workspaceResponse,
-    });
+    setupMocks(workspaceResponse);
     renderApp('/app/riverton/service-agreements/g1');
 
     // Wait for workspace details
@@ -282,27 +440,39 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(backLinks[0]).toHaveAttribute('href', '/app/riverton/service-agreements');
   });
 
-  it('Should show error banner when saving fails, and render spinner during pending mutations', async () => {
+  it('shows error banner when saving fails, and renders spinner during pending mutations', async () => {
     let resolvePut!: (v: any) => void;
     const putPromise = new Promise((resolve) => {
       resolvePut = resolve;
     });
-    mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      putPromise,
-      serviceResponse,
-    });
+
+    const fetchMock = setupMocks();
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/service-agreements/g1/versions/v2') && method === 'PATCH') {
+        await putPromise;
+        return new Response(null, { status: 500 });
+      }
+      return fetchMock(input, init);
+    }) as any;
 
     renderApp('/admin/service-agreements/g1');
 
     // Wait for form to load
     const saveBtn = await screen.findByRole('button', { name: /save/i }, { timeout: 10000 });
 
-    // Make form dirty by typing in mock editor title input
-    const titleInput = screen.getByLabelText('Title');
-    await userEvent.type(titleInput, '!');
+    // Make the editor dirty.
+    fireEvent.change(screen.getByLabelText('document'), {
+      target: {
+        value: JSON.stringify({
+          schema: {},
+          variants: { default: { type: 'Form', elements: [] } },
+        }),
+      },
+    });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
 
-    // Click save
     await userEvent.click(saveBtn);
 
     // Expect save button to be disabled and show spinner (busy)
@@ -316,27 +486,44 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Request failed');
   });
 
-  it('Should show read-only view for non-admin member, empty services fallback, and title undefined branch', async () => {
+  it('shows a read-only view for a non-admin member on a global agreement', async () => {
     const staffResponse = {
-      ...serviceResponse,
+      ...initialDetailResponse,
       agreement: {
-        ...serviceResponse.agreement,
+        ...initialDetailResponse.agreement,
         workspaceId: null, // represents global agreement
       },
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
       versions: [
-        serviceResponse.versions[0],
-        { ...serviceResponse.versions[1], data: { body: 'no title' } },
+        initialDetailResponse.versions[0],
+        // A version whose content carries no root label → no generated title.
+        {
+          ...initialDetailResponse.versions[1],
+          title: null,
+          content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
+        },
       ],
-      services: [],
     };
 
     // Setup mock auth as staff member
-    const mockUser = { ...authedUser, roles: ['staff'] };
-    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      user: mockUser,
-      serviceResponse: staffResponse,
-    });
+    mockUser = { ...authedUser, roles: ['staff'] };
+    const base = mockAuth(mockUser, { workspaces: [riverton] });
+    let patchUrl = '';
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/v1/service-agreements/g1/versions/v2')) {
+        patchUrl = url;
+        return json({ id: 'v2', content: {} });
+      }
+      if (url.includes('/v1/service-agreements/g1')) {
+        return json(staffResponse);
+      }
+      if (url.includes('/notifications')) {
+        return json({});
+      }
+      return (base as any)(input, init);
+    }) as any;
 
     renderApp('/app/riverton/service-agreements/g1');
 
@@ -347,38 +534,32 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /publish/i })).not.toBeInTheDocument();
 
-    // Verify empty services fallback is rendered
-    expect(screen.getByText(/Not attached to any service yet/i)).toBeInTheDocument();
+    // Feature 217: there is no "Associated services" section any more.
+    expect(screen.queryByText(/Not attached to any service yet/i)).toBeNull();
 
-    // Now, let's call the captured save mutation options manually to cover `formData.title` undefined branch!
+    // Call the captured save mutation directly to cover the content-parse branch.
     const saveOpt = capturedOptionsList.find((o) =>
       o.mutationFn?.toString().includes('updateAgreementDraft'),
     );
     expect(saveOpt).toBeDefined();
 
-    await saveOpt.mutationFn();
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
-      expect.anything(),
-    );
+    await saveOpt.mutationFn({ schema: {}, variants: { default: { type: 'Form', elements: [] } } });
+    expect(patchUrl).toContain('/v1/service-agreements/g1/versions/v2');
   });
 
-  it('Should disable publish button and render spinner when publish is pending', async () => {
+  it('disables publish button and renders spinner when publish is pending', async () => {
     let resolvePublish!: (v: any) => void;
     const publishPromise = new Promise((resolve) => {
       resolvePublish = resolve;
     });
 
-    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse,
-    });
+    const fetchMock = setupMocks();
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
       if (url.includes('/versions/v2/publish') && method === 'POST') {
         await publishPromise;
-        return jsonResponse({ id: 'v2', status: 'published' });
+        return json({ id: 'v2', status: 'published' });
       }
       return fetchMock(input, init);
     }) as any;
@@ -403,21 +584,13 @@ describe('AgreementDetail Component Test Suite', () => {
     });
   });
 
-  it('Should cover user undefined branch', async () => {
-    mockServiceAgreementsBff(serviceAgreement, {
-      testFile: 'agreement-detail.test',
-      serviceResponse,
-    });
-    const useAuthSpy = vi.spyOn(authModule, 'useAuth').mockReturnValue({
-      data: undefined,
-    } as any);
-
+  it('covers user undefined branch', async () => {
+    mockUser = undefined;
+    setupMocks();
     renderApp('/app/riverton/service-agreements/g1');
     // Wait for the render/query to load
     await screen.findByRole('heading', { name: 'Global Privacy Policy' }, { timeout: 10000 });
     // It should render successfully in read-only mode
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
-
-    useAuthSpy.mockRestore();
   });
 });

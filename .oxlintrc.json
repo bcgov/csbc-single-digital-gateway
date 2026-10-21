@@ -15,11 +15,15 @@
     "node_modules/**",
     "coverage/**",
     ".turbo/**",
-    "**/routeTree.gen.ts"
+    "**/routeTree.gen.ts",
+    "design_handoff_*/**"
   ],
   "rules": {
     "no-extraneous-class": ["warn", { "allowWithDecorator": true }],
-    "no-underscore-dangle": ["warn", { "allow": ["__APP_CONFIG__", "__UI_SRC__"] }]
+    "no-underscore-dangle": [
+      "warn",
+      { "allow": ["__APP_CONFIG__", "__UI_SRC__", "_getDragOffset"] }
+    ]
   },
   "overrides": [
     {

@@ -17,3 +17,6 @@ charts
 .mdd
 CLAUDE.md
 CLAUDE.local.md
+
+# Vendor design handoffs — static mockups, not source (doc 199)
+design_handoff_*/

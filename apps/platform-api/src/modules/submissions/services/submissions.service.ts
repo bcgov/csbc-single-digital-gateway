@@ -2,9 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import {
   type Database,
-  documentReferences,
   documentVersions,
-  documents,
   reviews,
   submissionVersions,
   submissions,
@@ -26,7 +24,7 @@ import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import {
   isStaffVisibleSubmission,
-  normalizeFormStructure,
+  normalizeContent,
   submissionReference,
   submissionStatusLabel,
 } from '../util/format';
@@ -81,13 +79,14 @@ export class SubmissionsService {
     await this.requireMembership(userId, query.workspaceId);
     // Join the submission's LATEST version (max version per submission; the pair is unique).
     const latestVersion = sql`(select max(sv2.version) from submission_versions sv2 where sv2.submission_id = ${submissions.id})`;
-    // The single service that references this submission's form version as an application method.
-    const serviceIdExpr = sql<
+    // Feature 217: the owning SERVICE of a submission used to be derived through
+    // `document_references` (the service version that referenced this form version as an
+    // application method). References are gone, so a submission is now identified by its FORM
+    // alone — search and the list columns no longer reach a service.
+    // The form's title — GENERATED on the submitted version (feature 217).
+    const formTitleExpr = sql<
       string | null
-    >`(select dr.owner_document_id from ${documentReferences} dr where dr.target_version_id = ${submissions.documentVersionId} and dr.relation = 'application_form' limit 1)`;
-    const serviceTitleExpr = sql<
-      string | null
-    >`(select d2.title from ${documentReferences} dr join ${documents} d2 on d2.id = dr.owner_document_id where dr.target_version_id = ${submissions.documentVersionId} and dr.relation = 'application_form' limit 1)`;
+    >`(select dv.title from ${documentVersions} dv where dv.id = ${submissions.documentVersionId})`;
     // The human reference (matches `submissionReference`): UTC YYYYMMDD + last-4 id hex, upper.
     const referenceExpr = sql`(to_char(${submissions.createdAt} at time zone 'UTC', 'YYYYMMDD') || '-' || upper(right(replace(${submissions.id}::text, '-', ''), 4)))`;
 
@@ -104,7 +103,7 @@ export class SubmissionsService {
       const pattern = `%${q}%`;
       const search = or(
         ilike(users.displayName, pattern),
-        sql`${serviceTitleExpr} ilike ${pattern}`,
+        sql`${formTitleExpr} ilike ${pattern}`,
         sql`${referenceExpr} ilike ${pattern}`,
       );
       if (search) {
@@ -130,16 +129,13 @@ export class SubmissionsService {
           status: submissionVersions.status,
           submittedAt: submissionVersions.submittedAt,
           versionUpdatedAt: submissionVersions.updatedAt,
-          serviceId: serviceIdExpr,
-          serviceTitle: serviceTitleExpr,
-          formTitle: documents.title,
+          formTitle: formTitleExpr,
           applicantName: users.displayName,
           applicantEmail: users.email,
         })
         .from(submissions)
         .innerJoin(submissionVersions, latestJoin)
         .leftJoin(users, eq(users.id, submissions.userId))
-        .leftJoin(documents, eq(documents.id, submissions.documentId))
         .where(where)
         .orderBy(direction(sortExpr), desc(submissions.createdAt))
         .limit(query.limit)
@@ -153,10 +149,8 @@ export class SubmissionsService {
     ]);
     const items = rows.map((row) => ({
       id: row.sub.id,
-      serviceId: row.serviceId ?? '',
-      serviceTitle: row.serviceTitle ?? 'Service',
       formId: row.sub.documentId,
-      formTitle: row.formTitle ?? 'Form',
+      formTitle: row.formTitle ?? null,
       applicantName: row.applicantName ?? 'Anonymous',
       applicantEmail: row.applicantEmail ?? null,
       status: row.status,
@@ -184,16 +178,13 @@ export class SubmissionsService {
       .orderBy(desc(submissionVersions.version))
       .limit(1);
     const [form] = await this.db
-      .select({ kind: documents.kind, structure: documentVersions.schema })
+      .select({ content: documentVersions.content })
       .from(documentVersions)
-      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
       .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
-    const kind = form?.kind ?? 'basic-form';
     return {
       ...summary,
-      kind,
-      structure: normalizeFormStructure(kind, form?.structure ?? {}),
+      structure: normalizeContent(form?.content ?? {}),
       data: version?.data ?? {},
       reviews: await this.reviewsFor(sub.id),
     };
@@ -275,28 +266,10 @@ export class SubmissionsService {
   }
 
   private async toSummary(sub: SubmissionRow): Promise<SubmissionSummary | null> {
-    const refRows = await this.db
-      .select({ serviceId: documentReferences.ownerDocumentId })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, sub.documentVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      )
-      .limit(1);
-    const serviceId = refRows[0]?.serviceId ?? '';
-    const [svc] = serviceId
-      ? await this.db
-          .select({ title: documents.title })
-          .from(documents)
-          .where(eq(documents.id, serviceId))
-          .limit(1)
-      : [];
     const [form] = await this.db
-      .select({ title: documents.title })
-      .from(documents)
-      .where(eq(documents.id, sub.documentId))
+      .select({ title: documentVersions.title })
+      .from(documentVersions)
+      .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
     const applicant = sub.userId
       ? (
@@ -311,10 +284,8 @@ export class SubmissionsService {
     const status: SubmissionStatus = version?.status ?? 'draft';
     return {
       id: sub.id,
-      serviceId,
-      serviceTitle: svc?.title ?? 'Service',
       formId: sub.documentId,
-      formTitle: form?.title ?? 'Form',
+      formTitle: form?.title ?? null,
       applicantName: applicant?.displayName ?? 'Anonymous',
       applicantEmail: applicant?.email ?? null,
       status,

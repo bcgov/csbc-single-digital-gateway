@@ -1,81 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import {
-  serviceDataString,
-  definitionSchemas,
-} from '../../../../../src/modules/catalog/util/format';
+import { contentSchemas } from '../../../../../src/modules/catalog/util/format';
 
-describe('catalog format utils', () => {
-  describe('serviceDataString', () => {
-    it('Should return the custom value from data record if it is a valid non-empty string', () => {
-      const data = { title: 'Custom Title', description: 'Custom Description' };
-      expect(serviceDataString(data, 'title', 'Fallback')).toBe('Custom Title');
-      expect(serviceDataString(data, 'description', 'Fallback')).toBe('Custom Description');
-    });
+/**
+ * Feature 217: `serviceDataString` (read a display string out of the version `data`, falling back
+ * to the document column) and `definitionSchemas` (split the bound TYPE version's `definition`) are
+ * both gone. Title and description are generated columns now, and a service renders from its OWN
+ * version content.
+ */
+describe('contentSchemas', () => {
+  it('splits a content into its schema, variants and answers', () => {
+    const content = {
+      schema: { type: 'object', properties: { name: { type: 'string' } } },
+      variants: { default: { type: 'Form', elements: [] }, brief: { type: 'Form', elements: [] } },
+      data: { name: 'Ada' },
+    };
 
-    it('Should return the fallback if the key is missing in the data record', () => {
-      const data = { otherKey: 'value' };
-      expect(serviceDataString(data, 'title', 'Fallback Title')).toBe('Fallback Title');
-    });
-
-    it('Should return the fallback if the value in data record is not a string', () => {
-      const data = { title: 123, description: true, tags: ['health'] };
-      expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
-      expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
-      expect(serviceDataString(data, 'tags', 'Fallback')).toBe('Fallback');
-    });
-
-    it('Should return the fallback if the value in data record is null or undefined', () => {
-      const data = { title: null, description: undefined };
-      expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
-      expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
-    });
-
-    it('Should return the fallback if the value is empty or only whitespace', () => {
-      const data = { title: '', description: '   ' };
-      expect(serviceDataString(data, 'title', 'Fallback')).toBe('Fallback');
-      expect(serviceDataString(data, 'description', 'Fallback')).toBe('Fallback');
-    });
+    expect(contentSchemas(content)).toEqual(content);
   });
 
-  describe('definitionSchemas', () => {
-    it('Should return empty schema and uischema if definition is undefined or null', () => {
-      expect(definitionSchemas(undefined)).toEqual({ schema: {}, uischema: {} });
-      expect(definitionSchemas(null)).toEqual({ schema: {}, uischema: {} });
+  it('falls back to an empty schema and an empty default variant when either half is absent', () => {
+    const empty = { schema: {}, variants: { default: {} }, data: {} };
+    expect(contentSchemas({})).toEqual(empty);
+    expect(contentSchemas({ schema: { type: 'object' } })).toEqual(empty);
+    // Doc 275: the old `{ schema, uischema }` shape is no longer read.
+    expect(contentSchemas({ schema: { type: 'object' }, uischema: { type: 'Form' } })).toEqual(
+      empty,
+    );
+  });
+
+  it('tolerates null and undefined rather than throwing', () => {
+    expect(contentSchemas(null)).toEqual({ schema: {}, variants: { default: {} }, data: {} });
+    expect(contentSchemas(undefined)).toEqual({ schema: {}, variants: { default: {} }, data: {} });
+  });
+
+  it('gives no answers when the content has none', () => {
+    expect(contentSchemas({ schema: {}, variants: { default: {} } }).data).toEqual({});
+  });
+
+  it('ignores keys that are neither schema, variants nor data', () => {
+    const result = contentSchemas({
+      schema: {},
+      variants: { default: {} },
+      data: {},
+      capabilities: { elements: {} },
     });
 
-    it('Should return schema and uischema from definition if both are present', () => {
-      const definition = {
-        schema: { type: 'object', properties: { name: { type: 'string' } } },
-        uischema: { type: 'VerticalLayout', elements: [] },
-      };
-      expect(definitionSchemas(definition)).toEqual({
-        schema: { type: 'object', properties: { name: { type: 'string' } } },
-        uischema: { type: 'VerticalLayout', elements: [] },
-      });
-    });
-
-    it('Should fall back to empty objects if schema or uischema are missing in definition', () => {
-      const definitionOnlySchema = {
-        schema: { type: 'object' },
-      };
-      expect(definitionSchemas(definitionOnlySchema)).toEqual({
-        schema: { type: 'object' },
-        uischema: {},
-      });
-
-      const definitionOnlyUischema = {
-        uischema: { type: 'VerticalLayout' },
-      };
-      expect(definitionSchemas(definitionOnlyUischema)).toEqual({
-        schema: {},
-        uischema: { type: 'VerticalLayout' },
-      });
-
-      const emptyDefinition = {};
-      expect(definitionSchemas(emptyDefinition)).toEqual({
-        schema: {},
-        uischema: {},
-      });
-    });
+    expect(Object.keys(result).toSorted()).toEqual(['data', 'schema', 'variants']);
   });
 });

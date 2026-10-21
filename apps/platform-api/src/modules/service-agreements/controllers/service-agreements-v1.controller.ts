@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -16,7 +16,7 @@ import {
 import { type Actor, ServiceAgreementsService } from '../services/service-agreements.service';
 
 /**
- * `/v1/service-agreements` — staff-facing consent documents (kind 'service-agreement').
+ * `/v1/service-agreements` — staff-facing consent documents (type 'services.service-agreement').
  * Protected-by-default (session). Workspace-vs-global authorization is role-aware and lives in
  * the service; the controller only derives the actor's admin flag from the session roles.
  */
@@ -61,6 +61,27 @@ export class ServiceAgreementsV1Controller {
     @Body() body: UpdateServiceAgreementDto,
   ) {
     return this.agreements.updateDraft(this.actor(user), id, versionId, body);
+  }
+
+  /**
+   * Doc 225: deletes the whole agreement. Refused with a reason when anyone has consented to any of
+   * its versions, or a workspace defaults to it.
+   */
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<void> {
+    return this.agreements.remove(this.actor(user), id);
+  }
+
+  /** Doc 225: deletes ONE version — never the last, never a consented one. */
+  @Delete(':id/versions/:versionId')
+  @HttpCode(204)
+  removeVersion(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ): Promise<void> {
+    return this.agreements.removeVersion(this.actor(user), id, versionId);
   }
 
   @Post(':id/versions')

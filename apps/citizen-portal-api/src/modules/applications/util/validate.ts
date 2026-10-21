@@ -1,5 +1,6 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
+import { documentContentOf } from '@repo/documents/content';
 
 // `strict: false` — JSONForms schemas carry presentation keywords Ajv's strict mode would reject.
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -20,31 +21,20 @@ function validateAgainst(schema: Record<string, unknown>, data: unknown): string
   );
 }
 
-interface MultiStagePage {
-  schema?: Record<string, unknown>;
-  uischema?: Record<string, unknown>;
-}
-interface MultiStageStage {
-  pages?: MultiStagePage[];
-}
-
 /**
- * Validate submitted answers against the form's JSON Schema(s). Basic forms validate against the
- * single schema; multi-stage forms validate against every page's schema (extra properties from
- * other pages are ignored, so the shared `data` object validates cleanly per page).
+ * Validate submitted answers against the form's JSON Schema.
+ *
+ * Feature 217: a form is one `{ schema, uischema }` document, so there is one schema — a staged
+ * application is a `Flow` ROOT inside the uischema, not a separate `{ stages: [{ pages }] }` shape
+ * with a schema per page. Per-stage validation of a Flow is the runner's job (`@repo/forms`), not
+ * this module's.
  */
 export function validateSubmission(
-  kind: string,
   structure: Record<string, unknown>,
   data: unknown,
 ): ValidationResult {
-  const schemas: Array<Record<string, unknown>> =
-    kind === 'multi-stage-form'
-      ? ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
-          (stage.pages ?? []).map((page) => page.schema ?? {}),
-        )
-      : [(structure['schema'] as Record<string, unknown> | undefined) ?? {}];
-  const errors = schemas.flatMap((schema) => validateAgainst(schema, data));
+  const schema = (structure['schema'] as Record<string, unknown> | undefined) ?? {};
+  const errors = validateAgainst(schema, data);
   return { valid: errors.length === 0, errors };
 }
 
@@ -91,20 +81,13 @@ function addressKeysFromUischema(uischema: Record<string, unknown> | undefined):
 /**
  * Find every address field in the form + the citizen's entered country/postal for it. Only entries
  * with BOTH a country and a non-empty postal are returned (empty postal is allowed — postal
- * requiredness is not enforced here). Basic forms carry one uischema; multi-stage forms carry one per
- * page.
+ * requiredness is not enforced here). One uischema tree, walked fully (feature 217).
  */
 export function collectAddressPostals(
-  kind: string,
   structure: Record<string, unknown>,
   data: unknown,
 ): AddressPostalEntry[] {
-  const uischemas: Array<Record<string, unknown> | undefined> =
-    kind === 'multi-stage-form'
-      ? ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
-          (stage.pages ?? []).map((page) => page.uischema),
-        )
-      : [structure['uischema'] as Record<string, unknown> | undefined];
+  const uischemas = variantUischemas(structure);
   const record = asRecord(data) ?? {};
   const keys = [...new Set(uischemas.flatMap(addressKeysFromUischema))];
   return keys.flatMap((key): AddressPostalEntry[] => {
@@ -196,17 +179,9 @@ function decimalConstraintsFromUischema(
   return constraints;
 }
 
-/** Every number field with a decimal-places limit in the form (basic = one uischema; multi-stage = one per page). */
-export function collectDecimalConstraints(
-  kind: string,
-  structure: Record<string, unknown>,
-): DecimalConstraint[] {
-  const uischemas: Array<Record<string, unknown> | undefined> =
-    kind === 'multi-stage-form'
-      ? ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
-          (stage.pages ?? []).map((page) => page.uischema),
-        )
-      : [structure['uischema'] as Record<string, unknown> | undefined];
+/** Every number field with a decimal-places limit in the form (one uischema tree, walked fully). */
+export function collectDecimalConstraints(structure: Record<string, unknown>): DecimalConstraint[] {
+  const uischemas = variantUischemas(structure);
   const byKey = new Map<string, DecimalConstraint>();
   for (const c of uischemas.flatMap(decimalConstraintsFromUischema)) {
     byKey.set(c.key, c);
@@ -247,25 +222,22 @@ export interface AddressLockConstraint {
   expected: string;
 }
 
-/** The (schema, uischema) pairs of a form — one for a basic form, one per page for multi-stage. */
+/**
+ * The (schema, uischema) pairs of a form — one per VARIANT (doc 275), all over the one schema. A Funnel's Forms are
+ * nested `elements` inside each variant, and every collector below recurses into those. A field shown only in some
+ * variants is still validated: the answers are shared, so a value is checked whichever variant collected it.
+ */
 function schemaUischemaPairs(
-  kind: string,
   structure: Record<string, unknown>,
 ): Array<{ schema: Record<string, unknown>; uischema: Record<string, unknown> | undefined }> {
-  if (kind === 'multi-stage-form') {
-    return ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
-      (stage.pages ?? []).map((page) => ({
-        schema: page.schema ?? {},
-        uischema: page.uischema,
-      })),
-    );
-  }
-  return [
-    {
-      schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {},
-      uischema: structure['uischema'] as Record<string, unknown> | undefined,
-    },
-  ];
+  const schema = (structure['schema'] as Record<string, unknown> | undefined) ?? {};
+  return variantUischemas(structure).map((uischema) => ({ schema, uischema }));
+}
+
+/** Every variant's uischema of a `{ schema, variants }` structure (doc 275); none when it has no variants. */
+function variantUischemas(structure: Record<string, unknown>): Record<string, unknown>[] {
+  const content = documentContentOf(structure);
+  return content === null ? [] : Object.values(content.variants);
 }
 
 /** Recursively collect every address control's key + its per-sub-field option bag. */
@@ -296,12 +268,9 @@ function addressLockNodes(
  * schema carries no matching default yields NO constraint (fail-open, by design: the alternative is
  * a form no submission can ever satisfy).
  */
-export function collectAddressLocks(
-  kind: string,
-  structure: Record<string, unknown>,
-): AddressLockConstraint[] {
+export function collectAddressLocks(structure: Record<string, unknown>): AddressLockConstraint[] {
   const constraints: AddressLockConstraint[] = [];
-  for (const { schema, uischema } of schemaUischemaPairs(kind, structure)) {
+  for (const { schema, uischema } of schemaUischemaPairs(structure)) {
     const properties = asRecord(schema.properties) ?? {};
     for (const { key, fields } of addressLockNodes(uischema)) {
       const defaults = asRecord(asRecord(properties[key])?.default) ?? {};

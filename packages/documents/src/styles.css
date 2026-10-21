@@ -1,0 +1,376 @@
+/*
+ * @repo/documents stylesheet — import once from the consuming app's CSS entry:
+ *   @import '@repo/documents/styles.css';
+ * Without it, the Document Studio canvas renders with no xyflow styles, and studio layouts (doc 236) with no gridstack
+ * positioning, silently.
+ */
+@import 'gridstack/dist/gridstack.css';
+@import '@xyflow/react/dist/style.css';
+
+/*
+ * Document Studio focus fades (doc 233). OPACITY ONLY: tw-animate's `animate-in` also animates `transform`, which is
+ * how xyflow positions a node, so on a node it throws the node to the canvas origin for the animation's length.
+ */
+@keyframes document-studio-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes document-studio-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * Studio layouts (doc 236 rule 16): gridstack clips item content (`overflow: auto`), which would cut off the outline a
+ * selected or hovered element draws outside its box.
+ */
+.grid-stack[data-slot='studio-vertical-layout'] > .grid-stack-item > .grid-stack-item-content {
+  overflow: visible;
+}
+
+/*
+ * Only a grid's OWN items animate (doc 236 bug B3). gridstack's `.grid-stack-animate .grid-stack-item` is a DESCENDANT
+ * selector: an animating root grid transitioned a remounted nested grid's brand-new items from `top: 0`, so every item
+ * slid down from the top of its layout after an insert. Higher specificity than gridstack's rules, so it wins.
+ */
+.grid-stack[data-slot='studio-vertical-layout'] .grid-stack-item {
+  transition: none;
+}
+
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item {
+  transition:
+    left 0.3s,
+    right 0.3s,
+    top 0.3s,
+    height 0.3s,
+    width 0.3s;
+}
+
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.ui-draggable-dragging,
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.grid-stack-placeholder {
+  transition: none;
+}
+
+/*
+ * While an item is dragged (doc 236 rule 23b) the cursor is the default pointer, never an inline-editable Heading's text
+ * cursor. gridstack gives the dragged item `pointer-events: none`, so the cursor comes from whatever is beneath it —
+ * often another Heading — and marks the grid `grid-stack-dragging` for the drag. Unlayered, so it beats `cursor-text`.
+ */
+.grid-stack[data-slot='studio-vertical-layout'].grid-stack-dragging,
+.grid-stack[data-slot='studio-vertical-layout'].grid-stack-dragging * {
+  cursor: default;
+}
+
+/*
+ * No outer padding on a Form's ROOT layout (doc 236 rule 27b): gridstack insets every item's content by its margin on
+ * all four sides, so the grid's edges carried half a gap. gridstack sets the margins as variables on the grid itself,
+ * so it pulls itself out by exactly them — only the gaps BETWEEN items remain. Only the Form's own grid: a nested
+ * layout pulled outwards would draw its edges outside its wrapper's selection ring.
+ */
+[data-slot='form'] > .grid-stack[data-slot='studio-vertical-layout'] {
+  margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))
+    calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));
+}
+
+/*
+ * A dragged studio item (doc 243 rule 12b). The grab offset clamp puts the item's TOP on the cursor so gridstack's maths
+ * follows the cursor; its content is translated back up by the grab distance, so the field stays where it was grabbed.
+ * gridstack measures the item's own box, which a child's translate never moves. Doc 260 rule 12: the clamp puts the
+ * item's LEFT on the cursor too, so the content goes back horizontally as well.
+ */
+.grid-stack[data-slot='studio-vertical-layout']
+  > .grid-stack-item.ui-draggable-dragging
+  > .grid-stack-item-content {
+  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);
+}
+
+/*
+ * Nothing inside a dragged item takes the pointer (doc 243 bug B1). gridstack gives the item `pointer-events: none`, but
+ * studio wrappers opt back in with `pointer-events-auto`, so the pointer landed on the item being dragged and the grid
+ * beneath never saw `mouseenter` — only a field's padding (no opt-in) let a drag through. Unlayered and important, so it
+ * beats the layered utility.
+ */
+.grid-stack-item.ui-draggable-dragging,
+.grid-stack-item.ui-draggable-dragging * {
+  pointer-events: none !important;
+}
+
+/*
+ * A dragged item stays visible when the hover-switch hides the tab it came from (doc 272 rule 6e). Every tab panel stays
+ * mounted, an inactive one `visibility: hidden` — and gridstack drags the REAL item, which lives in that panel, so it
+ * vanished from the cursor until the drag went back over its own tab. `visibility` is the one hiding property a
+ * descendant can override; its own content inherits it back.
+ */
+.grid-stack-item.ui-draggable-dragging {
+  visibility: visible;
+}
+
+/*
+ * Every tab's grid keeps a floor height (doc 272 rule 6f): an empty tab — or one whose only item is being dragged out —
+ * otherwise shrank to its empty-zone row and was hard to drop into after a hover-switch. A stylesheet `min-height`
+ * beats the inline `height` gridstack sets on an unlinked grid, and gridstack's own check reads it.
+ */
+[data-slot='studio-tabs']
+  [data-slot='tab-body']
+  > [data-slot='studio-element']
+  > :is([data-slot='studio-vertical-layout'], [data-slot='studio-row']) {
+  min-height: 8rem;
+}
+
+/*
+ * Every card slot's grid keeps a floor height (doc 273 B1): a slot whose only item was dragged out collapsed to nothing,
+ * so the drag could never come back to it and fell through to the page grid under the Card.
+ */
+[data-slot='card-slot'] > [data-slot='studio-element'] > [data-slot='studio-vertical-layout'] {
+  min-height: 4rem;
+}
+
+/*
+ * Studio Grids (doc 260 rule 14), the same treatment as studio layouts above under their own slot: content may draw its
+ * outline outside its box; only a grid's own items animate; the default cursor while dragging. A Grid's cells keep
+ * their content at the top, and the resize handle sits inside the item's margin.
+ */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .grid-stack-item-content {
+  overflow: visible;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row']) .grid-stack-item {
+  transition: none;
+}
+
+.grid-stack-animate:is([data-slot='studio-grid'], [data-slot='studio-row']) > .grid-stack-item {
+  transition:
+    left 0.3s,
+    right 0.3s,
+    top 0.3s,
+    height 0.3s,
+    width 0.3s;
+}
+
+.grid-stack-animate:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item.ui-draggable-dragging,
+.grid-stack-animate:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item.grid-stack-placeholder {
+  transition: none;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row']).grid-stack-dragging,
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row']).grid-stack-dragging * {
+  cursor: default;
+}
+
+/*
+ * A dragged item's content goes back to where it was grabbed, in BOTH axes (doc 260 rule 12): the grab offset clamp puts
+ * the item's top-left on the cursor. Every studio grid — a vertical layout's item also has its left on the cursor now.
+ */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item.ui-draggable-dragging
+  > .grid-stack-item-content {
+  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);
+}
+
+/*
+ * A Grid child resizes from its edges and corners (doc 260 rule 10b). Every handle starts AT the element's frame — 4px
+ * outside its content box, where its outline and selection ring sit — and reaches inward: the visible border is exactly
+ * where grabbing starts, and nothing outside it takes the pointer, so the gap around a child still selects the Grid.
+ * Only the corners draw anything: a bracket (`::after`, which never takes the pointer) on the frame's corner. Shown
+ * while the item is hovered, its element selected, or it is resizing.
+ */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-handle {
+  width: 12px;
+  height: 12px;
+  background-image: none;
+  transform: none;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 0 solid var(--color-ring);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-nw {
+  top: calc(var(--gs-item-margin-top) - 4px);
+  left: calc(var(--gs-item-margin-left) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-nw::after {
+  border-top-width: 3px;
+  border-left-width: 3px;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-ne {
+  top: calc(var(--gs-item-margin-top) - 4px);
+  right: calc(var(--gs-item-margin-right) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-ne::after {
+  border-top-width: 3px;
+  border-right-width: 3px;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-se {
+  bottom: calc(var(--gs-item-margin-bottom) - 4px);
+  right: calc(var(--gs-item-margin-right) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-se::after {
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-sw {
+  bottom: calc(var(--gs-item-margin-bottom) - 4px);
+  left: calc(var(--gs-item-margin-left) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-sw::after {
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+}
+
+/* The edges: an 8px strip from the frame inward, between the corners, drawing nothing — only the cursor says so. */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-n,
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-s {
+  width: auto;
+  height: 8px;
+  left: calc(var(--gs-item-margin-left) + 8px);
+  right: calc(var(--gs-item-margin-right) + 8px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-n {
+  top: calc(var(--gs-item-margin-top) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-s {
+  bottom: calc(var(--gs-item-margin-bottom) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-e,
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-w {
+  width: 8px;
+  height: auto;
+  top: calc(var(--gs-item-margin-top) + 8px);
+  bottom: calc(var(--gs-item-margin-bottom) + 8px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-e {
+  right: calc(var(--gs-item-margin-right) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .ui-resizable-w {
+  left: calc(var(--gs-item-margin-left) - 4px);
+}
+
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item:hover
+  > .ui-resizable-handle::after,
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item:has(> .grid-stack-item-content > [data-selected])
+  > .ui-resizable-handle::after,
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item.ui-resizable-resizing
+  > .ui-resizable-handle::after {
+  opacity: 1;
+}
+
+/*
+ * A Grid child's frame fills its cell (doc 260 rule 9b): rows are one height, so a short element would otherwise sit in a
+ * band of blank space that reads as padding. `min-height` — content taller than the row still grows it, and the grid
+ * re-measures. Its natural height is read from what flows inside it (grid-natural-height.ts), never from this box.
+ */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-item
+  > .grid-stack-item-content
+  > [data-slot='studio-element'] {
+  min-height: 100%;
+  /* Doc 260 rule 32: the content aligned inside the frame, by the item's resolved alignment (studio-grid.tsx). */
+  display: flex;
+  flex-direction: column;
+  justify-content: var(--grid-align-y, flex-start);
+  align-items: var(--grid-align-x, stretch);
+}
+
+/*
+ * A Grid's drop zones are the size of an element's FRAME (doc 260 rule 17d), which sits 4px outside its content box
+ * (`outline-offset-4`): gridstack's placeholder fills only the content box, so children looked bigger than the cell
+ * they were dropped on. The cell targets (grid-cells.tsx) are grown the same 4px.
+ */
+.grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])
+  > .grid-stack-placeholder
+  > .placeholder-content {
+  top: calc(var(--gs-item-margin-top) - 4px);
+  right: calc(var(--gs-item-margin-right) - 4px);
+  bottom: calc(var(--gs-item-margin-bottom) - 4px);
+  left: calc(var(--gs-item-margin-left) - 4px);
+}
+
+/*
+ * A row child resizes from its LEFT and RIGHT edges only (doc 261 rule 8): the Grid's edge strips (above, shared through
+ * `:is(…)`) take the pointer from the frame inward, and each draws a short bar centred on its edge of the frame instead
+ * of the Grid's corner brackets. Shown on hover, selection or resize by the shared visibility rule.
+ */
+.grid-stack[data-slot='studio-row']
+  > .grid-stack-item
+  > :is(.ui-resizable-e, .ui-resizable-w)::after {
+  inset: auto;
+  top: 50%;
+  width: 0;
+  height: 16px;
+  translate: 0 -50%;
+}
+
+.grid-stack[data-slot='studio-row'] > .grid-stack-item > .ui-resizable-e::after {
+  right: 0;
+  border-right-width: 3px;
+}
+
+.grid-stack[data-slot='studio-row'] > .grid-stack-item > .ui-resizable-w::after {
+  left: 0;
+  border-left-width: 3px;
+}

@@ -34,7 +34,7 @@ describe('ServiceAgreementsV1Controller', () => {
     it('Should create a service agreement', async () => {
       const body: CreateServiceAgreementDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-        data: { title: 'Agreement Title' },
+        title: 'Agreement Title',
       };
       const mockResult = { id: 'agreement-123', title: 'Agreement Title' };
       serviceMock.create.mockResolvedValue(mockResult);
@@ -74,11 +74,9 @@ describe('ServiceAgreementsV1Controller', () => {
   describe('updateDraft', () => {
     it('Should update a draft version of a service agreement', async () => {
       const body: UpdateServiceAgreementDto = {
-        title: 'New Title',
-        data: {
-          schema: { type: 'object' },
-          uischema: { type: 'VerticalLayout' },
-          isOptional: true,
+        content: {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: 'Form', elements: [], label: 'New Title' } },
         },
       };
       const mockResult = { id: 'version-123', version: 1 };

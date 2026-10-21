@@ -2,62 +2,57 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import {
   type Database,
   type Document,
-  documentReferences,
+  type DocumentVersion,
   documentVersions,
   documents,
   submissions,
   workspaceMembers,
+  DOCUMENT_TYPE,
 } from '@repo/database';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { deletableFor, SERVICE_HAS_SUBMISSIONS } from './service-deletable';
+import { TemplateResolver, type TemplateContent } from '../../templates/services/template.resolver';
 import {
   type CreateServiceInput,
-  type FormCatalogEntry,
   type ListServicesPageQuery,
   type ServiceDetail,
   type ServiceListResponse,
-  type ServiceSummary,
   type ServiceWithVersions,
   toServiceDto,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
-import { insertApplication, resolveApplications } from '../util/applications';
+import { rebuildLinksTx } from '../util/document-links';
+import { currentVersion, listServicesPage } from '../util/services-list';
 import { reactivateServiceTx } from '../util/version-copy';
-import { ServiceTypeResolver } from './service-type.resolver';
-
-function summarizeStatus(
-  versions: Array<{ status: 'draft' | 'published' | 'archived' }>,
-): ServiceSummary['status'] {
-  if (versions.some((v) => v.status === 'published')) return 'published';
-  if (versions.some((v) => v.status === 'draft')) return 'draft';
-  if (versions.length > 0) return 'archived';
-  return 'none';
-}
+import { ServiceMethodLifecycle } from './service-method-lifecycle.service';
 
 @Injectable()
 export class ServicesService {
   constructor(
     @InjectDatabase() private readonly db: Database,
-    private readonly serviceType: ServiceTypeResolver,
+    private readonly templates: TemplateResolver,
+    private readonly lifecycle: ServiceMethodLifecycle,
   ) {}
 
   /**
-   * Composite create: the service document + its draft v1 (data) + any inline forms + application
-   * references, all in ONE transaction. Applications are pre-validated before the write opens.
+   * Create a service: the document + its draft v1, in one transaction. The draft's `content` is a
+   * COPY of the published Service template's schema and variants with the default variant's `label` set to the
+   * requested title (doc 275) — the GENERATED `document_versions.title` reads exactly that path, so there is no title column to
+   * keep in sync.
    */
   async create(userId: string, input: CreateServiceInput): Promise<ServiceWithVersions> {
     await this.requireMembership(userId, input.workspaceId);
-    const type = await this.serviceType.resolve();
-    // A new service can't be a reference target yet, so pass '' as the (non-matching) service id.
-    const resolved = await resolveApplications(this.db, '', input.workspaceId, input.applications);
+    const template = await this.templates.forCreate(DOCUMENT_TYPE.service, input.templateId);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
         .values({
-          typeId: type.typeId,
+          type: DOCUMENT_TYPE.service,
+          kind: 'document',
           workspaceId: input.workspaceId,
-          kind: 'service',
-          title: input.title,
+          templateId: template.templateId,
         })
         .returning();
       const doc = insertedDoc[0];
@@ -68,300 +63,133 @@ export class ServicesService {
         .insert(documentVersions)
         .values({
           documentId: doc.id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: 1,
-          data: { ...input.data, title: input.title },
+          templateId: template.templateId,
+          templateVersionId: template.templateVersionId,
+          versionNumber: 1,
+          // The template's schema and variants, the title on every variant (the title column reads default's).
+          content: withTitle({ schema: template.schema, variants: template.variants }, input.title),
         })
         .returning();
       const version = insertedVersion[0];
       if (version === undefined) {
         throw new Error('document version insert returned no row');
       }
-      const owner = {
-        ownerVersionId: version.id,
-        ownerDocumentId: doc.id,
-        workspaceId: input.workspaceId,
+      // Doc 290 rule 2: every content write rebuilds its links (a template's content references nothing yet).
+      await rebuildLinksTx(tx, version);
+      return {
+        service: toServiceDto(doc, version),
+        versions: [toServiceVersionDto(version)],
       };
-      for (const app of resolved) {
-        // Sequential by necessity — these writes share one transaction connection.
-        // eslint-disable-next-line no-await-in-loop
-        await insertApplication(tx, owner, app);
-      }
-      return { service: toServiceDto(doc), versions: [toServiceVersionDto(version)] };
     });
   }
 
-  /** The Service type's published form definition (schema/uischema) — for the create editor. */
-  async getServiceDefinition(): Promise<{
+  /** A published Service template's `{ schema, variants }` — for the create editor (docs 228, 275). */
+  async getServiceDefinition(templateId?: string): Promise<{
     schema: Record<string, unknown>;
-    uischema: Record<string, unknown>;
+    variants: TemplateContent['variants'];
   }> {
-    const type = await this.serviceType.resolve();
-    return { schema: type.schema, uischema: type.uischema };
+    const template = await this.templates.forCreate(DOCUMENT_TYPE.service, templateId);
+    return { schema: template.schema, variants: template.variants };
   }
 
-  /** The workspace's form documents (basic-form / multi-stage-form) + a version to reference. */
-  async listForms(userId: string, workspaceId: string): Promise<FormCatalogEntry[]> {
-    await this.requireMembership(userId, workspaceId);
-    const docs = await this.db
-      .select()
-      .from(documents)
-      .where(
-        and(
-          eq(documents.workspaceId, workspaceId),
-          inArray(documents.kind, ['basic-form', 'multi-stage-form']),
-        ),
-      )
-      .orderBy(desc(documents.createdAt));
-    const entries = await Promise.all(
-      docs.map(async (doc) => {
-        const versions = await this.db
-          .select({ id: documentVersions.id, status: documentVersions.status })
-          .from(documentVersions)
-          .where(eq(documentVersions.documentId, doc.id))
-          .orderBy(desc(documentVersions.version));
-        const chosen = versions.find((v) => v.status === 'published') ?? versions[0];
-        return chosen
-          ? { documentId: doc.id, versionId: chosen.id, title: doc.title, kind: doc.kind }
-          : null;
-      }),
-    );
-    return entries.filter((entry): entry is FormCatalogEntry => entry !== null);
-  }
-
-  /**
-   * List a workspace's services — paginated, sortable, searchable (initiative `staff-list-query`).
-   * Paging/sort/search run in SQL; the page's derived fields (status, version count, submissions) are
-   * computed in two batched follow-up queries (not per-row), so cost is bounded by the page size.
-   */
+  /** A workspace's services, paginated / sorted / searched (`util/services-list.ts`). Members only. */
   async list(userId: string, query: ListServicesPageQuery): Promise<ServiceListResponse> {
     await this.requireMembership(userId, query.workspaceId);
-    const type = await this.serviceType.resolve();
-    const q = query.q?.trim();
-    const search =
-      q !== undefined && q !== ''
-        ? or(ilike(documents.title, `%${q}%`), ilike(documents.description, `%${q}%`))
-        : undefined;
-    const where = and(
-      eq(documents.workspaceId, query.workspaceId),
-      eq(documents.typeId, type.typeId),
-      search,
-    );
-    // Derived status precedence for `sort: 'status'` — published(0) → draft(1) → archived(2) → none(3).
-    const statusRank = sql`(CASE
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'published') THEN 0
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'draft') THEN 1
-      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id}) THEN 2
-      ELSE 3 END)`;
-    const sortExpr =
-      query.sort === 'title'
-        ? documents.title
-        : query.sort === 'status'
-          ? statusRank
-          : documents.updatedAt;
-    const direction = query.order === 'asc' ? asc : desc;
-    const [docs, totals] = await Promise.all([
-      this.db
-        .select()
-        .from(documents)
-        .where(where)
-        .orderBy(direction(sortExpr), desc(documents.createdAt))
-        .limit(query.limit)
-        .offset(query.offset),
-      this.db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(documents)
-        .where(where),
-    ]);
-    const docIds = docs.map((doc) => doc.id);
-    const [versionRows, submissionRows] = await Promise.all([
-      docIds.length === 0
-        ? []
-        : this.db
-            .select({
-              documentId: documentVersions.documentId,
-              version: documentVersions.version,
-              status: documentVersions.status,
-              publishedAt: documentVersions.publishedAt,
-            })
-            .from(documentVersions)
-            .where(inArray(documentVersions.documentId, docIds))
-            .orderBy(asc(documentVersions.version)),
-      docIds.length === 0
-        ? []
-        : this.db
-            .select({
-              ownerDocumentId: documentReferences.ownerDocumentId,
-              n: sql<number>`count(*)::int`,
-            })
-            .from(documentReferences)
-            .innerJoin(submissions, eq(submissions.documentId, documentReferences.targetDocumentId))
-            .where(
-              and(
-                inArray(documentReferences.ownerDocumentId, docIds),
-                eq(documentReferences.relation, 'application_form'),
-              ),
-            )
-            .groupBy(documentReferences.ownerDocumentId),
-    ]);
-    const versionsByDoc = new Map<string, Array<(typeof versionRows)[number]>>();
-    for (const row of versionRows) {
-      const list = versionsByDoc.get(row.documentId);
-      if (list) list.push(row);
-      else versionsByDoc.set(row.documentId, [row]);
-    }
-    const submissionDocIds = new Set(submissionRows.map((row) => row.ownerDocumentId));
-    const items = docs.map((doc) => {
-      const versions = versionsByDoc.get(doc.id) ?? [];
-      // versions are ordered asc by version, so the last row is the latest version.
-      const latest = versions[versions.length - 1];
-      // Object.assign onto the fresh DTO (not a spread) keeps oxlint's no-map-spread happy.
-      return Object.assign(toServiceDto(doc), {
-        status: summarizeStatus(versions),
-        versionCount: versions.length,
-        hasSubmissions: submissionDocIds.has(doc.id),
-        latestPublished: latest?.publishedAt != null,
-      });
-    });
-    return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
+    return listServicesPage(this.db, query);
   }
 
   /**
-   * A service + its versions + the Service form definition(s) to render.
+   * A service + its versions + the template(s) to render.
    *
-   * Feature 174: the definition is resolved **per version** via `document_versions.type_version_id`,
-   * NOT via `serviceType.resolve()` (the currently-published type version). A service authored
-   * before a Service type reshape stays pinned to the old type version and must keep rendering
-   * against the old template — resolving by "currently published" would render every one of its
-   * fields empty. `definitions` maps every type version the service's versions span (usually one);
-   * `definition` is the current version's template, kept for existing consumers.
+   * Feature 174 (carried forward): the template is resolved **per version** via
+   * `document_versions.template_version_id`, NOT via `templates.forCreate()` (the currently-published
+   * template version). A service authored before a template reshape stays pinned to the old
+   * version and must keep rendering against the template it was authored under.
    */
   async get(userId: string, id: string): Promise<ServiceDetail> {
     const doc = await this.requireDocument(userId, id);
     const versions = await this.versionsOf(id);
-    const definitions = await this.serviceType.definitionsForVersions(
-      versions.map((version) => version.typeVersionId),
+    const definitions = await this.templates.contentsForVersions(
+      versions
+        .map((version) => version.templateVersionId)
+        .filter((versionId): versionId is string => versionId !== null),
     );
-    // The "current" version drives the top-level `definition`: the published one if there is one,
-    // else the newest. `versionsOf` returns them oldest-first.
-    const current = versions.findLast((version) => version.publishedAt != null) ?? versions.at(-1);
+    const current = currentVersion(versions);
     const currentDefinition =
-      current === undefined ? undefined : definitions[current.typeVersionId];
+      current?.templateVersionId == null ? undefined : definitions[current.templateVersionId];
+    const hasSubmissions = await this.hasSubmissions(id);
     return {
-      service: toServiceDto(doc),
+      service: toServiceDto(doc, current),
       versions: versions.map(toServiceVersionDto),
-      definition: currentDefinition ?? { schema: {}, uischema: {} },
+      definition: currentDefinition ?? { schema: {}, variants: { default: {} } },
       definitions,
-      hasSubmissions: await this.hasSubmissions(id),
+      hasSubmissions,
+      deletable: deletableFor(versions, hasSubmissions),
     };
   }
 
-  /** Whether ANY of the service's application-method forms has submissions (gates delete vs archive). */
+  /**
+   * Whether the service document has submissions — gates delete vs archive.
+   *
+   * Feature 217: this used to count submissions against the service's referenced application
+   * forms. With `document_references` gone a service knows nothing about its ways to apply, so
+   * this now answers the narrower question the RESTRICT FK on `submissions` actually enforces.
+   */
   private async hasSubmissions(serviceId: string): Promise<boolean> {
     const rows = await this.db
       .select({ n: sql<number>`count(*)::int` })
-      .from(documentReferences)
-      .innerJoin(submissions, eq(submissions.documentId, documentReferences.targetDocumentId))
-      .where(
-        and(
-          eq(documentReferences.ownerDocumentId, serviceId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      );
+      .from(submissions)
+      .where(eq(submissions.documentId, serviceId));
     return (rows[0]?.n ?? 0) > 0;
   }
 
-  /** The application-method form document ids referenced by this service. */
-  private async applicationFormIds(serviceId: string): Promise<string[]> {
-    const rows = await this.db
-      .select({ formId: documentReferences.targetDocumentId })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.ownerDocumentId, serviceId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      );
-    return [...new Set(rows.map((r) => r.formId))];
-  }
-
-  /** The application-method target document ids referenced by this service — forms AND external
-   * links (feature 131). Used to clean up orphaned method documents when the service is deleted. */
-  private async applicationMethodTargetIds(serviceId: string): Promise<string[]> {
-    const rows = await this.db
-      .select({ targetId: documentReferences.targetDocumentId })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.ownerDocumentId, serviceId),
-          inArray(documentReferences.relation, ['application_form', 'external_application']),
-        ),
-      );
-    return [...new Set(rows.map((r) => r.targetId))];
-  }
-
-  /** Delete a service when none of its application forms has submissions — the service (cascading its
-   * versions + owned references) AND those now-unreferenced forms are removed. Refuses (409) when any
-   * form has submissions: archive instead to preserve the submitted data. */
+  /**
+   * Delete a service with no submissions; refuses (409) otherwise — archive instead, to preserve
+   * the submitted data. Deleting the document cascades its versions.
+   */
   async remove(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
+    const service = await this.requireDocument(userId, id);
     if (await this.hasSubmissions(id)) {
-      throw new ConflictException(
-        'An application of this service has submissions — archive it instead of deleting it',
-      );
+      throw new ConflictException(SERVICE_HAS_SUBMISSIONS);
     }
-    const formIds = await this.applicationMethodTargetIds(id);
     await this.db.transaction(async (tx) => {
-      // Deleting the service cascades its versions + the references it owns; the (submission-free)
-      // application methods (forms + external links) are then orphaned — delete each one that no
-      // other service still references.
+      // Doc 290 rule 11: first the methods only this service uses — its links go with it.
+      await this.lifecycle.deleteMethodsTx(tx, service);
       await tx.delete(documents).where(eq(documents.id, id));
-      for (const formId of formIds) {
-        // Sequential by necessity — these reads/writes share one transaction connection.
-        // eslint-disable-next-line no-await-in-loop
-        const remaining = await tx
-          .select({ n: sql<number>`count(*)::int` })
-          .from(documentReferences)
-          .where(eq(documentReferences.targetDocumentId, formId));
-        if ((remaining[0]?.n ?? 0) === 0) {
-          // eslint-disable-next-line no-await-in-loop
-          await tx.delete(documents).where(eq(documents.id, formId));
-        }
-      }
     });
   }
 
-  /** Archive a service (archive every non-archived version → status derives to 'archived'). Archiving a
-   * service also archives its application forms. */
+  /** Archive a service: archive every non-archived version → status derives to 'archived'; its methods too (doc 290). */
   async archive(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
-    const formIds = await this.applicationFormIds(id);
-    const docIds = [id, ...formIds];
-    await this.db
-      .update(documentVersions)
-      .set({ archivedAt: new Date() })
-      .where(
-        and(
-          inArray(documentVersions.documentId, docIds),
-          sql`${documentVersions.archivedAt} is null`,
-        ),
-      );
+    const service = await this.requireDocument(userId, id);
+    // Doc 290 rules 9-10: ONE timestamp for the service and its methods — reactivate matches on it.
+    const at = new Date();
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(documentVersions)
+        .set({ archivedAt: at })
+        .where(
+          and(eq(documentVersions.documentId, id), sql`${documentVersions.archivedAt} is null`),
+        );
+      await this.lifecycle.archiveMethodsTx(tx, service, at);
+    });
   }
 
-  /** Reactivate an archived service: clear `archived_at` on the LATEST version (→ its prior published/
-   * draft state) and the application forms it references. Older versions stay archived as history. */
+  /** Reactivate an archived service: clear `archived_at` on the LATEST version. */
   async reactivate(userId: string, id: string): Promise<void> {
-    await this.requireDocument(userId, id);
-    await this.db.transaction((tx) => reactivateServiceTx(tx, id));
+    const service = await this.requireDocument(userId, id);
+    await this.db.transaction(async (tx) => {
+      const archived = await reactivateServiceTx(tx, id);
+      await this.lifecycle.reactivateMethodsTx(tx, service, archived);
+    });
   }
 
-  private async versionsOf(documentId: string) {
+  private async versionsOf(documentId: string): Promise<DocumentVersion[]> {
     return this.db
       .select()
       .from(documentVersions)
       .where(eq(documentVersions.documentId, documentId))
-      .orderBy(asc(documentVersions.version));
+      .orderBy(asc(documentVersions.versionNumber));
   }
 
   /** The caller must be a member of the workspace; 404 otherwise (existence not leaked). */

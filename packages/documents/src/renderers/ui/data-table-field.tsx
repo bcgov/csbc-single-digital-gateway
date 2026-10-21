@@ -1,0 +1,56 @@
+import type { ControlProps } from '@jsonforms/core';
+import { Field, FieldDescription } from '@repo/ui/field';
+import type { ReactNode } from 'react';
+import { controlDescription } from './control-description';
+import { ControlLabel, useHiddenLabel } from './control-label';
+
+/** How the table is named and described by its field (doc 263 rule 15). */
+export interface DataTableWiring {
+  'aria-labelledby'?: string;
+  'aria-describedby'?: string;
+  'aria-label'?: string;
+}
+
+/**
+ * An object array's field (doc 263 rule 15), shared by the read-only and studio tables: label (with a required
+ * marker), description, then the table `children` draws from its wiring. A table is not labelable, so the label names
+ * it by id rather than `htmlFor`. Renders nothing when hidden.
+ */
+export function DataTableField({
+  props,
+  children,
+  component = 'data-table',
+}: {
+  props: ControlProps;
+  children: (wiring: DataTableWiring) => ReactNode;
+  /** The presentation it holds, as `data-component` (doc 271: a record shares the shell; doc 280: an accordion). */
+  component?: 'data-table' | 'record' | 'accordion' | 'document-reference';
+}) {
+  const { path, id, label, required, uischema, schema, visible } = props;
+  const hiddenLabel = useHiddenLabel(uischema);
+  if (!visible) return null;
+  const description = controlDescription(uischema, schema);
+  const descriptionId = `${id}-description`;
+  const labelId = `${id}-label`;
+  const table = children({
+    ...(label !== '' && { 'aria-labelledby': labelId }),
+    ...(description !== undefined && { 'aria-describedby': descriptionId }),
+    ...(label === '' && { 'aria-label': path.split('.').at(-1) ?? path }),
+  });
+  return (
+    <Field data-slot="data-table-field" data-component={component}>
+      {label !== '' && (
+        <ControlLabel
+          label={label}
+          required={required === true}
+          hiddenLabel={hiddenLabel}
+          id={labelId}
+        />
+      )}
+      {description !== undefined && (
+        <FieldDescription id={descriptionId}>{description}</FieldDescription>
+      )}
+      {table}
+    </Field>
+  );
+}

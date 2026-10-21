@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 describe('AdminHeader', () => {
-  it('Should render the header with the Overview section label and subtitle when on /admin', () => {
+  it('renders the header with the Overview section label and subtitle when on /admin', () => {
     currentPath = '/admin';
     const handleToggle = vi.fn();
     render(<AdminHeader onToggleSidebar={handleToggle} />);
@@ -32,18 +32,18 @@ describe('AdminHeader', () => {
     expect(screen.getByText('Platform administration.')).toBeInTheDocument();
   });
 
-  it('Should render the header with the Document Types section label and subtitle when on /admin/document-types', () => {
-    currentPath = '/admin/document-types';
+  it('renders the header with the Templates section label and subtitle when on /admin/templates', () => {
+    currentPath = '/admin/templates';
     const handleToggle = vi.fn();
     render(<AdminHeader onToggleSidebar={handleToggle} />);
 
-    expect(screen.getByRole('heading', { name: 'Document Types' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Templates' })).toBeInTheDocument();
     expect(
-      screen.getByText('Manage the document type definitions available to workspaces.'),
+      screen.getByText('Manage the document templates available to workspaces.'),
     ).toBeInTheDocument();
   });
 
-  it('Should call onToggleSidebar when the toggle button is clicked', async () => {
+  it('calls onToggleSidebar when the toggle button is clicked', async () => {
     currentPath = '/admin';
     const handleToggle = vi.fn();
     const user = userEvent.setup();

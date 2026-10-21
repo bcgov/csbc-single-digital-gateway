@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   submissionStatusLabel,
   submissionReference,
-  normalizeFormStructure,
+  normalizeContent,
 } from '../../../../../src/modules/submissions/util/format';
 import type { SubmissionStatus } from '../../../../../src/modules/submissions/dtos/submission.dtos';
 
 describe('format utility tests', () => {
   describe('submissionStatusLabel', () => {
-    it('Should return correct label for every status', () => {
+    it('returns correct label for every status', () => {
       const cases: Record<SubmissionStatus, string> = {
         draft: 'Draft',
         pending: 'Pending',
@@ -25,7 +25,7 @@ describe('format utility tests', () => {
   });
 
   describe('submissionReference', () => {
-    it('Should construct a stable reference string YYYYMMDD-XXXX from a UUID and a Date', () => {
+    it('constructs a stable reference string YYYYMMDD-XXXX from a UUID and a Date', () => {
       const submissionId = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
       const createdAt = new Date('2026-07-12T12:00:00.000Z');
 
@@ -37,58 +37,49 @@ describe('format utility tests', () => {
     });
   });
 
-  describe('normalizeFormStructure', () => {
-    describe('multi-stage-form', () => {
-      it('Should return valid values if they exist in structure', () => {
-        const input = {
-          name: 'My Multi Form',
-          description: 'A desc',
-          stages: [{ id: 's1' }],
-          edges: [{ id: 'e1' }],
-        };
-        const result = normalizeFormStructure('multi-stage-form', input);
-        expect(result).toEqual(input);
-      });
+  describe('normalizeContent', () => {
+    // Doc 275: `content` IS `{ schema, variants }`, so there is no per-kind branch any more —
+    // a routed application is a `Funnel` root inside each variant, not a different top-level object.
+    it("returns the content's schema and variants unchanged", () => {
+      const input = {
+        schema: { type: 'object', properties: { field: { type: 'string' } } },
+        variants: {
+          default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/field' }] },
+          mobile: { type: 'Form', elements: [] },
+        },
+      };
 
-      it('Should default missing or invalid types to empty strings or arrays', () => {
-        const input = {
-          name: 123, // invalid
-          description: null, // invalid
-          stages: 'not-an-array', // invalid
-        };
-        const result = normalizeFormStructure('multi-stage-form', input as any);
-        expect(result).toEqual({
-          name: '',
-          description: '',
-          stages: [],
-          edges: [],
-        });
+      expect(normalizeContent(input)).toEqual(input);
+    });
+
+    it('defaults an empty content to an empty object schema and an empty Form', () => {
+      expect(normalizeContent({})).toEqual({
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
       });
     });
 
-    describe('basic-form and other kinds', () => {
-      it('Should return existing schema and uischema', () => {
-        const input = {
-          schema: { type: 'object', properties: { field: { type: 'string' } } },
-          uischema: { type: 'Horizontal' },
-        };
-        const result = normalizeFormStructure('basic-form', input);
-        expect(result).toEqual(input);
+    it('degrades the old top-level uischema shape to an empty Form rather than throwing', () => {
+      expect(
+        normalizeContent({ schema: { type: 'object' }, uischema: { type: 'Form', elements: [] } }),
+      ).toEqual({
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
       });
+    });
 
-      it('Should default schema and uischema if missing', () => {
-        const result = normalizeFormStructure('basic-form', {});
-        expect(result).toEqual({
-          schema: {
-            type: 'object',
-            properties: {},
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        });
+    it('keeps a Funnel root as-is rather than coercing it', () => {
+      const input = { schema: {}, variants: { default: { type: 'Funnel', elements: [] } } };
+
+      expect(normalizeContent(input)['variants']).toEqual({
+        default: { type: 'Funnel', elements: [] },
       });
+    });
+
+    it('ignores keys that are not schema or variants', () => {
+      const result = normalizeContent({ schema: { type: 'object' }, stages: [{ id: 's1' }] });
+
+      expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
     });
   });
 });

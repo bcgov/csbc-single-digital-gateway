@@ -1,70 +1,91 @@
 import {
-  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   type Database,
   type Document,
-  documentTypeVersions,
-  documentTypes,
+  documentMembers,
   documentVersions,
   documents,
+  submissions,
   workspaceMembers,
+  DOCUMENT_TYPE,
 } from '@repo/database';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { TemplateResolver } from '../../templates/services/template.resolver';
+import { validateContent } from '../../templates/services/validate-content';
+import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type CreateFormInput,
   type FormVersionResponse,
   type FormWithVersion,
-  type UpdateFormSchemaInput,
+  type UpdateFormContentInput,
   toFormDto,
   toFormVersionDto,
 } from '../dtos/form.dtos';
 
-const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
+/** Doc 287: the 409 body's message when a form cannot be deleted. */
+export const FORM_HAS_SUBMISSIONS = 'Form has submissions';
 
+/**
+ * Application-method documents (feature 217). A "form" is a `documents` row with
+ * `type = DOCUMENT_TYPE.applicationMethod`; the caller no longer picks a type id, because the three old form
+ * kinds collapsed into one type whose flavour lives in the root of `content.variants` (a `Form` or a `Funnel`).
+ */
 @Injectable()
 export class FormsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly templates: TemplateResolver,
+  ) {}
 
-  /** Standalone create: the form document + its draft v1 definition, in ONE transaction. */
+  /** Standalone create: the document + its draft v1 content, in ONE transaction. */
   async create(userId: string, input: CreateFormInput): Promise<FormWithVersion> {
     await this.requireMembership(userId, input.workspaceId);
-    const type = await this.resolveType(input.typeId);
+    const template = await this.templates.forCreate(
+      DOCUMENT_TYPE.applicationMethod,
+      input.templateId,
+    );
+    // An explicit content still has to satisfy the type's allowed roots; an omitted one starts
+    // from the template with the requested title stamped on every variant (the title column reads default's).
+    const content =
+      input.content ??
+      withTitle({ schema: template.schema, variants: template.variants }, input.title);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
         .values({
-          typeId: type.typeId,
+          type: DOCUMENT_TYPE.applicationMethod,
+          kind: 'document',
           workspaceId: input.workspaceId,
-          kind: type.kind,
-          title: input.title,
+          templateId: template.templateId,
         })
         .returning();
       const doc = insertedDoc[0];
       if (doc === undefined) {
         throw new Error('document insert returned no row');
       }
+      validateContent(doc, content);
       const insertedVersion = await tx
         .insert(documentVersions)
         .values({
           documentId: doc.id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: 1,
-          schema: input.definition,
-          data: {},
+          templateId: template.templateId,
+          templateVersionId: template.templateVersionId,
+          versionNumber: 1,
+          content,
         })
         .returning();
       const version = insertedVersion[0];
       if (version === undefined) {
         throw new Error('document version insert returned no row');
       }
-      return { form: toFormDto(doc), version: toFormVersionDto(version) };
+      return { form: toFormDto(doc, version), version: toFormVersionDto(version) };
     });
   }
 
@@ -75,23 +96,34 @@ export class FormsService {
       .select()
       .from(documentVersions)
       .where(eq(documentVersions.documentId, id))
-      .orderBy(desc(documentVersions.version))
+      .orderBy(desc(documentVersions.versionNumber))
       .limit(1);
     const latest = rows[0];
     if (latest === undefined) {
       throw new NotFoundException('Form has no versions');
     }
-    return { form: toFormDto(doc), version: toFormVersionDto(latest) };
+    // Doc 221: the PINNED template, never `forCreate()` — a version authored before a template
+    // reshape must render against the template it was authored under, and a governing capability
+    // map must not change because a newer template version was published.
+    const definition =
+      latest.templateVersionId === null
+        ? undefined
+        : await this.templates.contentForVersion(latest.templateVersionId);
+    return {
+      form: toFormDto(doc, latest),
+      version: toFormVersionDto(latest),
+      ...(definition === undefined ? {} : { definition }),
+    };
   }
 
-  /** Edit a draft version's definition (and optionally retitle the document). */
-  async updateSchema(
+  /** Edit a draft version's content. */
+  async updateContent(
     userId: string,
     id: string,
     versionId: string,
-    input: UpdateFormSchemaInput,
+    input: UpdateFormContentInput,
   ): Promise<FormVersionResponse> {
-    await this.requireDocument(userId, id);
+    const doc = await this.requireDocument(userId, id);
     const rows = await this.db
       .select()
       .from(documentVersions)
@@ -104,14 +136,19 @@ export class FormsService {
     if (version.status !== 'draft') {
       throw new ConflictException('Only draft versions can be edited');
     }
+    const content = validateContent(doc, input.content);
+    // Doc 222: the governing template has the final say — the studio's gates are UX, and both the
+    // uischema code panel and this endpoint bypass them.
+    assertWithinCapabilities(
+      version.content,
+      content,
+      await this.templates.capabilitiesForVersion(version.templateVersionId),
+    );
     const updated = await this.db
       .update(documentVersions)
-      .set({ schema: input.definition })
+      .set({ content, revision: sql`${documentVersions.revision} + 1` })
       .where(eq(documentVersions.id, versionId))
       .returning();
-    if (input.title !== undefined) {
-      await this.db.update(documents).set({ title: input.title }).where(eq(documents.id, id));
-    }
     const row = updated[0];
     if (row === undefined) {
       throw new NotFoundException('Form version not found');
@@ -119,34 +156,46 @@ export class FormsService {
     return toFormVersionDto(row);
   }
 
-  /** Resolve a published form type-version by id; reject non-form kinds. */
-  private async resolveType(
-    typeId: string,
-  ): Promise<{ typeId: string; typeVersionId: string; kind: string }> {
+  /**
+   * Doc 287: delete an application method (a document reference's Remove). 404 unless it is an
+   * application-method DOCUMENT in a workspace the caller belongs to; 403 for a document viewer; 409
+   * while a submission references it (the RESTRICT FK would refuse anyway). Versions, history and
+   * document members cascade from `documents`.
+   */
+  async remove(userId: string, id: string): Promise<void> {
+    const doc = await this.requireDocument(userId, id);
+    if (doc.kind !== 'document') {
+      throw new NotFoundException('Form not found');
+    }
+    const [role, submissionCount] = await Promise.all([
+      this.documentRole(userId, id),
+      this.submissionCount(id),
+    ]);
+    if (role === 'viewer') {
+      throw new ForbiddenException('Viewers cannot delete a form');
+    }
+    if (submissionCount > 0) {
+      throw new ConflictException(FORM_HAS_SUBMISSIONS);
+    }
+    await this.db.delete(documents).where(eq(documents.id, id));
+  }
+
+  /** The caller's per-document role, if they have one (a workspace member without one may edit). */
+  private async documentRole(userId: string, documentId: string): Promise<string | undefined> {
     const rows = await this.db
-      .select({
-        typeId: documentTypes.id,
-        typeVersionId: documentTypeVersions.id,
-        kind: documentTypes.kind,
-      })
-      .from(documentTypes)
-      .innerJoin(
-        documentTypeVersions,
-        and(
-          eq(documentTypeVersions.typeId, documentTypes.id),
-          eq(documentTypeVersions.status, 'published'),
-        ),
-      )
-      .where(eq(documentTypes.id, typeId))
+      .select({ role: documentMembers.role })
+      .from(documentMembers)
+      .where(and(eq(documentMembers.documentId, documentId), eq(documentMembers.userId, userId)))
       .limit(1);
-    const row = rows[0];
-    if (row === undefined) {
-      throw new UnprocessableEntityException('Form type not found or has no published version');
-    }
-    if (!FORM_KINDS.has(row.kind)) {
-      throw new BadRequestException('A form must be a basic-form or multi-stage-form type');
-    }
-    return { typeId: row.typeId, typeVersionId: row.typeVersionId, kind: row.kind };
+    return rows[0]?.role;
+  }
+
+  private async submissionCount(documentId: string): Promise<number> {
+    const rows = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(submissions)
+      .where(eq(submissions.documentId, documentId));
+    return rows[0]?.n ?? 0;
   }
 
   /** The caller must be a member of the workspace; 404 otherwise (existence not leaked). */
@@ -163,7 +212,8 @@ export class FormsService {
     }
   }
 
-  /** The document must exist AND the caller be a member of its workspace; 404 otherwise. */
+  /** The document must exist, be an application method, AND the caller be a member of its
+   * workspace; 404 otherwise. */
   async requireDocument(userId: string, id: string): Promise<Document> {
     const rows = await this.db
       .select({ doc: documents })
@@ -175,7 +225,7 @@ export class FormsService {
           eq(workspaceMembers.userId, userId),
         ),
       )
-      .where(eq(documents.id, id))
+      .where(and(eq(documents.id, id), eq(documents.type, DOCUMENT_TYPE.applicationMethod)))
       .limit(1);
     const row = rows[0];
     if (row === undefined) {

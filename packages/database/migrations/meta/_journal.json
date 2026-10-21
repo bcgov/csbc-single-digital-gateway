@@ -155,6 +155,34 @@
       "when": 1785455936820,
       "tag": "0021_geo_reference",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790211761276,
+      "tag": "0022_documents_rewrite",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790629733769,
+      "tag": "0023_document_type_namespacing",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791320707180,
+      "tag": "0024_document_content_variants",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791504573295,
+      "tag": "0025_document_links",
+      "breakpoints": true
     }
   ]
 }

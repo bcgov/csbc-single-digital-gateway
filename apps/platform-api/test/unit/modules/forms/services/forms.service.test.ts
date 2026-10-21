@@ -1,286 +1,470 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   BadRequestException,
   ConflictException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { documentVersions, documents } from '@repo/database';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FormsService } from '../../../../../src/modules/forms/services/forms.service';
-import { documents, documentVersions } from '@repo/database';
-import { createMockDoc, createMockFormVersion } from '../../../../utils/test-helpers';
-import { createMockDb } from '../../../../utils/create-db-mock';
+
+/**
+ * Feature 217. A form is an APPLICATION METHOD document: no `typeId` on create, one `content`
+ * instead of a per-kind `definition`, and no title column to sync (the title is GENERATED from
+ * the default variant's label, `content.variants.default.label` — doc 275).
+ */
+
+const TEMPLATE = {
+  templateId: 'template-1',
+  templateVersionId: 'template-version-1',
+  schema: { type: 'object', properties: {} },
+  variants: { default: { type: 'Form', elements: [] } },
+};
+
+const CONTENT = {
+  schema: { type: 'object', properties: {} },
+  variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
+};
+
+/** A governed uischema with its one Control relabelled — the edit a frozen template refuses. */
+const relabel = <T extends object>(uischema: T) => ({
+  ...uischema,
+  elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'CHANGED' }],
+});
 
 describe('FormsService', () => {
   let service: FormsService;
-  let txMock: any;
   let dbMock: any;
+  let txMock: any;
+  let templatesMock: any;
 
   beforeEach(() => {
-    const mocks = createMockDb();
-    txMock = mocks.txMock;
-    dbMock = mocks.dbMock;
-
-    service = new FormsService(dbMock);
-  });
-
-  describe('create', () => {
-    const mockInput = {
-      workspaceId: 'ws-1',
-      typeId: 'type-1',
-      title: 'New Form',
-      definition: { schema: {}, uischema: {} },
+    txMock = {
+      insert: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      returning: vi.fn(),
     };
 
-    it('Should successfully create a form and version inside a transaction', async () => {
-      // 1. requireMembership check
+    dbMock = {
+      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn(),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      returning: vi.fn(),
+    };
+
+    templatesMock = {
+      forCreate: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 222: ungoverned — these cases are about versioning, not capabilities.
+      capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
+      // Doc 221: the READ path resolves the PINNED template version; `forCreate` stays for CREATE.
+      contentForVersion: vi.fn().mockResolvedValue({
+        schema: TEMPLATE.schema,
+        variants: TEMPLATE.variants,
+      }),
+    };
+
+    service = new FormsService(dbMock, templatesMock);
+  });
+
+  const doc = {
+    id: 'doc-1',
+    workspaceId: 'ws-1',
+    type: 'services.service-application-method',
+    kind: 'document',
+    createdAt: new Date('2026-07-28T12:00:00.000Z'),
+    updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+  };
+  const version = {
+    id: 'version-1',
+    documentId: 'doc-1',
+    templateId: TEMPLATE.templateId,
+    templateVersionId: TEMPLATE.templateVersionId,
+    versionNumber: 1,
+    revision: 1,
+    status: 'draft',
+    title: 'Apply online',
+    description: null,
+    content: CONTENT,
+    createdAt: new Date('2026-07-28T12:00:00.000Z'),
+  };
+
+  describe('create', () => {
+    const input = { workspaceId: 'ws-1', title: 'Apply online' };
+
+    it('creates the document and its draft v1 inside one transaction', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
-      // 2. resolveType lookup
-      dbMock.limit.mockResolvedValueOnce([
-        {
-          typeId: 'type-1',
-          typeVersionId: 'type-version-1',
-          kind: 'basic-form',
-        },
-      ]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
 
-      const mockDoc = createMockDoc({});
-
-      const mockFormVersion = createMockFormVersion({});
-
-      txMock.returning
-        .mockResolvedValueOnce([mockDoc]) // inserted doc
-        .mockResolvedValueOnce([mockFormVersion]); // inserted version
-
-      const result = await service.create('user-1', mockInput);
+      const result = await service.create('user-1', input);
 
       expect(dbMock.transaction).toHaveBeenCalledTimes(1);
       expect(txMock.insert).toHaveBeenNthCalledWith(1, documents);
       expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
-      expect(result).toEqual({
-        form: {
-          id: 'doc-1',
-          workspaceId: 'ws-1',
-          title: 'New Form',
-          kind: 'basic-form',
-          createdAt: '2026-07-12T00:00:00.000Z',
-        },
-        version: {
-          id: 'version-1',
-          documentId: 'doc-1',
-          version: 1,
-          status: 'draft',
-          schema: { schema: {}, uischema: {} },
-          createdAt: '2026-07-12T00:00:00.000Z',
-        },
+      expect(result.form.id).toBe('doc-1');
+      expect(result.version.id).toBe('version-1');
+    });
+
+    it('resolves the application-method template, not a caller-supplied type', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
+
+      await service.create('user-1', input);
+
+      expect(templatesMock.forCreate).toHaveBeenCalledWith(
+        'services.service-application-method',
+        undefined,
+      );
+      expect(txMock.values).toHaveBeenNthCalledWith(1, {
+        type: 'services.service-application-method',
+        kind: 'document',
+        workspaceId: 'ws-1',
+        templateId: TEMPLATE.templateId,
       });
     });
 
-    it('Should throw NotFoundException if user is not a workspace member', async () => {
-      dbMock.limit.mockResolvedValueOnce([]); // no membership
+    it('stamps the title into the label the GENERATED title column reads', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
 
-      await expect(service.create('user-1', mockInput)).rejects.toThrow(NotFoundException);
+      await service.create('user-1', input);
+
+      const values = txMock.values.mock.calls[1][0];
+      // Doc 275: a copy of the template's schema and variants, the label on the DEFAULT variant.
+      expect(values.content).toEqual({
+        schema: TEMPLATE.schema,
+        variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
+      });
+      expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
+      expect(values.versionNumber).toBe(1);
     });
 
-    it('Should throw UnprocessableEntityException if type has no published version', async () => {
-      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]); // member
-      dbMock.limit.mockResolvedValueOnce([]); // type not found / not published
+    it('uses an explicitly supplied content instead of the template', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
+      const custom = {
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Funnel', elements: [], label: 'Guided' } },
+      };
 
-      await expect(service.create('user-1', mockInput)).rejects.toThrow(
-        UnprocessableEntityException,
+      await service.create('user-1', { ...input, content: custom });
+
+      expect(txMock.values.mock.calls[1][0].content).toEqual(custom);
+    });
+
+    it.each(['Service', 'Flow'])(
+      'rejects a %s root — an application method is a Form or a Funnel (doc 275)',
+      async (root) => {
+        dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+        txMock.returning.mockResolvedValueOnce([doc]);
+        const badRoot = {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: root, elements: [] } },
+        };
+
+        await expect(service.create('user-1', { ...input, content: badRoot })).rejects.toThrow(
+          BadRequestException,
+        );
+      },
+    );
+
+    it("accepts a variant whose root differs from the default's (doc 275 B1)", async () => {
+      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
+      const mixed = {
+        schema: { type: 'object', properties: {} },
+        variants: {
+          default: { type: 'Form', elements: [] },
+          guided: { type: 'Funnel', elements: [] },
+        },
+      };
+
+      const result = await service.create('user-1', { ...input, content: mixed });
+
+      expect(result.form.id).toBe('doc-1');
+      expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
+    });
+
+    it('throws NotFoundException if the user is not a workspace member', async () => {
+      dbMock.limit.mockResolvedValueOnce([]);
+
+      await expect(service.create('user-1', input)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if the document insert returns no row', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+      txMock.returning.mockResolvedValueOnce([]);
+
+      await expect(service.create('user-1', input)).rejects.toThrow(
+        'document insert returned no row',
       );
     });
 
-    it('Should throw BadRequestException if the resolved type is not a form kind', async () => {
-      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]); // member
-      dbMock.limit.mockResolvedValueOnce([
-        {
-          typeId: 'type-1',
-          typeVersionId: 'type-version-1',
-          kind: 'service', // not basic-form or multi-stage-form
-        },
-      ]);
-
-      await expect(service.create('user-1', mockInput)).rejects.toThrow(BadRequestException);
-    });
-
-    it('Should throw Error if document insert returned no row when creating a form', async () => {
+    it('throws if the version insert returns no row', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
-      dbMock.limit.mockResolvedValueOnce([
-        {
-          typeId: 'type-1',
-          typeVersionId: 'type-version-1',
-          kind: 'basic-form',
-        },
-      ]);
-      txMock.returning.mockResolvedValueOnce([]); // empty doc insert
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([]);
 
-      await expect(service.create('user-1', mockInput)).rejects.toThrow(
-        new Error('document insert returned no row'),
-      );
-    });
-
-    it('Should throw Error if document version insert returned no row', async () => {
-      dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
-      dbMock.limit.mockResolvedValueOnce([
-        {
-          typeId: 'type-1',
-          typeVersionId: 'type-version-1',
-          kind: 'basic-form',
-        },
-      ]);
-      const mockDoc = createMockDoc({ workspaceId: 'ws-1' });
-      txMock.returning.mockResolvedValueOnce([mockDoc]).mockResolvedValueOnce([]); // empty version insert
-
-      await expect(service.create('user-1', mockInput)).rejects.toThrow(
-        new Error('document version insert returned no row'),
+      await expect(service.create('user-1', input)).rejects.toThrow(
+        'document version insert returned no row',
       );
     });
   });
 
   describe('get', () => {
-    it('Should successfully retrieve a form and its latest version', async () => {
-      const mockDoc = createMockDoc({});
-      const mockFormVersion = createMockFormVersion({});
-
-      // 1. requireDocument
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]);
-      // 2. latest document version lookup
-      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
+    it('returns the document and its latest version', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([version]);
 
       const result = await service.get('user-1', 'doc-1');
 
-      expect(result).toEqual({
-        form: {
-          id: 'doc-1',
-          workspaceId: 'ws-1',
-          title: 'New Form',
-          kind: 'basic-form',
-          createdAt: '2026-07-12T00:00:00.000Z',
-        },
-        version: {
-          id: 'version-1',
-          documentId: 'doc-1',
-          version: 1,
-          status: 'draft',
-          schema: { schema: {}, uischema: {} },
-          createdAt: '2026-07-12T00:00:00.000Z',
-        },
-      });
+      expect(result.form.id).toBe('doc-1');
+      expect(result.form.title).toBe('Apply online');
+      expect(result.version.content).toEqual(CONTENT);
     });
 
-    it('Should throw NotFoundException if the document has no versions', async () => {
-      const mockDoc = createMockDoc({});
-
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([]); // no versions
+    it('throws NotFoundException if the document has no versions', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([]);
 
       await expect(service.get('user-1', 'doc-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('Should throw NotFoundException if the document does not exist or user is not a member', async () => {
-      dbMock.limit.mockResolvedValueOnce([]); // requireDocument fails
+    it('throws NotFoundException if the document is absent or the caller is not a member', async () => {
+      dbMock.limit.mockResolvedValueOnce([]);
 
       await expect(service.get('user-1', 'doc-1')).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('updateSchema', () => {
-    const mockInput = {
-      definition: { schema: { new: true }, uischema: {} },
-      title: 'Updated Form Title',
-    };
+  describe('updateContent', () => {
+    const input = { content: CONTENT };
 
-    it('Should successfully update a draft form version and the document title', async () => {
-      const mockDoc = createMockDoc({
-        title: 'Old Form Title',
-      });
-      const mockFormVersion = createMockFormVersion({});
-      const mockUpdatedVersion = {
-        ...mockFormVersion,
-        schema: { schema: { new: true }, uischema: {} },
+    it('writes the content and bumps the revision', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([version]);
+      dbMock.returning.mockResolvedValueOnce([{ ...version, revision: 2 }]);
+
+      const result = await service.updateContent('user-1', 'doc-1', 'version-1', input);
+
+      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
+      const setArg = dbMock.set.mock.calls[0][0];
+      expect(setArg.content).toEqual(CONTENT);
+      expect(setArg.revision).toBeDefined();
+      expect(result.revision).toBe(2);
+    });
+
+    it('never writes a title — the document has no title column', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([version]);
+      dbMock.returning.mockResolvedValueOnce([version]);
+
+      await service.updateContent('user-1', 'doc-1', 'version-1', input);
+
+      expect(dbMock.update).toHaveBeenCalledTimes(1);
+      expect(dbMock.update).not.toHaveBeenCalledWith(documents);
+      expect(dbMock.set.mock.calls[0][0]).not.toHaveProperty('title');
+    });
+
+    it('rejects a content whose root is not allowed for an application method', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([version]);
+
+      await expect(
+        service.updateContent('user-1', 'doc-1', 'version-1', {
+          content: {
+            schema: { type: 'object', properties: {} },
+            variants: { default: { type: 'Flow', elements: [] } },
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    // Doc 222 — the studio's gates are UX. This endpoint and the studio's own uischema code panel
+    // both bypass them, so a governing template has to be enforced HERE or it is not enforced.
+    describe('under a governing template', () => {
+      const GOVERNED = {
+        schema: { type: 'object', properties: { a: { type: 'string' } } },
+        variants: {
+          default: {
+            type: 'Form',
+            id: 'root1',
+            label: 'Apply online',
+            elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'Name' }],
+          },
+        },
       };
+      const CLOSED = {
+        edit: 'none',
+        remove: false,
+        move: false,
+        addChildren: false,
+        removeChildren: false,
+        reorderChildren: false,
+        edges: false,
+      };
+      const governedVersion = { ...version, content: GOVERNED };
+      const relabelled = { ...GOVERNED, variants: { default: relabel(GOVERNED.variants.default) } };
 
-      // 1. requireDocument
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]);
-      // 2. document version lookup
-      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
-      // 3. update version returning
-      dbMock.returning = vi.fn().mockResolvedValueOnce([mockUpdatedVersion]);
+      const govern = (capabilities: unknown) =>
+        templatesMock.capabilitiesForVersion.mockResolvedValue(capabilities);
 
-      const result = await service.updateSchema('user-1', 'doc-1', 'version-1', mockInput);
+      it('refuses an edit the template froze, with 422', async () => {
+        govern({ default: { '*': CLOSED } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
 
-      expect(dbMock.update).toHaveBeenNthCalledWith(1, documentVersions);
-      expect(dbMock.update).toHaveBeenNthCalledWith(2, documents);
-      expect(result).toEqual({
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: { schema: { new: true }, uischema: {} },
-        createdAt: '2026-07-12T00:00:00.000Z',
+        await expect(
+          service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled }),
+        ).rejects.toThrow(UnprocessableEntityException);
+        // The refusal must happen BEFORE the write, not be cleaned up after one.
+        expect(dbMock.update).not.toHaveBeenCalled();
+      });
+
+      it('names the element and the field it refused', async () => {
+        govern({ default: { '*': CLOSED } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+
+        const error = await service
+          .updateContent('user-1', 'doc-1', 'version-1', { content: relabelled })
+          .catch((thrown: UnprocessableEntityException) => thrown);
+
+        const body = (error as UnprocessableEntityException).getResponse() as {
+          violations: { code: string; elementId: string; field: string }[];
+        };
+        expect(body.violations).toEqual([
+          expect.objectContaining({ code: 'edit', elementId: 'a1', field: 'label' }),
+        ]);
+      });
+
+      it('allows the same edit when the template grants that field', async () => {
+        govern({ default: { '*': CLOSED }, elements: { a1: { edit: ['label'] } } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+        dbMock.returning.mockResolvedValueOnce([{ ...governedVersion, revision: 2 }]);
+
+        await expect(
+          service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled }),
+        ).resolves.toBeDefined();
+        expect(dbMock.update).toHaveBeenCalled();
+      });
+
+      // Doc 275: the map governs EVERY variant, each checked against its own previous self.
+      describe('across variants', () => {
+        const TWO = {
+          ...GOVERNED,
+          variants: { default: GOVERNED.variants.default, mobile: GOVERNED.variants.default },
+        };
+        const twoVersion = { ...version, content: TWO };
+        const violationsOf = async (content: unknown, from: unknown = twoVersion) => {
+          dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([from]);
+          const error = await service
+            .updateContent('user-1', 'doc-1', 'version-1', { content } as never)
+            .catch((thrown: unknown) => thrown);
+          expect(error).toBeInstanceOf(UnprocessableEntityException);
+          expect(dbMock.update).not.toHaveBeenCalled();
+          return (
+            (error as UnprocessableEntityException).getResponse() as {
+              violations: { code: string; elementId?: string; field?: string }[];
+            }
+          ).violations;
+        };
+
+        it('refuses a frozen edit made only in a non-default variant', async () => {
+          govern({ default: { '*': CLOSED } });
+
+          const violations = await violationsOf({
+            ...TWO,
+            variants: { default: TWO.variants.default, mobile: relabel(TWO.variants.mobile) },
+          });
+
+          expect(violations).toEqual([
+            expect.objectContaining({ code: 'edit', elementId: 'a1', field: 'label' }),
+          ]);
+        });
+
+        it('reports the same refusal once when every variant makes it', async () => {
+          govern({ default: { '*': CLOSED } });
+
+          const violations = await violationsOf({
+            ...TWO,
+            variants: {
+              default: relabel(TWO.variants.default),
+              mobile: relabel(TWO.variants.mobile),
+            },
+          });
+
+          expect(violations).toHaveLength(1);
+        });
+
+        it('refuses adding a variant to a governed document (variant-added)', async () => {
+          govern({});
+
+          const violations = await violationsOf(TWO, governedVersion);
+
+          expect(violations).toEqual([expect.objectContaining({ code: 'variant-added' })]);
+          // No element or field to name — the keys are absent, not undefined.
+          expect(violations[0]).not.toHaveProperty('elementId');
+          expect(violations[0]).not.toHaveProperty('field');
+        });
+
+        it('refuses removing a variant from a governed document (variant-removed)', async () => {
+          govern({});
+
+          const violations = await violationsOf(GOVERNED);
+
+          expect(violations).toEqual([expect.objectContaining({ code: 'variant-removed' })]);
+        });
+
+        it('lets an ungoverned document add a variant', async () => {
+          govern(undefined);
+          dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+          dbMock.returning.mockResolvedValueOnce([twoVersion]);
+
+          await expect(
+            service.updateContent('user-1', 'doc-1', 'version-1', { content: TWO }),
+          ).resolves.toBeDefined();
+        });
+      });
+
+      it('is resolved from the version PIN, never from whatever is published now', async () => {
+        // Otherwise a template author could retroactively re-govern documents already authored
+        // under an earlier version (doc 221's integration contract).
+        govern(undefined);
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+        dbMock.returning.mockResolvedValueOnce([governedVersion]);
+
+        await service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled });
+
+        expect(templatesMock.capabilitiesForVersion).toHaveBeenCalledWith(
+          version.templateVersionId,
+        );
+        expect(templatesMock.forCreate).not.toHaveBeenCalled();
       });
     });
 
-    it('Should throw NotFoundException if the version is not found when updating schema', async () => {
-      const mockDoc = createMockDoc({});
+    it('throws NotFoundException if the version is not found', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([]);
 
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([]); // version not found
-
-      await expect(service.updateSchema('user-1', 'doc-1', 'version-1', mockInput)).rejects.toThrow(
+      await expect(service.updateContent('user-1', 'doc-1', 'version-1', input)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('Should throw ConflictException if the version is not in draft status', async () => {
-      const mockDoc = createMockDoc({});
-      const mockFormVersion = createMockFormVersion({
-        status: 'published', // not draft
-      });
+    it('throws ConflictException if the version is not a draft', async () => {
+      dbMock.limit
+        .mockResolvedValueOnce([{ doc }])
+        .mockResolvedValueOnce([{ ...version, status: 'published' }]);
 
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
-
-      await expect(service.updateSchema('user-1', 'doc-1', 'version-1', mockInput)).rejects.toThrow(
+      await expect(service.updateContent('user-1', 'doc-1', 'version-1', input)).rejects.toThrow(
         ConflictException,
       );
     });
 
-    it('Should throw NotFoundException if updating version query returned no row', async () => {
-      const mockDoc = createMockDoc({});
-      const mockFormVersion = createMockFormVersion({});
+    it('throws NotFoundException if the update returns no row', async () => {
+      dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([version]);
+      dbMock.returning.mockResolvedValueOnce([]);
 
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
-      dbMock.returning = vi.fn().mockResolvedValueOnce([]); // empty returning
-
-      await expect(service.updateSchema('user-1', 'doc-1', 'version-1', mockInput)).rejects.toThrow(
+      await expect(service.updateContent('user-1', 'doc-1', 'version-1', input)).rejects.toThrow(
         NotFoundException,
       );
-    });
-
-    it('Should successfully update a draft form version without updating the document title if title is omitted', async () => {
-      const mockDoc = createMockDoc({
-        title: 'Old Form Title',
-      });
-      const mockFormVersion = createMockFormVersion({});
-      const mockUpdatedVersion = {
-        ...mockFormVersion,
-        schema: { schema: { updated: true }, uischema: {} },
-      };
-
-      dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockFormVersion]); // version lookup
-      dbMock.returning = vi.fn().mockResolvedValueOnce([mockUpdatedVersion]); // update returning
-
-      const result = await service.updateSchema('user-1', 'doc-1', 'version-1', {
-        definition: { schema: { updated: true }, uischema: {} },
-      });
-
-      expect(dbMock.update).toHaveBeenCalledTimes(1);
-      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
-      expect(dbMock.update).not.toHaveBeenCalledWith(documents);
-      expect(result.schema).toEqual({ schema: { updated: true }, uischema: {} });
     });
   });
 });

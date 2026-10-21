@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import {
+  documentLinks,
   type Database,
-  countries,
-  documentReferences,
   documentVersions,
-  documents,
   reviews,
   submissionVersions,
   submissions,
@@ -15,22 +13,129 @@ import {
   notificationOutbox,
 } from '@repo/database';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
-import { createMockDb } from '../../../../utils/create-mock-db';
+import { staffSubmissionContent } from '../../../../../src/modules/applications/util/notification-content';
+
+// Doc 292 rule 9: watch which service name the staff message is built with (the real builder still runs).
+vi.mock('../../../../../src/modules/applications/util/notification-content', async (original) => {
+  const actual =
+    await original<
+      typeof import('../../../../../src/modules/applications/util/notification-content')
+    >();
+  return { ...actual, staffSubmissionContent: vi.fn(actual.staffSubmissionContent) };
+});
+
+/** Doc 292 rule 2: the only kind of version a draft may start on — a published application method in a workspace. */
+const PUBLISHED_METHOD = {
+  documentId: 'doc-1',
+  status: 'published',
+  type: 'services.service-application-method',
+  kind: 'document',
+  workspaceId: 'ws-1',
+  content: {
+    schema: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' } } },
+    variants: { default: { type: 'Form', elements: [] } },
+  },
+};
+const LINKED_SERVICE = { serviceId: 'svc-1', title: 'Parking permits' };
+
+const createDbMock = () => {
+  const mocks: {
+    queries: Array<{
+      table?: any;
+      action?: 'select' | 'insert' | 'update' | undefined;
+      resolve: any;
+    }>;
+    sets: Array<{ table: any; values: any }>;
+  } = {
+    queries: [],
+    sets: [],
+  };
+
+  const createBuilder = () => {
+    let activeTable: any = null;
+    let action: 'select' | 'insert' | 'update' = 'select';
+
+    const builder = {
+      select: vi.fn().mockImplementation(() => {
+        action = 'select';
+        return builder;
+      }),
+      insert: vi.fn().mockImplementation((table) => {
+        action = 'insert';
+        activeTable = table;
+        return builder;
+      }),
+      update: vi.fn().mockImplementation((table) => {
+        action = 'update';
+        activeTable = table;
+        return builder;
+      }),
+      from: vi.fn().mockImplementation((table) => {
+        activeTable = table;
+        return builder;
+      }),
+      innerJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      set: vi.fn().mockImplementation((values: any) => {
+        mocks.sets.push({ table: activeTable, values });
+        return builder;
+      }),
+      values: vi.fn().mockReturnThis(),
+      returning: vi.fn().mockReturnThis(),
+      onConflictDoNothing: vi.fn().mockReturnThis(),
+      // eslint-disable-next-line unicorn/no-thenable -- Drizzle ORM queries are thenables; the mock must implement .then() to support direct await
+      then: (onfulfilled: any) => {
+        const index = mocks.queries.findIndex(
+          (q) =>
+            (q.table === undefined || q.table === activeTable) &&
+            (q.action === undefined || q.action === action),
+        );
+        let result: any = [];
+        if (index !== -1) {
+          const entry = mocks.queries[index];
+          if (entry !== undefined) {
+            result = entry.resolve;
+            mocks.queries.splice(index, 1);
+          }
+        }
+        return Promise.resolve(result).then(onfulfilled);
+      },
+    };
+    return builder;
+  };
+
+  // Each query gets its OWN builder: one shared builder's `activeTable` is overwritten when the service runs
+  // independent queries together (Promise.all), and a result then lands on the wrong query.
+  const root = createBuilder();
+  const dbMock = {
+    ...root,
+    select: vi.fn((...args: unknown[]) => createBuilder().select(...args)),
+    insert: vi.fn((table: unknown) => createBuilder().insert(table)),
+    update: vi.fn((table: unknown) => createBuilder().update(table)),
+    transaction: vi.fn(async (cb: any) => {
+      return cb(createBuilder());
+    }),
+  };
+
+  const mockResponse = (resolve: any, table?: any, action?: 'select' | 'insert' | 'update') => {
+    mocks.queries.push({ table, action, resolve });
+  };
+
+  return { dbMock, mockResponse, sets: mocks.sets };
+};
 
 describe('ApplicationsService Unit Test Suite', () => {
   let service: ApplicationsService;
   let dbMock: any;
   let mockResponse: any;
-  let consentMock: any;
   let configMock: any;
 
   beforeEach(() => {
-    const mocks = createMockDb();
-    dbMock = mocks.builderMock;
+    const mocks = createDbMock();
+    dbMock = mocks.dbMock;
     mockResponse = mocks.mockResponse;
-    consentMock = {
-      assertSubmittableForForm: vi.fn().mockResolvedValue(undefined),
-    };
     configMock = {
       get: vi.fn((key: string) => {
         if (key === 'CITIZEN_WEB_URL') return 'http://citizen';
@@ -38,102 +143,11 @@ describe('ApplicationsService Unit Test Suite', () => {
         return undefined;
       }),
     };
-    service = new ApplicationsService(
-      dbMock as unknown as Database,
-      consentMock as any,
-      configMock as any,
-    );
-  });
-
-  describe('getApplicationForm', () => {
-    it('Should throw NotFoundException if service is not found when fetching an application form', async () => {
-      mockResponse([], documents, 'select'); // no service version found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('Should throw NotFoundException if form reference is not found', async () => {
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([], documentReferences, 'select'); // form reference not found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('Should throw NotFoundException if form document or version is not found', async () => {
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([], documentVersions, 'select'); // form details not found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('Should return normalized form details on success', async () => {
-      const mockForm = {
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: { schema: { type: 'object' } },
-      };
-
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([mockForm], documentVersions, 'select'); // form details found
-
-      const result = await service.getApplicationForm('svc-id', 'form-id');
-
-      expect(result).toEqual({
-        serviceId: 'svc-id',
-        formId: 'form-id',
-        formVersionId: 'form-ver-id',
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: {
-          schema: { type: 'object' },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        },
-      });
-    });
-
-    it('Should return normalized form details on success even if structure is null', async () => {
-      const mockForm = {
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: null,
-      };
-
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([mockForm], documentVersions, 'select'); // form details found
-
-      const result = await service.getApplicationForm('svc-id', 'form-id');
-
-      expect(result).toEqual({
-        serviceId: 'svc-id',
-        formId: 'form-id',
-        formVersionId: 'form-ver-id',
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: {
-          schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        },
-      });
-    });
+    service = new ApplicationsService(dbMock as unknown as Database, configMock as any);
   });
 
   describe('createOrResumeDraft', () => {
-    it('Should throw UnprocessableEntityException if form version is not found or kind is invalid', async () => {
+    it('should throw UnprocessableEntityException if form version is not found or kind is invalid', async () => {
       mockResponse([], documentVersions, 'select'); // form version not found
 
       await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toThrow(
@@ -141,8 +155,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('Should resume existing draft if one is found', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+    it('should resume existing draft if one is found', async () => {
+      const fv = PUBLISHED_METHOD;
       const existingSub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -151,6 +165,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const existingVer = {
         id: 'ver-1',
+        submissionId: 'sub-1',
+        version: 1,
         status: 'draft',
         data: { field: 'value' },
         updatedAt: new Date('2026-07-08T12:10:00.000Z'),
@@ -159,6 +175,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft steps:
       // - select submissions
       mockResponse([existingSub], submissions, 'select');
@@ -180,8 +198,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should create a new draft if no existing draft is found', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+    it('should create a new draft if no existing draft is found', async () => {
+      const fv = PUBLISHED_METHOD;
       const newSub = {
         id: 'new-sub-1',
         documentId: 'doc-1',
@@ -198,6 +216,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
 
@@ -220,11 +240,13 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should throw an Error if submission insert returns no row', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+    it('should throw an Error if submission insert returns no row', async () => {
+      const fv = PUBLISHED_METHOD;
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
       // 3. transaction insert returns empty
@@ -235,8 +257,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('Should throw an Error if submission version insert returns no row', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+    it('should throw an Error if submission version insert returns no row', async () => {
+      const fv = PUBLISHED_METHOD;
       const newSub = {
         id: 'new-sub-1',
         documentId: 'doc-1',
@@ -246,6 +268,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
       // 3. transaction inserts
@@ -259,13 +283,13 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('getDetail', () => {
-    it('Should throw NotFoundException if submission is not found or not owned by user', async () => {
+    it('should throw NotFoundException if submission is not found or not owned by user', async () => {
       mockResponse([], submissions, 'select'); // requireOwn returns empty
 
       await expect(service.getDetail('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('Should throw NotFoundException if latest submission version is not found', async () => {
+    it('should throw NotFoundException if latest submission version is not found', async () => {
       const sub = { id: 'sub-1', documentId: 'doc-1', userId: 'user-1' };
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([], submissionVersions, 'select'); // requireLatest -> latestVersion returns null
@@ -273,7 +297,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       await expect(service.getDetail('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('Should return full details on success', async () => {
+    it('should return full details on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -291,10 +315,21 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([ver], submissionVersions, 'select'); // requireLatest -> latestVersion
-      mockResponse([{ title: 'Form Title', kind: 'basic-form' }], documents, 'select'); // form doc details
-      mockResponse([{ schema: { type: 'object' } }], documentVersions, 'select'); // form version details
-      mockResponse([{ serviceId: 'svc-1' }], documentReferences, 'select'); // documentReferences relation
-      mockResponse([{ title: 'Service Title' }], documents, 'select'); // owning service document
+      // Feature 217: one lookup — the form VERSION's generated title + its content. There is no
+      // owning service to resolve, and no `kind`.
+      mockResponse(
+        [
+          {
+            title: 'Form Title',
+            content: {
+              schema: { type: 'object' },
+              variants: { default: { type: 'Form', elements: [] } },
+            },
+          },
+        ],
+        documentVersions,
+        'select',
+      );
       mockResponse([], reviews, 'select'); // latestReviewReason -> reviews select
 
       const result = await service.getDetail('user-1', 'sub-1');
@@ -307,15 +342,10 @@ describe('ApplicationsService Unit Test Suite', () => {
         formId: 'doc-1',
         formVersionId: 'fv-1',
         formTitle: 'Form Title',
-        serviceId: 'svc-1',
-        serviceTitle: 'Service Title',
-        kind: 'basic-form',
         structure: {
-          schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
+          // normalizeContent passes a present schema through verbatim.
+          schema: { type: 'object' },
+          variants: { default: { type: 'Form', elements: [] } },
         },
         data: { field: 'value' },
         reviewReason: null,
@@ -325,7 +355,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should return details with default fallback values when form doc, version, reference, or service are missing', async () => {
+    it('falls back to a null title and an empty document when the form version is missing', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -343,9 +373,7 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([ver], submissionVersions, 'select'); // requireLatest
-      mockResponse([], documents, 'select'); // form doc details (empty -> formDoc undefined)
       mockResponse([], documentVersions, 'select'); // form version details (empty -> formVer undefined)
-      mockResponse([], documentReferences, 'select'); // documentReferences relation (empty -> refRows[0] undefined)
       mockResponse([{ reason: 'Some reason' }], reviews, 'select'); // latestReviewReason -> reviews select
 
       const result = await service.getDetail('user-1', 'sub-1');
@@ -357,16 +385,10 @@ describe('ApplicationsService Unit Test Suite', () => {
         statusLabel: 'Draft',
         formId: 'doc-1',
         formVersionId: 'fv-1',
-        formTitle: 'Application', // fallback
-        serviceId: '', // fallback
-        serviceTitle: 'Service', // fallback
-        kind: 'basic-form', // fallback
+        formTitle: null, // no version row → no generated title
         structure: {
           schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
+          variants: { default: { type: 'Form', elements: [] } },
         },
         data: { field: 'value' },
         reviewReason: 'Some reason',
@@ -378,7 +400,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('revise', () => {
-    it('Should throw ConflictException if submission is not in needs_changes status', async () => {
+    it('should throw ConflictException if submission is not in needs_changes status', async () => {
       const sub = { id: 'sub-1', userId: 'user-1' };
       const ver = { id: 'ver-1', status: 'draft', version: 1 };
 
@@ -388,7 +410,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       await expect(service.revise('user-1', 'sub-1')).rejects.toThrow(ConflictException);
     });
 
-    it('Should insert new submission version (N+1) with draft status on success', async () => {
+    it('should insert new submission version (N+1) with draft status on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -432,7 +454,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('saveDraft', () => {
-    it('Should throw ConflictException if latest version is not draft', async () => {
+    it('should throw ConflictException if latest version is not draft', async () => {
       const sub = { id: 'sub-1', userId: 'user-1' };
       const ver = { id: 'ver-1', status: 'pending' };
 
@@ -444,7 +466,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('Should update version data on success', async () => {
+    it('should update version data on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -479,7 +501,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should throw Error if update returns no row', async () => {
+    it('should throw Error if update returns no row', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -500,7 +522,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('submit', () => {
-    it('Should throw UnprocessableEntityException if validation fails', async () => {
+    it('should throw UnprocessableEntityException if validation fails', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -509,13 +531,15 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const ver = { id: 'ver-1', status: 'draft' };
       const formSchema = {
-        kind: 'basic-form',
-        structure: {
+        content: {
           schema: {
             type: 'object',
             properties: { age: { type: 'number' } },
             required: ['age'],
           },
+          // Doc 275: content without a default variant is malformed and falls back to an empty
+          // document, which would validate anything — so the fixture carries one.
+          variants: { default: { type: 'Form', elements: [] } },
         },
       };
 
@@ -528,7 +552,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('Should update status to pending and set submittedAt on successful validation', async () => {
+    it('should update status to pending and set submittedAt on successful validation', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -538,13 +562,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const ver = { id: 'ver-1', status: 'draft' };
       const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: { age: { type: 'number' } },
-          },
-        },
+        content: { schema: { type: 'object', properties: { age: { type: 'number' } } } },
       };
       const submittedVer = {
         id: 'ver-1',
@@ -559,7 +577,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
       mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email query
       mockResponse([{ slug: 'workspace-slug' }], workspaces, 'select'); // workspace slug query
-      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef query
+      mockResponse([{ title: 'Service Title' }], documentVersions, 'select'); // form title for the staff message
       mockResponse(
         [{ userId: 'member-1', email: 'member1@example.com' }],
         workspaceMembers,
@@ -584,7 +602,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should throw NotFoundException if form version is not found during submit', async () => {
+    it('should throw NotFoundException if form version is not found during submit', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -602,7 +620,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('Should submit successfully even if form schema structure is null', async () => {
+    it('should submit successfully even if form schema structure is null', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -611,10 +629,8 @@ describe('ApplicationsService Unit Test Suite', () => {
         createdAt: new Date('2026-07-08T12:00:00.000Z'),
       };
       const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: null,
-      };
+      // A content row with no schema half — normalizeContent supplies the empty defaults.
+      const formSchema = { content: {} };
       const submittedVer = {
         id: 'ver-1',
         status: 'pending',
@@ -643,7 +659,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('Should submit successfully even if workspace is not found or has no slug but members exist', async () => {
+    it('should submit successfully even if workspace is not found or has no slug but members exist', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -652,10 +668,8 @@ describe('ApplicationsService Unit Test Suite', () => {
         createdAt: new Date('2026-07-08T12:00:00.000Z'),
       };
       const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: null,
-      };
+      // A content row with no schema half — normalizeContent supplies the empty defaults.
+      const formSchema = { content: {} };
       const submittedVer = {
         id: 'ver-1',
         status: 'pending',
@@ -669,7 +683,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
       mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email
       mockResponse([], workspaces, 'select'); // workspace is undefined
-      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef
+      mockResponse([{ title: 'Service Title' }], documentVersions, 'select'); // form title
       mockResponse(
         [{ userId: 'member-1', email: 'member1@example.com' }],
         workspaceMembers,
@@ -683,317 +697,15 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       expect(result.status).toBe('pending');
     });
-
-    it('Should validate address postal codes against database country regexes and throw UnprocessableEntityException if invalid', async () => {
-      const sub = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        userId: 'user-1',
-      };
-      const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: {
-              homeAddress: {
-                type: 'object',
-                properties: {
-                  country: { type: 'string' },
-                  postal_code: { type: 'string' },
-                },
-              },
-            },
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [
-              {
-                type: 'Control',
-                scope: '#/properties/homeAddress',
-                options: { format: 'address' },
-              },
-            ],
-          },
-        },
-      };
-
-      mockResponse([sub], submissions, 'select'); // requireOwn
-      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
-      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
-      mockResponse(
-        [
-          {
-            name: 'Canada',
-            regex:
-              '^([ABCEGHJKLMNPRSTVXY]\\d[ABCEGHJKLMNPRSTVWXYZ])(?: ?(\\d[ABCEGHJKLMNPRSTVWXYZ]\\d))?$',
-          },
-        ],
-        countries,
-        'select',
-      ); // postal code regex lookup from countries table
-
-      await expect(
-        service.submit('user-1', 'sub-1', {
-          homeAddress: { country: 'Canada', postal_code: 'INVALID' },
-        }),
-      ).rejects.toThrow(UnprocessableEntityException);
-    });
-
-    it('Should validate address postal codes and succeed when valid or when country regex is missing', async () => {
-      const sub = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        userId: 'user-1',
-        createdAt: new Date('2026-07-08T12:00:00.000Z'),
-      };
-      const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: {
-              homeAddress: {
-                type: 'object',
-                properties: {
-                  country: { type: 'string' },
-                  postal_code: { type: 'string' },
-                },
-              },
-              workAddress: {
-                type: 'object',
-                properties: {
-                  country: { type: 'string' },
-                  postal_code: { type: 'string' },
-                },
-              },
-            },
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [
-              {
-                type: 'Control',
-                scope: '#/properties/homeAddress',
-                options: { format: 'address' },
-              },
-              {
-                type: 'Control',
-                scope: '#/properties/workAddress',
-                options: { format: 'address' },
-              },
-            ],
-          },
-        },
-      };
-      const submittedVer = {
-        id: 'ver-1',
-        status: 'pending',
-        data: {
-          homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
-          workAddress: { country: 'Otherland', postal_code: '12345' },
-        },
-        updatedAt: new Date('2026-07-08T12:40:00.000Z'),
-        submittedAt: new Date('2026-07-08T12:40:00.000Z'),
-      };
-
-      mockResponse([sub], submissions, 'select'); // requireOwn
-      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
-      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
-      mockResponse(
-        [
-          {
-            name: 'Canada',
-            regex:
-              '^([ABCEGHJKLMNPRSTVXY]\\d[ABCEGHJKLMNPRSTVWXYZ])(?: ?(\\d[ABCEGHJKLMNPRSTVWXYZ]\\d))?$',
-          },
-          { name: 'Otherland', regex: null },
-        ],
-        countries,
-        'select',
-      ); // countries table lookup (covers matching regex and null regex fallback)
-      mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email
-      mockResponse([{ slug: 'workspace-slug' }], workspaces, 'select'); // workspace slug
-      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef
-      mockResponse(
-        [{ userId: 'member-1', email: 'member1@example.com' }],
-        workspaceMembers,
-        'select',
-      ); // members
-      mockResponse([submittedVer], submissionVersions, 'update'); // update query
-      mockResponse([], notificationOutbox, 'insert'); // citizen notification
-      mockResponse([], notificationOutbox, 'insert'); // staff notification
-
-      const result = await service.submit('user-1', 'sub-1', {
-        homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
-        workAddress: { country: 'Otherland', postal_code: '12345' },
-      });
-
-      expect(result.status).toBe('pending');
-      expect(result.data).toEqual({
-        homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
-        workAddress: { country: 'Otherland', postal_code: '12345' },
-      });
-    });
-
-    it('Should throw UnprocessableEntityException if decimal constraints validation fails', async () => {
-      const sub = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        userId: 'user-1',
-      };
-      const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: {
-              amount: { type: 'number' },
-            },
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [
-              {
-                type: 'Control',
-                scope: '#/properties/amount',
-                options: { decimals: 2 },
-              },
-            ],
-          },
-        },
-      };
-
-      mockResponse([sub], submissions, 'select'); // requireOwn
-      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
-      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
-
-      await expect(service.submit('user-1', 'sub-1', { amount: 12.345 })).rejects.toThrow(
-        UnprocessableEntityException,
-      );
-    });
-
-    it('Should throw UnprocessableEntityException if address read-only lock validation fails', async () => {
-      const sub = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        userId: 'user-1',
-      };
-      const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: {
-              homeAddress: {
-                type: 'object',
-                default: { country: 'Canada' },
-                properties: {
-                  country: { type: 'string' },
-                  postal_code: { type: 'string' },
-                },
-              },
-            },
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [
-              {
-                type: 'Control',
-                scope: '#/properties/homeAddress',
-                options: {
-                  format: 'address',
-                  fields: { country: { readOnly: true } },
-                },
-              },
-            ],
-          },
-        },
-      };
-
-      mockResponse([sub], submissions, 'select'); // requireOwn
-      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
-      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
-      mockResponse(
-        [
-          {
-            name: 'United States',
-            regex: '^\\d{5}(-\\d{4})?$',
-          },
-        ],
-        countries,
-        'select',
-      ); // address postal lookup for United States passes
-
-      await expect(
-        service.submit('user-1', 'sub-1', {
-          homeAddress: { country: 'United States', postal_code: '90210' },
-        }),
-      ).rejects.toThrow(UnprocessableEntityException);
-    });
   });
 
   describe('listMine', () => {
-    it('Should list all owned submissions and map to MyApplication DTOS, skipping null entries', async () => {
-      const sub1 = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        createdAt: new Date('2026-07-08T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-08T12:00:00.000Z'),
-      };
-      const sub2 = {
-        id: 'sub-2',
-        documentId: 'doc-2',
-        documentVersionId: 'fv-2',
-        createdAt: new Date('2026-07-08T12:05:00.000Z'),
-        updatedAt: new Date('2026-07-08T12:05:00.000Z'),
-      };
-
-      mockResponse([sub1, sub2], submissions, 'select'); // listMine submissions query
-
-      // toMyApplication for sub1:
-      mockResponse(
-        [{ serviceId: 'svc-1', serviceVersionId: 'svc-ver-1' }],
-        documentReferences,
-        'select',
-      ); // ref
-      mockResponse([{ title: 'Service 1' }], documents, 'select'); // svc doc
-      mockResponse([{ title: 'Form 1' }], documents, 'select'); // form doc
-      mockResponse(
-        [{ status: 'draft', updatedAt: new Date('2026-07-08T12:10:00.000Z') }],
-        submissionVersions,
-        'select',
-      ); // latestVersion
-
-      // toMyApplication for sub2 (let it return empty reference, which skips the item):
-      mockResponse([], documentReferences, 'select'); // no reference found
-
-      const result = await service.listMine('user-1');
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        id: 'sub-1',
-        serviceId: 'svc-1',
-        serviceVersionId: 'svc-ver-1',
-        serviceTitle: 'Service 1',
-        formTitle: 'Form 1',
-        reference: expect.any(String),
-        status: 'draft',
-        statusLabel: 'Draft',
-        lastUpdated: '2026-07-08T12:10:00.000Z',
-      });
-    });
-
-    it('Should fall back to defaults when service, form, or version are missing/undefined', async () => {
+    /**
+     * Feature 217: `toMyApplication` used to resolve the OWNING SERVICE through the form's
+     * `application_form` reference, and returned null — hiding the row — when there was none.
+     * There is no service to name now, and every one of the citizen's applications is listed.
+     */
+    it('lists every owned submission, identified by the form it was made on', async () => {
       const sub1 = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -1003,15 +715,41 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
 
       mockResponse([sub1], submissions, 'select'); // listMine submissions query
-
-      // toMyApplication mocks:
+      mockResponse([{ title: 'Form 1' }], documentVersions, 'select'); // form version title
       mockResponse(
-        [{ serviceId: 'svc-1', serviceVersionId: 'svc-ver-1' }],
-        documentReferences,
+        [{ status: 'draft', updatedAt: new Date('2026-07-08T12:10:00.000Z') }],
+        submissionVersions,
         'select',
-      ); // ref
-      mockResponse([], documents, 'select'); // svc doc (empty -> svc undefined)
-      mockResponse([], documents, 'select'); // form doc (empty -> form undefined)
+      ); // latestVersion
+
+      const result = await service.listMine('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: 'sub-1',
+        // Doc 292 rule 7: no published service links to this form in these cases.
+        serviceId: null,
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        formTitle: 'Form 1',
+        reference: expect.any(String),
+        status: 'draft',
+        statusLabel: 'Draft',
+        lastUpdated: '2026-07-08T12:10:00.000Z',
+      });
+    });
+
+    it('no longer hides a submission whose form has no owning service', async () => {
+      const sub1 = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-08T12:05:00.000Z'),
+      };
+
+      mockResponse([sub1], submissions, 'select');
+      mockResponse([], documentVersions, 'select'); // no form version row
       mockResponse([], submissionVersions, 'select'); // latestVersion (empty -> ver undefined)
 
       const result = await service.listMine('user-1');
@@ -1019,15 +757,196 @@ describe('ApplicationsService Unit Test Suite', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         id: 'sub-1',
-        serviceId: 'svc-1',
-        serviceVersionId: 'svc-ver-1',
-        serviceTitle: 'Service',
-        formTitle: 'Application',
+        // Doc 292 rule 7: no published service links to this form in these cases.
+        serviceId: null,
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        formTitle: null,
         reference: expect.any(String),
         status: 'draft',
         statusLabel: 'Draft',
         lastUpdated: '2026-07-08T12:05:00.000Z', // falls back to sub.updatedAt
       });
+    });
+  });
+});
+
+// Doc 292.
+
+const draftVersion292 = (over: Record<string, unknown> = {}) => ({
+  id: 'ver-1',
+  submissionId: 'sub-1',
+  version: 1,
+  status: 'draft',
+  data: { name: 'Jane', removedField: 'x' },
+  updatedAt: new Date('2026-10-13T10:00:00.000Z'),
+  submittedAt: null,
+  ...over,
+});
+const submission292 = (over: Record<string, unknown> = {}) => ({
+  id: 'sub-1',
+  documentId: 'doc-1',
+  documentVersionId: 'fv-1',
+  userId: 'user-1',
+  createdAt: new Date('2026-10-13T09:00:00.000Z'),
+  updatedAt: new Date('2026-10-13T09:00:00.000Z'),
+  ...over,
+});
+
+describe('ApplicationsService — doc 292', () => {
+  let service: ApplicationsService;
+  let mockResponse: any;
+  let sets: Array<{ table: any; values: any }>;
+  const config = { get: vi.fn((key: string) => `http://${key.toLowerCase()}`) };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const mocks = createDbMock();
+    mockResponse = mocks.mockResponse;
+    sets = mocks.sets;
+    service = new ApplicationsService(mocks.dbMock as unknown as Database, config as any);
+  });
+
+  describe('createOrResumeDraft (rules 2-5)', () => {
+    it('refuses 422 a version that is not a published application method', async () => {
+      for (const row of [
+        { ...PUBLISHED_METHOD, status: 'draft' },
+        { ...PUBLISHED_METHOD, type: 'services.service' },
+        { ...PUBLISHED_METHOD, kind: 'template' },
+        { ...PUBLISHED_METHOD, workspaceId: null },
+      ]) {
+        mockResponse([row], documentVersions, 'select');
+        mockResponse([LINKED_SERVICE], documentLinks, 'select');
+        // eslint-disable-next-line no-await-in-loop -- one case after another on one mock
+        await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toThrow(
+          'Not an application form version',
+        );
+      }
+    });
+
+    it('refuses 422 a published method version no published service links to', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([], documentLinks, 'select');
+
+      await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('resumes the citizen draft on the same version', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([submission292()], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-1');
+
+      expect(result).toMatchObject({ id: 'sub-1', formVersionId: 'fv-1', status: 'draft' });
+      expect(sets).toEqual([]);
+    });
+
+    it('moves a never-submitted draft on another version of the method to this one, keeping known answers', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([submission292({ documentVersionId: 'fv-old' })], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse([submission292({ documentVersionId: 'fv-2' })], submissions, 'update');
+      mockResponse([draftVersion292({ data: { name: 'Jane' } })], submissionVersions, 'update');
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-2');
+
+      expect(sets).toEqual([
+        { table: submissions, values: { documentVersionId: 'fv-2' } },
+        // `removedField` is not in the new schema; `name` is.
+        { table: submissionVersions, values: { data: { name: 'Jane' } } },
+      ]);
+      expect(result).toMatchObject({ id: 'sub-1', formVersionId: 'fv-2', data: { name: 'Jane' } });
+    });
+
+    it('creates a new draft otherwise and never moves a submitted application', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      // An application on an older version that was SUBMITTED and is being revised (v2 draft).
+      mockResponse([submission292({ documentVersionId: 'fv-old' })], submissions, 'select');
+      mockResponse(
+        [
+          draftVersion292({ status: 'needs_changes' }),
+          draftVersion292({ id: 'ver-2', version: 2 }),
+        ],
+        submissionVersions,
+        'select',
+      );
+      mockResponse(
+        [submission292({ id: 'sub-new', documentVersionId: 'fv-2' })],
+        submissions,
+        'insert',
+      );
+      mockResponse(
+        [draftVersion292({ id: 'ver-new', submissionId: 'sub-new', data: {} })],
+        submissionVersions,
+        'insert',
+      );
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-2');
+
+      expect(result).toMatchObject({ id: 'sub-new', formVersionId: 'fv-2', data: {} });
+      expect(sets).toEqual([]);
+    });
+  });
+
+  describe('submit (rule 9)', () => {
+    const arrange = (links: unknown[]) => {
+      mockResponse([submission292()], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse(
+        [{ content: { schema: { type: 'object', properties: {} } } }],
+        documentVersions,
+        'select',
+      );
+      mockResponse([{ email: 'citizen@example.com' }], users, 'select');
+      mockResponse([{ slug: 'ws' }], workspaces, 'select');
+      mockResponse(links, documentLinks, 'select');
+      mockResponse([{ title: 'Apply online' }], documentVersions, 'select');
+      mockResponse([{ userId: 'm1', email: 'm1@example.com' }], workspaceMembers, 'select');
+      mockResponse([draftVersion292({ status: 'pending' })], submissionVersions, 'update');
+    };
+
+    it('names the linked published service in the staff notification, else the method', async () => {
+      arrange([LINKED_SERVICE]);
+      await service.submit('user-1', 'sub-1', {});
+      expect(vi.mocked(staffSubmissionContent)).toHaveBeenLastCalledWith(
+        expect.any(String),
+        'Parking permits',
+      );
+
+      arrange([]);
+      await service.submit('user-1', 'sub-1', {});
+      expect(vi.mocked(staffSubmissionContent)).toHaveBeenLastCalledWith(
+        expect.any(String),
+        'Apply online',
+      );
+    });
+  });
+
+  describe('listMine (rule 7)', () => {
+    it('gives each application the service it was made through, or null', async () => {
+      mockResponse(
+        [submission292(), submission292({ id: 'sub-2', documentId: 'doc-2' })],
+        submissions,
+        'select',
+      );
+      mockResponse([{ title: 'Apply online' }], documentVersions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([{ title: 'Other' }], documentVersions, 'select');
+      mockResponse([draftVersion292({ submissionId: 'sub-2' })], submissionVersions, 'select');
+      mockResponse([], documentLinks, 'select');
+
+      const result = await service.listMine('user-1');
+
+      expect(result.map((item) => [item.id, item.serviceId])).toEqual([
+        ['sub-1', 'svc-1'],
+        ['sub-2', null],
+      ]);
     });
   });
 });

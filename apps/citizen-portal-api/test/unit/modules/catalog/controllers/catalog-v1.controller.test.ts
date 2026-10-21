@@ -71,3 +71,17 @@ describe('CatalogV1Controller Unit Test Suite', () => {
     });
   });
 });
+
+// Doc 291.
+describe('CatalogV1Controller — application methods (doc 291)', () => {
+  describe('routes', () => {
+    it('getApplicationMethod delegates with the service and method ids', async () => {
+      const method = { id: 'm1', title: 'Online', description: null, schema: {}, variants: {} };
+      const catalog = { getApplicationMethod: vi.fn().mockResolvedValue(method) };
+      const controller = new CatalogV1Controller(catalog as unknown as CatalogService);
+
+      await expect(controller.getApplicationMethod('service-1', 'm1')).resolves.toBe(method);
+      expect(catalog.getApplicationMethod).toHaveBeenCalledWith('service-1', 'm1');
+    });
+  });
+});

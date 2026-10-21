@@ -90,7 +90,6 @@ export function SubmissionsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Service</TableHead>
                     <TableHead>Application</TableHead>
                     <SortableHeader
                       column="status"
@@ -118,7 +117,7 @@ export function SubmissionsPage() {
                 <TableBody>
                   {items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                         {q === ''
                           ? 'No submissions yet — they appear here once applicants submit.'
                           : `No submissions match “${q}”.`}
@@ -137,8 +136,7 @@ export function SubmissionsPage() {
                           </Link>
                           <div className="text-xs text-muted-foreground">{s.reference}</div>
                         </TableCell>
-                        <TableCell>{s.serviceTitle}</TableCell>
-                        <TableCell>{s.formTitle}</TableCell>
+                        <TableCell>{s.formTitle ?? '—'}</TableCell>
                         <TableCell>
                           <Badge color="yellow">{s.statusLabel}</Badge>
                         </TableCell>

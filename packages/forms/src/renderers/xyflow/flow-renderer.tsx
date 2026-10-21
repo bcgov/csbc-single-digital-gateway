@@ -1,0 +1,328 @@
+import type { LayoutProps, UISchemaElement } from '@jsonforms/core';
+import { withJsonFormsLayoutProps } from '@jsonforms/react';
+import {
+  Background,
+  Controls,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  type EdgeTypes,
+  type NodeTypes,
+  type ReactFlowProps,
+} from '@xyflow/react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import { ConditionHoverProvider, type ConditionHover } from './condition-hover';
+import { LayoutNestingContext } from '../gridstack/layout-nesting';
+import { ActionEdge } from './action-edge';
+import {
+  DEFAULT_DIRECTION,
+  // Aliased: the canvas component in this file is itself called `FlowLayout`.
+  type FlowLayout as ElkLayout,
+} from './flow-elk';
+import { useFlowLayout } from './use-flow-layout';
+import { AddAffordance } from './add-affordance';
+import { FlowContext, type FlowContextValue } from './flow-context';
+import { FLOW_EMPTY_MESSAGE, useFlowEditor, type FlowEditor } from './flow-editor';
+import {
+  drawnNodes,
+  elementsOf,
+  flowNodeKind,
+  FLOW_CHILD_MESSAGE,
+  FLOW_NESTED_MESSAGE,
+} from './flow-elements';
+import {
+  connectGesture,
+  disconnectGesture,
+  reconnectGesture,
+  reconnectRefusal,
+  selectEdgeGesture,
+} from './flow-gestures';
+import { ConditionNode } from './condition-node';
+import {
+  ACTION_EDGE_TYPE,
+  CONDITION_NODE_TYPE,
+  STAGE_NODE_TYPE,
+  toFlowEdges,
+  toFlowNodes,
+  type FlowNode,
+} from './flow-nodes';
+import { StageNode } from './stage-node';
+
+// Stable identity — xyflow warns and re-creates every node when nodeTypes changes between renders. The same applies to
+// edgeTypes (doc 198 rule 9), so both are module-level constants.
+const NODE_TYPES: NodeTypes = {
+  [STAGE_NODE_TYPE]: StageNode,
+  [CONDITION_NODE_TYPE]: ConditionNode,
+};
+const EDGE_TYPES: EdgeTypes = { [ACTION_EDGE_TYPE]: ActionEdge };
+
+type FlowProps = ReactFlowProps<FlowNode>;
+
+/** Doc 195 rule 11: nothing on a view-only canvas can be moved, connected, selected or deleted. */
+const VIEW_ONLY_PROPS: FlowProps = {
+  nodesDraggable: false,
+  nodesConnectable: false,
+  elementsSelectable: false,
+  deleteKeyCode: null,
+};
+
+/**
+ * Doc 196 rules 5-7: an editable canvas connects handles that `connectionProblem` allows and turns Delete / Backspace on
+ * selected edges into a disconnect. xyflow never changes anything itself — `onBeforeDelete` resolves `false` — so the
+ * uischema stays the only source of truth.
+ *
+ * Doc 198 rule 4: Stages are NOT draggable even here. Positions are derived (rules 1-2), so a drag could not persist.
+ */
+function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
+  const flowId = editor.idOf(flow);
+  const emit = (gesture: ReturnType<typeof connectGesture>) => {
+    if (gesture) editor.onGesture(gesture);
+  };
+  return {
+    nodesDraggable: false,
+    nodesConnectable: true,
+    elementsSelectable: true,
+    selectionOnDrag: false,
+    multiSelectionKeyCode: null,
+    deleteKeyCode: ['Delete', 'Backspace'],
+    // Doc 199 rule 45c: the handle decides whether this duplicates an edge, so it is part of the question.
+    // Doc 209 rule 14: "may connect" is derived here — `=== undefined` — rather than kept as a second port
+    // method that could drift from the one carrying the reason.
+    isValidConnection: ({ source, target, sourceHandle }) =>
+      editor.connectionProblem(flow, source, target, sourceHandle) === undefined,
+    onConnect: (connection) => emit(connectGesture(flowId, connection)),
+    /**
+     * Doc 209 rules 19-20: dragging an edge's tip re-points it, through the SAME `repointEdge` the inspector
+     * panel runs. Only under an editor — a view-only canvas is not connectable either (doc 196 rule 5).
+     */
+    edgesReconnectable: true,
+    onReconnect: (oldEdge, connection) => emit(reconnectGesture(flowId, oldEdge.id, connection)),
+    /**
+     * Rules 15-16: a drop xyflow judges invalid never reaches `onReconnect`, so without this the drag would
+     * snap back saying nothing while the inspector's pickers explained themselves.
+     */
+    onReconnectEnd: (_event, oldEdge, anchor, state) =>
+      emit(reconnectRefusal(flowId, oldEdge, anchor, state)),
+    onBeforeDelete: ({ edges }) => {
+      emit(disconnectGesture(flowId, edges));
+      return Promise.resolve(false);
+    },
+  };
+}
+
+interface FitOnResizeProps {
+  readonly target: RefObject<HTMLElement | null>;
+  readonly userMoved: RefObject<boolean>;
+  /** Doc 198 rule 31: refit when a new arrangement lands, so a changed algorithm or direction is in view. */
+  readonly layout: ElkLayout;
+}
+
+/**
+ * Doc 196 rule 15: refits the view whenever the canvas container resizes (a dock panel opening or closing) until the
+ * author pans or zooms by hand. The observer's first report is the mount, which the `fitView` prop already handles.
+ */
+function FitOnResize({ target, userMoved, layout }: FitOnResizeProps) {
+  const { fitView } = useReactFlow();
+  // Rule 31: a new layout moves every node at once; the canvas follows it rather than leaving the flow off-screen.
+  useEffect(() => {
+    if (layout.positions.size > 0) void fitView();
+  }, [fitView, layout]);
+  useEffect(() => {
+    const element = target.current;
+    if (!element) return undefined;
+    let mounted = false;
+    const observer = new ResizeObserver(() => {
+      if (mounted && !userMoved.current) void fitView();
+      mounted = true;
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [fitView, target, userMoved]);
+  return null;
+}
+
+/**
+ * The Flow layout renderer (doc 195 rules 6-11). Anywhere but the root it renders an error. At the root it draws a
+ * ReactFlow canvas — a node per Stage and the sanitised edges, both derived from the uischema — and provides the Flow's
+ * dispatch props to the Stage nodes. Without a Flow editor the canvas is view-only; under one it is editable (doc 196).
+ */
+function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible }: LayoutProps) {
+  const nested = useContext(LayoutNestingContext) !== null;
+  const inFlow = useContext(FlowContext) !== null;
+  const editor = useFlowEditor();
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const userMoved = useRef(false);
+  // Doc 198 rules 30-32: the arrangement is a VIEW of the document, so it lives here rather than in the uischema.
+  // Doc 199 rule 50: which Condition row the pointer is over. CANVAS state — a hover must never reach the
+  // document, or moving the mouse would dirty it and push an undo entry.
+  const [hovered, setHovered] = useState<{ nodeId: string | null; handle: string | null }>({
+    nodeId: null,
+    handle: null,
+  });
+  const hover = useMemo<ConditionHover>(
+    () => ({
+      nodeId: hovered.nodeId,
+      handle: hovered.handle,
+      setHovered: (nodeId, handle) => setHovered({ nodeId, handle }),
+    }),
+    [hovered],
+  );
+  // Doc 198 rule 31 is SUPERSEDED: there is no layout picker, so the direction is the module constant rather
+  // than state, and `useFlowLayout` re-runs on the document alone.
+  const direction = DEFAULT_DIRECTION;
+  const layout = useFlowLayout(uischema, { direction });
+  // Doc 210 rule 23: the Flow element and — under an editor — its element id travel with the dispatch props,
+  // so a Condition's output + can list the nodes it may connect to and name the Flow in its gesture.
+  const flowElementId = editor ? editor.idOf(uischema) : undefined;
+  const context = useMemo<FlowContextValue>(
+    () => ({
+      schema,
+      path,
+      enabled,
+      renderers,
+      cells,
+      direction,
+      element: uischema,
+      id: flowElementId,
+    }),
+    [schema, path, enabled, renderers, cells, direction, uischema, flowElementId],
+  );
+  const derivedNodes = useMemo(
+    () => toFlowNodes(uischema, layout.positions),
+    [uischema, layout.positions],
+  );
+  // Doc 198 rule 9: an edge component is given only its own id, so the Flow's element id — which the + needs for its
+  // `insert-between` gesture — rides along in `data`. A view-only edge carries none, and draws no +.
+  const derivedEdges = useMemo(() => {
+    const edges = toFlowEdges(uischema, layout.routes);
+    if (!editor) return edges;
+    const flowId = editor.idOf(uischema);
+    return edges.map((edge) => ({ ...edge, data: { ...edge.data, flowId } }));
+  }, [uischema, layout.routes, editor]);
+  const flowProps = useMemo(
+    () => (editor ? editingProps(editor, uischema) : VIEW_ONLY_PROPS),
+    [editor, uischema],
+  );
+  // xyflow applies its own measurements (nodes) and selection (edges, doc 196 rule 7) through its change handlers, so
+  // both live in state, re-seeded when the uischema changes (React's "adjust state while rendering" pattern). Edges
+  // passed as derived props with no onEdgesChange never become selected, so Delete has nothing to delete.
+  const [nodes, setNodes, onNodesChange] = useNodesState(derivedNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(derivedEdges);
+  /**
+   * Doc 209 rule 2: xyflow's own edge selection is the source of truth for WHICH edge, so the studio is told
+   * about it rather than driving it. The state update still goes through `onEdgesChange` first — the gesture
+   * only reports what it did.
+   */
+  const handleEdgesChange = useCallback<typeof onEdgesChange>(
+    (changes) => {
+      onEdgesChange(changes);
+      if (!editor) return;
+      const gesture = selectEdgeGesture(editor.idOf(uischema), changes);
+      if (gesture) editor.onGesture(gesture);
+    },
+    [onEdgesChange, editor, uischema],
+  );
+  const [seeded, setSeeded] = useState(uischema);
+  if (seeded !== uischema) {
+    setSeeded(uischema);
+    setNodes(derivedNodes);
+    setEdges(derivedEdges);
+  }
+
+  // Doc 198 rule 30b: ELK answers AFTER the render that asked it, so its positions and routes are applied to the
+  // nodes and edges already in state rather than re-seeding them — re-seeding would drop the edge selection that
+  // Delete works on (doc 196 rule 7) every time a layout resolved.
+  useEffect(() => {
+    setNodes((current) =>
+      current.map((node) => {
+        const position = layout.positions.get(node.id);
+        return position === undefined ? node : { ...node, position };
+      }),
+    );
+    setEdges((current) =>
+      current.map((edge) => ({
+        ...edge,
+        data: { ...edge.data, points: layout.routes.get(edge.id) ?? [] },
+      })),
+    );
+  }, [layout, setNodes, setEdges]);
+
+  if (nested || inFlow) {
+    return (
+      <p role="alert" data-slot="flow-nested-error" className="text-sm text-destructive">
+        {FLOW_NESTED_MESSAGE}
+      </p>
+    );
+  }
+  if (!visible) return null;
+  // Doc 199 rule 22: a Flow legitimately holds two kinds of node, so a stray is something that is NEITHER.
+  // Reading `isStage` alone flagged every Condition as an illegal child while still drawing its node.
+  const strays = elementsOf(uischema).some((element) => flowNodeKind(element) === undefined);
+  // Doc 199 rule 16: a Flow holding only a Condition is not empty — reading Stages alone would draw that node
+  // and overlay the "add a stage" hint on top of it.
+  const empty = editor !== null && drawnNodes(uischema).length === 0;
+
+  return (
+    <FlowContext.Provider value={context}>
+      <ConditionHoverProvider value={hover}>
+        <div data-slot="flow" className="flex h-full min-h-96 w-full flex-col gap-2">
+          {strays ? (
+            <p role="alert" data-slot="flow-element-error" className="text-sm text-destructive">
+              {FLOW_CHILD_MESSAGE}
+            </p>
+          ) : null}
+          <div ref={canvasRef} data-slot="flow-canvas" className="relative min-h-0 flex-1">
+            <ReactFlow
+              {...flowProps}
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={handleEdgesChange}
+              nodeTypes={NODE_TYPES}
+              edgeTypes={EDGE_TYPES}
+              fitView
+              onMoveStart={(event) => {
+                // Only a pan or zoom by hand has an event; fitView and the Controls buttons do not.
+                if (event) userMoved.current = true;
+                if (event) editor?.onGestureActive?.(true);
+              }}
+              onMoveEnd={(event) => {
+                if (event) editor?.onGestureActive?.(false);
+              }}
+            >
+              <Background />
+              <Controls showInteractive={false} />
+              <FitOnResize target={canvasRef} userMoved={userMoved} layout={layout} />
+            </ReactFlow>
+            {empty && editor ? (
+              // Doc 198 rule 12: with no palette to reach, an empty Flow needs its own way out of the empty state.
+              <div
+                data-slot="flow-empty"
+                className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+              >
+                <p>{FLOW_EMPTY_MESSAGE}</p>
+                {/* Doc 199 rule 24: the origin + stays Stage-only — a Condition with nothing upstream to test
+                  could hold no valid criterion (rule 26). */}
+                <AddAffordance
+                  label="Add a stage"
+                  onAdd={() => editor.onGesture({ type: 'append', stageId: null, kind: 'stage' })}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </ConditionHoverProvider>
+    </FlowContext.Provider>
+  );
+}
+
+export const FlowLayoutRenderer = withJsonFormsLayoutProps(FlowLayout);

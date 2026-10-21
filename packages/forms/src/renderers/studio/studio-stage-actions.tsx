@@ -1,0 +1,64 @@
+import { mdiDeleteOutline } from '@mdi/js';
+import { Icon } from '@mdi/react';
+import { Button } from '@repo/ui/button';
+import { Popover, PopoverContent } from '@repo/ui/popover';
+import { useCallback, type RefObject } from 'react';
+import type { StudioSelection } from './studio-selection';
+
+interface StudioStageActionsProps {
+  readonly elementId: string;
+  readonly open: boolean;
+  /** The node's studio frame. */
+  readonly frameRef: RefObject<HTMLElement | null>;
+  readonly selection: StudioSelection;
+  /** Doc 199 rule 31: names the popover after the node it acts on — "Stage actions", "Condition actions". */
+  readonly label?: string;
+}
+
+/**
+ * A Stage's actions popover (doc 196 rule 9): Delete only, at the bottom-right of its frame, with the same visibility
+ * rules as a grid item's (doc 185 rules 9-13) — driven only by `open`, no focus movement, own dismissal ignored.
+ * `data-studio-actions-for` lets the studio treat the pointer over the popover as over its Stage. A Stage is not
+ * copied: its Forms would need their data properties re-keyed.
+ */
+export function StudioStageActions({
+  elementId,
+  open,
+  frameRef,
+  selection,
+  label = 'Stage actions',
+}: StudioStageActionsProps) {
+  const anchor = useCallback(() => frameRef.current, [frameRef]);
+
+  return (
+    <Popover open={open}>
+      <PopoverContent
+        anchor={anchor}
+        side="bottom"
+        align="end"
+        sideOffset={4}
+        initialFocus={false}
+        finalFocus={false}
+        aria-label={label}
+        data-studio-actions-for={elementId}
+        /**
+         * Node CHROME sits below node EDITORS. Both popovers default to `z-50` on their positioner, so they
+         * tied and DOM order decided — which put this bar over an open Condition row editor. Lowering the
+         * chrome, rather than raising each editor, keeps one rule instead of an escalating ladder.
+         */
+        positionerClassName="z-40"
+        className="w-auto gap-0 p-0.5"
+      >
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Delete"
+          className="text-destructive"
+          onClick={() => selection.requestDelete(elementId)}
+        >
+          <Icon path={mdiDeleteOutline} size="14px" />
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}

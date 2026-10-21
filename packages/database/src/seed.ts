@@ -1,97 +1,47 @@
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
-import { sql } from 'drizzle-orm';
 
 import { createDatabase } from './client';
 import { resolvePgSsl } from './ssl';
-import { documentTypes, documentTypeVersions } from './schema';
-import { serviceDefinition } from './seed-data/service-definition';
+import { DOCUMENT_TYPE, documentVersions, documents } from './schema';
+import {
+  blankApplicationMethodContent,
+  blankServiceAgreementContent,
+  blankServiceContent,
+} from './seed-data/blank-documents';
 
 // Load this package's own .env (see .env.example) so `npm run db:seed -w @repo/database`
 // picks up DATABASE_URL regardless of the cwd it is invoked from.
 config({ path: resolve(import.meta.dirname, '../.env'), quiet: true });
 
-// Fixed ids make the seed idempotent (re-running inserts nothing new).
-const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';
-const MULTI_STAGE_ID = '00000000-0000-4000-8000-000000000002';
-const SERVICE_ID = '00000000-0000-4000-8000-000000000003';
-const SERVICE_AGREEMENT_ID = '00000000-0000-4000-8000-000000000004';
-const EXTERNAL_APPLICATION_ID = '00000000-0000-4000-8000-000000000005';
-
-const emptyForm = {
-  schema: { type: 'object', properties: {}, required: [] },
-  uischema: { type: 'VerticalLayout', elements: [] },
-};
-
-// The Service type definition is large (it carries the authored section Groups) and lives in its
-// own module so this file stays under the 300-line gate — see the notes there on how the console
-// derives page sections from its top-level `Group` elements.
-
-// A service agreement (consent document) is authored as a fixed set of fields. `content` is a
-// rich-text field (Lexical `object`, `richtext` renderer) like the service `about`. `approveLabel`/
-// `rejectLabel` are the display strings for the citizen's approve/reject radio (Wave 3); the
-// decision value itself is NOT part of this definition (it's collected at apply time).
-const serviceAgreementDefinition = {
-  schema: {
-    type: 'object',
-    required: ['title'],
-    properties: {
-      title: { type: 'string', title: 'Title' },
-      description: { type: 'string', title: 'Description' },
-      content: { type: 'object', title: 'Content' },
-      isOptional: { type: 'boolean', title: 'Optional', default: false },
-      approveLabel: { type: 'string', title: 'Approve label', default: 'Approve' },
-      rejectLabel: { type: 'string', title: 'Reject label', default: 'Reject' },
-    },
-  },
-  uischema: {
-    type: 'VerticalLayout',
-    elements: [
-      { type: 'Control', scope: '#/properties/title' },
-      { type: 'Control', scope: '#/properties/description', options: { multi: true } },
-      { type: 'Control', scope: '#/properties/content', options: { format: 'richtext' } },
-      { type: 'Control', scope: '#/properties/isOptional' },
-      { type: 'Control', scope: '#/properties/approveLabel' },
-      { type: 'Control', scope: '#/properties/rejectLabel' },
-    ],
-  },
-};
-
-// An external application method (feature 131) collects no JSONForms structure — its version `data`
-// holds `{ label, url }` directly. This definition documents that data shape (it is not rendered by
-// a builder); `structureFromDefinition` returns NULL for this kind, so the document's `schema` is NULL.
-const externalApplicationDefinition = {
-  schema: {
-    type: 'object',
-    required: ['label', 'url'],
-    properties: {
-      label: { type: 'string', title: 'Label' },
-      url: { type: 'string', format: 'uri', title: 'URL' },
-    },
-  },
-};
-
-const basicFormDefinition = {
-  name: 'Basic Form',
-  description: 'A single page of fields applicants complete and submit in one go.',
-  ...emptyForm,
-};
-
-const multiStageDefinition = {
-  stages: [
-    {
-      id: 'stage-1',
-      name: 'Stage 1',
-      position: { x: 0, y: 0 },
-      pages: [{ id: 'page-1', name: 'Page 1', description: '', ...emptyForm }],
-    },
-  ],
-  edges: [],
-};
+// Fixed ids make the seed idempotent (a re-run inserts nothing) and let tests and fixtures
+// reference the templates by constant. The VERSION ids are fixed too: a targetless
+// `ON CONFLICT DO NOTHING` would otherwise arbitrate on whichever unique it hit
+// (`document_versions_document_id_version_number_key` or the one-published partial index), and a
+// fresh random id on every run is a silent invariant risk.
+export const TEMPLATE_SERVICE_ID = '00000000-0000-4000-8000-000000000001';
+export const TEMPLATE_APPLICATION_METHOD_ID = '00000000-0000-4000-8000-000000000002';
+export const TEMPLATE_SERVICE_AGREEMENT_ID = '00000000-0000-4000-8000-000000000003';
+export const TEMPLATE_SERVICE_V1_ID = '00000000-0000-4000-8000-000000000011';
+export const TEMPLATE_APPLICATION_METHOD_V1_ID = '00000000-0000-4000-8000-000000000012';
+export const TEMPLATE_SERVICE_AGREEMENT_V1_ID = '00000000-0000-4000-8000-000000000013';
 
 /**
- * Seed runner — idempotent (fixed ids + `onConflictDoNothing`). Inserts the first two document types
- * (Basic Form, Multi-stage Form) with a PUBLISHED version 1 so they appear in the staff catalog.
+ * Seed runner — idempotent (fixed ids + `onConflictDoNothing`). Inserts one GLOBAL template
+ * document per `document_type`, each with a DRAFT version 1 holding a blank `@repo/documents`
+ * content, `{ schema, variants }` (docs 227, 275). An admin authors and publishes each before staff can create documents of
+ * that type. `onConflictDoNothing` means an ALREADY-seeded database keeps whatever it has.
+ *
+ * `workspaceId` is omitted, so each template is global (available in every workspace).
+ * `templateId`/`templateVersionId` are omitted: a template follows no template, which satisfies
+ * `document_versions_template_pair_chk` and leaves the MATCH SIMPLE template FK skipped.
+ *
+ * No `document_version_history` rows: `user_id` is NOT NULL with a RESTRICT FK to `users`, and the
+ * seed creates no users. A seeded template version legitimately has no history — don't "fix" this
+ * by inventing a user.
+ *
+ * `title`, `description` and `status` are GENERATED columns, so they are absent from the insert
+ * type and must not be set. `status` is `draft` because neither `publishedAt` nor `archivedAt` is set.
  */
 async function seed(): Promise<void> {
   const url = process.env.DATABASE_URL;
@@ -104,54 +54,48 @@ async function seed(): Promise<void> {
   });
   try {
     await db
-      .insert(documentTypes)
+      .insert(documents)
       .values([
-        { id: BASIC_FORM_ID, name: 'Basic Form', kind: 'basic-form' },
-        { id: MULTI_STAGE_ID, name: 'Multi-stage Form', kind: 'multi-stage-form' },
-        { id: SERVICE_ID, name: 'Service', kind: 'service' },
-        { id: SERVICE_AGREEMENT_ID, name: 'Service Agreement', kind: 'service-agreement' },
-        { id: EXTERNAL_APPLICATION_ID, name: 'External Application', kind: 'external-application' },
+        { id: TEMPLATE_SERVICE_ID, kind: 'template', type: DOCUMENT_TYPE.service },
+        {
+          id: TEMPLATE_APPLICATION_METHOD_ID,
+          kind: 'template',
+          type: DOCUMENT_TYPE.applicationMethod,
+        },
+        {
+          id: TEMPLATE_SERVICE_AGREEMENT_ID,
+          kind: 'template',
+          type: DOCUMENT_TYPE.serviceAgreement,
+        },
       ])
       .onConflictDoNothing();
 
     await db
-      .insert(documentTypeVersions)
+      .insert(documentVersions)
       .values([
         {
-          typeId: BASIC_FORM_ID,
-          version: 1,
-          definition: basicFormDefinition,
-          publishedAt: sql`now()`,
+          id: TEMPLATE_SERVICE_V1_ID,
+          documentId: TEMPLATE_SERVICE_ID,
+          versionNumber: 1,
+          content: blankServiceContent,
         },
         {
-          typeId: MULTI_STAGE_ID,
-          version: 1,
-          definition: multiStageDefinition,
-          publishedAt: sql`now()`,
+          id: TEMPLATE_APPLICATION_METHOD_V1_ID,
+          documentId: TEMPLATE_APPLICATION_METHOD_ID,
+          versionNumber: 1,
+          content: blankApplicationMethodContent,
         },
         {
-          typeId: SERVICE_ID,
-          version: 1,
-          definition: serviceDefinition,
-          publishedAt: sql`now()`,
-        },
-        {
-          typeId: SERVICE_AGREEMENT_ID,
-          version: 1,
-          definition: serviceAgreementDefinition,
-          publishedAt: sql`now()`,
-        },
-        {
-          typeId: EXTERNAL_APPLICATION_ID,
-          version: 1,
-          definition: externalApplicationDefinition,
-          publishedAt: sql`now()`,
+          id: TEMPLATE_SERVICE_AGREEMENT_V1_ID,
+          documentId: TEMPLATE_SERVICE_AGREEMENT_ID,
+          versionNumber: 1,
+          content: blankServiceAgreementContent,
         },
       ])
       .onConflictDoNothing();
 
     console.info(
-      '[seed] document types ready: Basic Form, Multi-stage Form, Service, Service Agreement, External Application (published v1).',
+      '[seed] templates ready: Service, Application method, Service agreement (draft v1).',
     );
   } finally {
     await db.$client.end();

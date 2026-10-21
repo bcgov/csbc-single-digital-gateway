@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
+  CatalogApplicationMethodDetailDto,
   CatalogServiceDetailDto,
   CatalogServiceListDto,
   CatalogServiceVersionDto,
@@ -39,5 +40,13 @@ export class CatalogV1Controller {
   @ZodSerializerDto(CatalogServiceVersionDto)
   getVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
     return this.catalog.getServiceVersion(id, versionId);
+  }
+
+  /** Doc 291 rule 7: an application method's published form — only one the service's published version lists. */
+  @Public()
+  @Get(':id/application-methods/:methodId')
+  @ZodSerializerDto(CatalogApplicationMethodDetailDto)
+  getApplicationMethod(@Param('id') id: string, @Param('methodId') methodId: string) {
+    return this.catalog.getApplicationMethod(id, methodId);
   }
 }

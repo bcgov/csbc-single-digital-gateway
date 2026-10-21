@@ -1,73 +1,74 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { formQueryOptions, updateFormSchema } from '@/lib/forms';
-import { mockResponse } from '../../support/mock-response';
-import { mockFetch } from '../../support/vi-fixtures';
+import { QueryClient } from '@tanstack/react-query';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BFF_ORIGIN } from '@/lib/bff';
+import { formQueryOptions, updateFormDraft } from '@/lib/forms';
 
-// Mock BFF origin
-vi.mock('@/lib/bff', () => ({
-  BFF_ORIGIN: 'http://bff-test',
-}));
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
-describe('Forms Unit Test Suite', () => {
-  globalThis.fetch = mockFetch;
+const VERSION = {
+  id: 'fv1',
+  documentId: 'f 1',
+  versionNumber: 1,
+  revision: 1,
+  status: 'draft',
+  title: 'Apply online',
+  description: null,
+  content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
+  createdAt: '2026-10-08T00:00:00.000Z',
+};
 
-  beforeEach(() => {
-    mockFetch.mockReset();
-  });
+let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
+beforeEach(() => {
+  fetchMock = vi.fn<typeof fetch>();
+  vi.stubGlobal('fetch', fetchMock);
+});
+afterEach(() => vi.unstubAllGlobals());
 
-  it('Should query form details with query options', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse(200, {
-        form: { id: 'frm-1', title: 'Application Form' },
-        version: { id: 'v-1' },
-      }),
-    );
-
-    const options = formQueryOptions('frm-1');
-    expect(options.queryKey).toEqual(['forms', 'detail', 'frm-1']);
-
-    const details = await (options.queryFn as any)();
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/forms/frm-1', {
-      credentials: 'include',
+// Doc 288: the application method client — GET /v1/forms/:id and PATCH a draft version.
+describe('forms client (doc 288)', () => {
+  describe('formQueryOptions', () => {
+    it('GETs /v1/forms/:id with credentials under key forms/detail/:id', async () => {
+      const body = { form: { id: 'f 1' }, version: VERSION };
+      fetchMock.mockResolvedValue(json(body));
+      const options = formQueryOptions('f 1');
+      expect(options.queryKey).toEqual(['forms', 'detail', 'f 1']);
+      const data = await new QueryClient().fetchQuery(options);
+      expect(data).toEqual(body);
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(String(url)).toBe(`${BFF_ORIGIN}/v1/forms/f%201`);
+      expect(init?.credentials).toBe('include');
     });
-    expect(details.form.title).toBe('Application Form');
-  });
 
-  it('Should update form schema definition and optional title', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'v-1', schema: { type: 'object' } }));
-
-    const updateInput = {
-      definition: { schema: { type: 'object' }, uischema: {} },
-      title: 'New Title',
-    };
-
-    const res = await updateFormSchema('frm-1', 'v-1', updateInput);
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/forms/frm-1/versions/v-1', {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(updateInput),
+    it("throws the API's message on an error response", async () => {
+      fetchMock.mockResolvedValue(json({ message: 'Form not found' }, 404));
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      await expect(client.fetchQuery(formQueryOptions('f1'))).rejects.toThrow('Form not found');
     });
-    expect(res.schema).toEqual({ type: 'object' });
   });
 
-  it('Should handle error message body on failed responses', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse(400, { message: 'Invalid JSON Schema payload' }, false),
-    );
+  describe('updateFormDraft', () => {
+    it('PATCHes /v1/forms/:id/versions/:versionId with { content } and returns the version', async () => {
+      fetchMock.mockResolvedValue(json({ ...VERSION, revision: 2 }));
+      const content = { schema: {}, variants: { default: { type: 'Form', label: 'New' } } };
+      const saved = await updateFormDraft('f1', 'fv1', { content });
+      expect(saved.revision).toBe(2);
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(String(url)).toBe(`${BFF_ORIGIN}/v1/forms/f1/versions/fv1`);
+      expect(init?.method).toBe('PATCH');
+      expect(init?.credentials).toBe('include');
+      expect(JSON.parse(String(init?.body))).toEqual({ content });
+    });
 
-    const options = formQueryOptions('frm-1');
-    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
-      'Invalid JSON Schema payload',
-    );
-  });
-
-  it('Should fall back to default HTTP status text message on failure without body details', async () => {
-    mockFetch.mockResolvedValue(mockResponse(500, null, false));
-
-    const options = formQueryOptions('frm-1');
-    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
-      'Request failed: 500',
-    );
+    it("throws the API's message on a refusal (409 / 403)", async () => {
+      fetchMock.mockResolvedValue(json({ message: 'Only draft versions can be edited' }, 409));
+      await expect(updateFormDraft('f1', 'fv1', { content: {} })).rejects.toThrow(
+        'Only draft versions can be edited',
+      );
+      fetchMock.mockResolvedValue(json({ message: ['Not allowed', 'by the template'] }, 403));
+      await expect(updateFormDraft('f1', 'fv1', { content: {} })).rejects.toThrow(
+        'Not allowed, by the template',
+      );
+    });
   });
 });

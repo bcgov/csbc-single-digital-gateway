@@ -1,24 +1,21 @@
-/**
- * Read a display string out of a service version's `data` JSONB (where the meaningful title and
- * description live), falling back to the document column when absent/blank.
- */
-export function serviceDataString(
-  data: Record<string, unknown>,
-  key: string,
-  fallback: string,
-): string {
-  const value = data[key];
-  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
-}
+import { documentContentOf } from '@repo/documents/content';
 
-/** Split a document-type version `definition` JSONB into the `{ schema, uischema }` a renderer needs. */
-export function definitionSchemas(definition: unknown): {
+/**
+ * Split a document version's `content` JSONB into the `{ schema, variants, data }` a renderer needs (doc 275).
+ *
+ * Feature 217: this used to split the bound document-TYPE version's `definition`, with the filled
+ * values living separately in `data`. A service's own version content is what renders now, and
+ * since doc 281 that content carries the service's answers in `content.data` — `{}` when none.
+ */
+export function contentSchemas(content: unknown): {
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  variants: Record<string, Record<string, unknown>>;
+  data: Record<string, unknown>;
 } {
-  const def = (definition ?? {}) as { schema?: unknown; uischema?: unknown };
+  const parsed = documentContentOf(content);
   return {
-    schema: (def.schema as Record<string, unknown> | undefined) ?? {},
-    uischema: (def.uischema as Record<string, unknown> | undefined) ?? {},
+    schema: parsed?.schema ?? {},
+    variants: parsed?.variants ?? { default: {} },
+    data: parsed?.data ?? {},
   };
 }

@@ -17,9 +17,21 @@ function PopoverContent({
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
+  anchor,
+  positionerClassName,
   ...props
 }: PopoverPrimitive.Popup.Props &
-  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset'>) {
+  Pick<
+    PopoverPrimitive.Positioner.Props,
+    'align' | 'alignOffset' | 'side' | 'sideOffset' | 'anchor'
+  > & {
+    /**
+     * Classes for the POSITIONER, not the popup. The positioner is `isolate z-50`, so it creates the
+     * stacking context — a `z-*` on the popup cannot lift one popover above another, and two popovers
+     * both at the default tie and fall back to DOM order. Pass a `z-*` here to order them deliberately.
+     */
+    positionerClassName?: string;
+  }) {
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
@@ -27,7 +39,8 @@ function PopoverContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        className="isolate z-50"
+        anchor={anchor}
+        className={cn('isolate z-50', positionerClassName)}
       >
         <PopoverPrimitive.Popup
           data-slot="popover-content"

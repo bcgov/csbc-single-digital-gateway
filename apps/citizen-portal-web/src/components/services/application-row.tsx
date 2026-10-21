@@ -1,58 +1,56 @@
 import { Badge } from '@repo/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription } from '@repo/ui/card';
-import { mdiChevronRight } from '@mdi/js';
-import { Icon } from '@mdi/react';
+import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import type { MyApplication } from '@/lib/catalog';
 
 /**
- * One tracked application, linking to the application page (`/applications/:id`). A thick blue left
- * accent; the title (with the status pill to its right) and a single metadata line below it. Shared
- * by "Track your applications" (home) and a service's "Your activity"; `titleBy` selects which name
- * leads:
- * - `'service'` (default, home — disambiguates across services): title = service name; meta =
- *   `<application name> • Ref #<reference> • <last updated>`.
- * - `'application'` (a service's own "Your activity", where the service is implicit): title =
- *   application/form name; meta = `Ref #<reference> • <last updated>` (the form name is the title,
- *   so it is not repeated).
+ * One tracked application. A thick blue left accent; the title (with the status pill to its right)
+ * and a single metadata line below it.
+ *
+ * Doc 292 rule 7: the row links again — a draft back to its apply page (when a published service still offers its
+ * method), anything else to its application page.
  */
-export function ApplicationRow({
-  application,
-  titleBy = 'service',
-}: {
-  application: MyApplication;
-  titleBy?: 'service' | 'application';
-}) {
-  const byApplication = titleBy === 'application';
+export function ApplicationRow({ application }: { application: MyApplication }) {
   return (
-    <Card className="border-l-4 border-l-blue-70">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle>
-            <Link
-              to="/applications/$id"
-              params={{ id: application.id }}
-              className="no-underline hover:underline"
-            >
-              {byApplication ? application.formTitle : application.serviceTitle}
-              <Icon
-                path={mdiChevronRight}
-                size="20px"
-                className="inline-flex text-link"
-                aria-hidden={true}
-              />
-            </Link>
-          </CardTitle>
-          <Badge color="yellow" className="shrink-0">
-            {application.statusLabel}
-          </Badge>
-        </div>
-        <CardDescription>
-          {byApplication ? null : <>{application.formTitle} &#8226; </>}
-          Ref #{application.reference} &#8226;{' '}
-          {new Date(application.lastUpdated).toLocaleDateString()}
-        </CardDescription>
-      </CardHeader>
-    </Card>
+    <RowLink application={application}>
+      <Card className="border-l-4 border-l-blue-70 transition-colors group-hover/row:bg-muted/40">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle>{application.formTitle ?? 'Application'}</CardTitle>
+            <Badge color="yellow" className="shrink-0">
+              {application.statusLabel}
+            </Badge>
+          </div>
+          <CardDescription>
+            Ref #{application.reference} &#8226;{' '}
+            {new Date(application.lastUpdated).toLocaleDateString()}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </RowLink>
+  );
+}
+
+function RowLink({ application, children }: { application: MyApplication; children: ReactNode }) {
+  const className = 'group/row block rounded-xl focus-visible:outline-2 focus-visible:outline-ring';
+  if (application.status === 'draft' && application.serviceId !== null)
+    return (
+      <Link
+        to="/services/$serviceId/apply/$methodId"
+        params={{ serviceId: application.serviceId, methodId: application.formId }}
+        className={className}
+      >
+        {children}
+      </Link>
+    );
+  return (
+    <Link
+      to="/applications/$applicationId"
+      params={{ applicationId: application.id }}
+      className={className}
+    >
+      {children}
+    </Link>
   );
 }

@@ -1,4 +1,5 @@
 import type { SubmissionStatus } from '../dtos/application.dtos';
+import { documentContentOf } from '@repo/documents/content';
 
 /** Human-facing label for a submission status (matches the citizen UI badges). */
 const STATUS_LABELS: Record<SubmissionStatus, string> = {
@@ -26,29 +27,16 @@ export function applicationReference(submissionId: string, createdAt: Date): str
 }
 
 /**
- * Coerce a form version's stored `schema` JSONB into the structure the renderer needs, defaulting
- * any missing arrays/fields (a template-seeded blob can omit them — see CLAUDE.md normalize rule).
+ * Coerce a document version's stored `content` JSONB into the structure the renderer needs,
+ * defaulting either half when absent.
+ *
+ * Doc 275: `content` IS `{ schema, variants }` (a `@repo/documents` DocumentContent), so there is no per-kind shape
+ * to branch on — a routed application is a `Funnel` root inside each variant, not a different top-level object.
  */
-export function normalizeFormStructure(
-  kind: string,
-  structure: Record<string, unknown>,
-): Record<string, unknown> {
-  if (kind === 'multi-stage-form') {
-    return {
-      name: typeof structure['name'] === 'string' ? structure['name'] : '',
-      description: typeof structure['description'] === 'string' ? structure['description'] : '',
-      stages: Array.isArray(structure['stages']) ? structure['stages'] : [],
-      edges: Array.isArray(structure['edges']) ? structure['edges'] : [],
-    };
-  }
+export function normalizeContent(content: Record<string, unknown>): Record<string, unknown> {
+  const parsed = documentContentOf(content);
   return {
-    schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {
-      type: 'object',
-      properties: {},
-    },
-    uischema: (structure['uischema'] as Record<string, unknown> | undefined) ?? {
-      type: 'VerticalLayout',
-      elements: [],
-    },
+    schema: parsed?.schema ?? { type: 'object', properties: {} },
+    variants: parsed?.variants ?? { default: { type: 'Form', elements: [] } },
   };
 }

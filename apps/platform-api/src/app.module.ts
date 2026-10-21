@@ -21,7 +21,7 @@ import { validateEnv, type Env } from './config/env.schema';
 import { OutboxRelayModule } from './notifications/outbox-relay.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DefaultAgreementsModule } from './modules/default-agreements/default-agreements.module';
-import { DocumentTypesModule } from './modules/document-types/document-types.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { ServiceAgreementsModule } from './modules/service-agreements/service-agreements.module';
@@ -115,7 +115,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     // Feature modules (versioned under /v1).
     WorkspacesModule,
     DefaultAgreementsModule,
-    DocumentTypesModule,
+    TemplatesModule,
     ServicesModule,
     FormsModule,
     GeoModule,

@@ -1,22 +1,32 @@
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
-import { ServiceSections } from '@/components/services/detail-sections';
-import { Breadcrumb } from '@/components/services/service-content';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { serviceQueryOptions } from '@/lib/catalog';
+import { ServiceSections } from './services/detail-sections';
+import { StartApplication, citizenReferenceSource } from './services/start-application';
 
 /**
  * A single service's detail page (`/services/:serviceId`) — public (feature 60). Always shows the
  * current PUBLISHED version (no version switcher; a specific version is reachable only via its
- * permalink). Layout follows `inspiration/services-detail.png`: a sticky "On this page" rail beside
- * a sectioned overview (shared with the historical version page via `ServiceSections`).
+ * permalink).
+ *
+ * The header — title, description and "Start an application" over the service's published application methods
+ * (doc 291) — then the service's citizen variant read back through `@repo/documents`, with "On this page" built from
+ * its Section titles (`ServiceSections`) and its application-method cards linked to their apply page.
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
   const { data: service, isPending, isError } = useQuery(serviceQueryOptions(serviceId));
+  const methods = service?.applicationMethods;
+  const references = useMemo(
+    () => (methods === undefined ? undefined : citizenReferenceSource(serviceId, methods)),
+    [serviceId, methods],
+  );
 
   if (isPending) {
     return (
@@ -58,7 +68,7 @@ export function ServiceDetailPage() {
               trail={[
                 { label: 'Home', href: '/' },
                 { label: 'Services', href: '/services' },
-                { label: service.title },
+                { label: service.title ?? 'Service' },
               ]}
             />
           }
@@ -66,23 +76,22 @@ export function ServiceDetailPage() {
           <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1">
               <h1 className="font-heading text-2xl font-semibold text-foreground">
-                {service.title}
+                {service.title ?? 'Service'}
               </h1>
               {service.description ? (
                 <p className="max-w-2xl text-sm text-muted-foreground">{service.description}</p>
               ) : null}
             </div>
-            <Button className="shrink-0">Start an application</Button>
+            <StartApplication serviceId={serviceId} methods={service.applicationMethods ?? []} />
           </header>
         </PageHeaderBanner>
 
         <div className="mx-auto mb-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <ServiceSections
-            serviceId={service.id}
             schema={service.schema}
-            uischema={service.uischema}
+            variants={service.variants}
             data={service.data}
-            applications={service.applications}
+            references={references}
           />
         </div>
       </div>
