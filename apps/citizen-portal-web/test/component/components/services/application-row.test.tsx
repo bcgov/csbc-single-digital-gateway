@@ -3,6 +3,22 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApplicationRow } from '@/components/services/application-row';
 import type { MyApplication } from '@/lib/catalog';
 
+// Doc 292 rule 7: the row is a router Link — rendered here as the anchor it becomes, with its params filled in.
+vi.mock('@tanstack/react-router', async (original) => ({
+  ...(await original<typeof import('@tanstack/react-router')>()),
+  Link: ({ to, params, children, className }: any) => (
+    <a
+      className={className}
+      href={Object.entries(params ?? {}).reduce(
+        (href: string, [key, value]) => href.replace(`$${key}`, String(value)),
+        to,
+      )}
+    >
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock('@repo/ui/card', () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardHeader: ({ children }: any) => <div data-testid="card-header">{children}</div>,
@@ -19,13 +35,13 @@ vi.mock('@repo/ui/badge', () => ({
 }));
 
 /**
- * Feature 217: the row led with the owning SERVICE's name and linked to `/applications/:id`.
- * A submission no longer knows its service, and the application page went with the `@repo/react`
- * renderers, so the row leads with the form and is not a link.
+ * The row leads with the form it was made on (feature 217) and links again (doc 292 rule 7): a draft back to its apply
+ * page when a published service offers its method, anything else to its application page.
  */
 describe('ApplicationRow Component', () => {
   const mockApplication: MyApplication = {
     id: 'app-abc',
+    serviceId: null,
     formId: 'form-123',
     formVersionId: 'ver-456',
     formTitle: 'Income Form',
@@ -60,9 +76,19 @@ describe('ApplicationRow Component', () => {
     expect(screen.getByTestId('card-title')).toHaveTextContent('Application');
   });
 
-  it('is no longer a link — there is nowhere to navigate to yet', () => {
+  it('links a submitted application to its page (doc 292 rule 7)', () => {
     render(<ApplicationRow application={mockApplication} />);
 
-    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/applications/app-abc');
+  });
+
+  it('links a draft to its apply page, or to its own page when no service offers it (doc 292 rule 7)', () => {
+    const draft = { ...mockApplication, status: 'draft' as const, statusLabel: 'Draft' };
+    const { unmount } = render(<ApplicationRow application={{ ...draft, serviceId: 'svc-9' }} />);
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/services/svc-9/apply/form-123');
+    unmount();
+
+    render(<ApplicationRow application={draft} />);
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/applications/app-abc');
   });
 });

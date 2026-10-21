@@ -1,13 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
-  getApplicationForm,
   createOrResumeDraft,
   saveDraft,
   submitApplication,
   getApplication,
   reviseApplication,
   applicationQueryOptions,
-  applicationFormQueryOptions,
   draftQueryOptions,
 } from '@/lib/applications';
 import { BFF_ORIGIN } from '@/lib/bff';
@@ -18,22 +16,6 @@ describe('applications lib', () => {
   });
 
   describe('requestJson API functions', () => {
-    it('getApplicationForm fetches form from the correct endpoint', async () => {
-      const mockForm = { id: 'form1', title: 'Test Form' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockForm,
-      } as Response);
-
-      const result = await getApplicationForm('service-123', 'form-abc');
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BFF_ORIGIN}/v1/services/service-123/applications/form-abc`,
-        { credentials: 'include' },
-      );
-      expect(result).toEqual(mockForm);
-    });
-
     it('createOrResumeDraft sends POST to applications endpoint', async () => {
       const mockSubmission = { id: 'sub-1', status: 'draft' };
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -157,26 +139,6 @@ describe('applications lib', () => {
         expect.any(Object),
       );
       expect(result).toEqual(mockDetail);
-    });
-
-    it('applicationFormQueryOptions creates correct options object', async () => {
-      const mockForm = { id: 'form1', title: 'Test Form' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockForm,
-      } as Response);
-
-      const options = applicationFormQueryOptions('service-1', 'form-1');
-      expect(options.queryKey).toEqual(['applicationForm', 'service-1', 'form-1']);
-      expect(options.staleTime).toBe(60000);
-      expect(options.retry).toBe(false);
-
-      const result = await options.queryFn!({} as any);
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BFF_ORIGIN}/v1/services/service-1/applications/form-1`,
-        expect.any(Object),
-      );
-      expect(result).toEqual(mockForm);
     });
 
     it('draftQueryOptions creates correct options object when formVersionId is provided', async () => {

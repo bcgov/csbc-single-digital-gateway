@@ -5,6 +5,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 /** One application method a citizen may see: the method and its PUBLISHED version's content. */
 export interface PublishedMethod {
   id: string;
+  /** Doc 292: the published version — what a citizen's draft is created on. */
+  versionId: string;
   title: string | null;
   description: string | null;
   content: unknown;
@@ -29,6 +31,7 @@ export async function publishedMethods(
   const rows = await db
     .select({
       id: documents.id,
+      versionId: documentVersions.id,
       title: documentVersions.title,
       description: documentVersions.description,
       content: documentVersions.content,

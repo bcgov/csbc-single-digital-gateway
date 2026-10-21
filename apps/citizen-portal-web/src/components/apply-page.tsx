@@ -1,19 +1,23 @@
-import { DocumentRunner } from '@repo/documents/runner';
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { AnswersForm } from '@/components/application/answers-form';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
-import { applicationMethodQueryOptions, serviceQueryOptions } from '@/lib/catalog';
-import { citizenUischema } from './services/detail-sections';
+import { draftQueryOptions } from '@/lib/applications';
+import { useAuth, useLoginUrl } from '@/lib/auth';
+import {
+  type CatalogApplicationMethodDetail,
+  applicationMethodQueryOptions,
+  serviceQueryOptions,
+} from '@/lib/catalog';
 
 /**
- * Doc 291 rules 10-12 — `/services/:serviceId/apply/:methodId`: one of a service's PUBLISHED application methods,
- * filled in a `DocumentRunner` over its Citizen variant (else default). Nothing is submitted or stored yet: the answers
- * live in this page, Submit is hidden and Save draft shows disabled.
+ * Doc 291 rules 10-12, doc 292 rules 1, 6 — `/services/:serviceId/apply/:methodId`: one of a service's PUBLISHED
+ * application methods. A signed-out citizen is asked to log in (and comes back here); a signed-in one fills their draft
+ * on the method's published version — created, resumed or carried over by the API — and can save or submit it.
  */
 export function ApplyPage() {
   const { serviceId, methodId } = useParams({ from: '/services/$serviceId/apply/$methodId' });
@@ -80,32 +84,49 @@ export function ApplyPage() {
           </header>
         </PageHeaderBanner>
         <div className="mx-auto mb-6 flex w-full max-w-285 flex-col px-4 md:px-3">
-          <ApplyForm schema={method.data.schema} variants={method.data.variants} />
+          <ApplyBody method={method.data} />
         </div>
       </div>
     </CitizenShell>
   );
 }
 
-/** Rule 10: the method's citizen form, its answers held here. */
-function ApplyForm({
-  schema,
-  variants,
-}: {
-  schema: Record<string, unknown>;
-  variants: Readonly<Record<string, Record<string, unknown>>>;
-}) {
-  const uischema = useMemo(() => citizenUischema(variants), [variants]);
-  const [answers, setAnswers] = useState<unknown>({});
+/** Rules 1, 6: log in first; then the citizen's draft on the published version, filled and saved or submitted. */
+function ApplyBody({ method }: { method: CatalogApplicationMethodDetail }) {
+  const auth = useAuth();
+  const loginUrl = useLoginUrl();
+  const navigate = useNavigate();
+  const signedIn = auth.data !== null && auth.data !== undefined;
+  const draft = useQuery({ ...draftQueryOptions(method.versionId), enabled: signedIn });
+
+  if (auth.isPending) return <Skeleton className="h-64 w-full" />;
+  if (!signedIn)
+    return (
+      <div
+        data-slot="apply-sign-in"
+        className="flex flex-col items-start gap-3 rounded-xl border border-border bg-background p-6"
+      >
+        <p className="text-sm">
+          Log in to start your application. You can save it and come back later.
+        </p>
+        <Button render={<a href={loginUrl} />}>Log in to apply</Button>
+      </div>
+    );
+  if (draft.isPending) return <Skeleton className="h-64 w-full" />;
+  if (draft.isError)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        This application can’t be started right now.
+      </p>
+    );
   return (
-    <div data-slot="apply-form" className="rounded-xl border border-border bg-background">
-      <DocumentRunner
-        schema={schema}
-        uischema={uischema}
-        data={answers}
-        onChange={setAnswers}
-        submit={false}
-      />
-    </div>
+    <AnswersForm
+      submission={draft.data}
+      schema={method.schema}
+      variants={method.variants}
+      onSubmitted={(applicationId) =>
+        void navigate({ to: '/applications/$applicationId', params: { applicationId } })
+      }
+    />
   );
 }

@@ -6,7 +6,11 @@ import type { MyApplication } from '@/lib/catalog';
 // Mock Link from @tanstack/react-router to avoid router context setup
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, params, ...props }: any) => {
-    const href = to.replace('$id', params?.id || '');
+    // Doc 292 rule 7: fill in whichever params the route takes.
+    const href = Object.entries(params ?? {}).reduce(
+      (path: string, [key, value]) => path.replace(`$${key}`, String(value)),
+      to,
+    );
     return (
       <a href={href} {...props}>
         {children}
@@ -19,6 +23,7 @@ describe('TrackApplications Component', () => {
   const mockApplications: MyApplication[] = [
     {
       id: 'app-1',
+      serviceId: null,
       formId: 'form-1',
       formVersionId: 'ver-1',
       formTitle: 'Income Assistance Application',
@@ -29,6 +34,7 @@ describe('TrackApplications Component', () => {
     },
     {
       id: 'app-2',
+      serviceId: null,
       formId: 'form-2',
       formVersionId: 'ver-2',
       formTitle: 'Child Care Benefit Application',
@@ -84,9 +90,10 @@ describe('TrackApplications Component', () => {
     expect(screen.getAllByText(/Child Care Benefit/).length).toBe(1);
     expect(screen.getByText(/20260708-0002/)).toBeInTheDocument();
 
-    // Feature 217: the rows are no longer links — the application page went with the
-    // @repo/react renderers.
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    // Doc 292 rule 7: each row links to its application page again.
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
+      mockApplications.map((application) => `/applications/${application.id}`),
+    );
 
     // Should not render empty state
     expect(screen.queryByText('You have no applications to track')).not.toBeInTheDocument();

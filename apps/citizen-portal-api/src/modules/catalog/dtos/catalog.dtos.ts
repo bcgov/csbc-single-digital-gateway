@@ -91,6 +91,8 @@ export class CatalogServiceVersionDto extends createZodDto(catalogServiceVersion
 
 /** Doc 291 rule 7: one application method's PUBLISHED form — what the apply page fills. No answers. */
 export const catalogApplicationMethodDetailSchema = catalogApplicationMethodSchema.extend({
+  /** Doc 292: the published version a citizen's draft is created on. */
+  versionId: z.string(),
   schema: z.record(z.string(), z.unknown()),
   variants: z.record(z.string(), z.record(z.string(), z.unknown())),
 });

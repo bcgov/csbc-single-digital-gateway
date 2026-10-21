@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import {
+  documentLinks,
   type Database,
   documentVersions,
   reviews,
@@ -12,6 +13,30 @@ import {
   notificationOutbox,
 } from '@repo/database';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
+import { staffSubmissionContent } from '../../../../../src/modules/applications/util/notification-content';
+
+// Doc 292 rule 9: watch which service name the staff message is built with (the real builder still runs).
+vi.mock('../../../../../src/modules/applications/util/notification-content', async (original) => {
+  const actual =
+    await original<
+      typeof import('../../../../../src/modules/applications/util/notification-content')
+    >();
+  return { ...actual, staffSubmissionContent: vi.fn(actual.staffSubmissionContent) };
+});
+
+/** Doc 292 rule 2: the only kind of version a draft may start on — a published application method in a workspace. */
+const PUBLISHED_METHOD = {
+  documentId: 'doc-1',
+  status: 'published',
+  type: 'services.service-application-method',
+  kind: 'document',
+  workspaceId: 'ws-1',
+  content: {
+    schema: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' } } },
+    variants: { default: { type: 'Form', elements: [] } },
+  },
+};
+const LINKED_SERVICE = { serviceId: 'svc-1', title: 'Parking permits' };
 
 const createDbMock = () => {
   const mocks: {
@@ -20,8 +45,10 @@ const createDbMock = () => {
       action?: 'select' | 'insert' | 'update' | undefined;
       resolve: any;
     }>;
+    sets: Array<{ table: any; values: any }>;
   } = {
     queries: [],
+    sets: [],
   };
 
   const createBuilder = () => {
@@ -51,7 +78,10 @@ const createDbMock = () => {
       where: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
+      set: vi.fn().mockImplementation((values: any) => {
+        mocks.sets.push({ table: activeTable, values });
+        return builder;
+      }),
       values: vi.fn().mockReturnThis(),
       returning: vi.fn().mockReturnThis(),
       onConflictDoNothing: vi.fn().mockReturnThis(),
@@ -76,8 +106,14 @@ const createDbMock = () => {
     return builder;
   };
 
+  // Each query gets its OWN builder: one shared builder's `activeTable` is overwritten when the service runs
+  // independent queries together (Promise.all), and a result then lands on the wrong query.
+  const root = createBuilder();
   const dbMock = {
-    ...createBuilder(),
+    ...root,
+    select: vi.fn((...args: unknown[]) => createBuilder().select(...args)),
+    insert: vi.fn((table: unknown) => createBuilder().insert(table)),
+    update: vi.fn((table: unknown) => createBuilder().update(table)),
     transaction: vi.fn(async (cb: any) => {
       return cb(createBuilder());
     }),
@@ -87,7 +123,7 @@ const createDbMock = () => {
     mocks.queries.push({ table, action, resolve });
   };
 
-  return { dbMock, mockResponse };
+  return { dbMock, mockResponse, sets: mocks.sets };
 };
 
 describe('ApplicationsService Unit Test Suite', () => {
@@ -120,7 +156,7 @@ describe('ApplicationsService Unit Test Suite', () => {
     });
 
     it('should resume existing draft if one is found', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+      const fv = PUBLISHED_METHOD;
       const existingSub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -129,6 +165,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const existingVer = {
         id: 'ver-1',
+        submissionId: 'sub-1',
+        version: 1,
         status: 'draft',
         data: { field: 'value' },
         updatedAt: new Date('2026-07-08T12:10:00.000Z'),
@@ -137,6 +175,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft steps:
       // - select submissions
       mockResponse([existingSub], submissions, 'select');
@@ -159,7 +199,7 @@ describe('ApplicationsService Unit Test Suite', () => {
     });
 
     it('should create a new draft if no existing draft is found', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+      const fv = PUBLISHED_METHOD;
       const newSub = {
         id: 'new-sub-1',
         documentId: 'doc-1',
@@ -176,6 +216,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
 
@@ -199,10 +241,12 @@ describe('ApplicationsService Unit Test Suite', () => {
     });
 
     it('should throw an Error if submission insert returns no row', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+      const fv = PUBLISHED_METHOD;
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
       // 3. transaction insert returns empty
@@ -214,7 +258,7 @@ describe('ApplicationsService Unit Test Suite', () => {
     });
 
     it('should throw an Error if submission version insert returns no row', async () => {
-      const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
+      const fv = PUBLISHED_METHOD;
       const newSub = {
         id: 'new-sub-1',
         documentId: 'doc-1',
@@ -224,6 +268,8 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       // 1. check form version
       mockResponse([fv], documentVersions, 'select');
+      // Doc 292 rule 2: a published service links to the method.
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
       // 2. findUserDraft returns null (no submissions found)
       mockResponse([], submissions, 'select');
       // 3. transaction inserts
@@ -681,6 +727,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         id: 'sub-1',
+        // Doc 292 rule 7: no published service links to this form in these cases.
+        serviceId: null,
         formId: 'doc-1',
         formVersionId: 'fv-1',
         formTitle: 'Form 1',
@@ -709,6 +757,8 @@ describe('ApplicationsService Unit Test Suite', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         id: 'sub-1',
+        // Doc 292 rule 7: no published service links to this form in these cases.
+        serviceId: null,
         formId: 'doc-1',
         formVersionId: 'fv-1',
         formTitle: null,
@@ -717,6 +767,186 @@ describe('ApplicationsService Unit Test Suite', () => {
         statusLabel: 'Draft',
         lastUpdated: '2026-07-08T12:05:00.000Z', // falls back to sub.updatedAt
       });
+    });
+  });
+});
+
+// Doc 292.
+
+const draftVersion292 = (over: Record<string, unknown> = {}) => ({
+  id: 'ver-1',
+  submissionId: 'sub-1',
+  version: 1,
+  status: 'draft',
+  data: { name: 'Jane', removedField: 'x' },
+  updatedAt: new Date('2026-10-13T10:00:00.000Z'),
+  submittedAt: null,
+  ...over,
+});
+const submission292 = (over: Record<string, unknown> = {}) => ({
+  id: 'sub-1',
+  documentId: 'doc-1',
+  documentVersionId: 'fv-1',
+  userId: 'user-1',
+  createdAt: new Date('2026-10-13T09:00:00.000Z'),
+  updatedAt: new Date('2026-10-13T09:00:00.000Z'),
+  ...over,
+});
+
+describe('ApplicationsService — doc 292', () => {
+  let service: ApplicationsService;
+  let mockResponse: any;
+  let sets: Array<{ table: any; values: any }>;
+  const config = { get: vi.fn((key: string) => `http://${key.toLowerCase()}`) };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const mocks = createDbMock();
+    mockResponse = mocks.mockResponse;
+    sets = mocks.sets;
+    service = new ApplicationsService(mocks.dbMock as unknown as Database, config as any);
+  });
+
+  describe('createOrResumeDraft (rules 2-5)', () => {
+    it('refuses 422 a version that is not a published application method', async () => {
+      for (const row of [
+        { ...PUBLISHED_METHOD, status: 'draft' },
+        { ...PUBLISHED_METHOD, type: 'services.service' },
+        { ...PUBLISHED_METHOD, kind: 'template' },
+        { ...PUBLISHED_METHOD, workspaceId: null },
+      ]) {
+        mockResponse([row], documentVersions, 'select');
+        mockResponse([LINKED_SERVICE], documentLinks, 'select');
+        // eslint-disable-next-line no-await-in-loop -- one case after another on one mock
+        await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toThrow(
+          'Not an application form version',
+        );
+      }
+    });
+
+    it('refuses 422 a published method version no published service links to', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([], documentLinks, 'select');
+
+      await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('resumes the citizen draft on the same version', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([submission292()], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-1');
+
+      expect(result).toMatchObject({ id: 'sub-1', formVersionId: 'fv-1', status: 'draft' });
+      expect(sets).toEqual([]);
+    });
+
+    it('moves a never-submitted draft on another version of the method to this one, keeping known answers', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([submission292({ documentVersionId: 'fv-old' })], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse([submission292({ documentVersionId: 'fv-2' })], submissions, 'update');
+      mockResponse([draftVersion292({ data: { name: 'Jane' } })], submissionVersions, 'update');
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-2');
+
+      expect(sets).toEqual([
+        { table: submissions, values: { documentVersionId: 'fv-2' } },
+        // `removedField` is not in the new schema; `name` is.
+        { table: submissionVersions, values: { data: { name: 'Jane' } } },
+      ]);
+      expect(result).toMatchObject({ id: 'sub-1', formVersionId: 'fv-2', data: { name: 'Jane' } });
+    });
+
+    it('creates a new draft otherwise and never moves a submitted application', async () => {
+      mockResponse([PUBLISHED_METHOD], documentVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      // An application on an older version that was SUBMITTED and is being revised (v2 draft).
+      mockResponse([submission292({ documentVersionId: 'fv-old' })], submissions, 'select');
+      mockResponse(
+        [
+          draftVersion292({ status: 'needs_changes' }),
+          draftVersion292({ id: 'ver-2', version: 2 }),
+        ],
+        submissionVersions,
+        'select',
+      );
+      mockResponse(
+        [submission292({ id: 'sub-new', documentVersionId: 'fv-2' })],
+        submissions,
+        'insert',
+      );
+      mockResponse(
+        [draftVersion292({ id: 'ver-new', submissionId: 'sub-new', data: {} })],
+        submissionVersions,
+        'insert',
+      );
+
+      const result = await service.createOrResumeDraft('user-1', 'fv-2');
+
+      expect(result).toMatchObject({ id: 'sub-new', formVersionId: 'fv-2', data: {} });
+      expect(sets).toEqual([]);
+    });
+  });
+
+  describe('submit (rule 9)', () => {
+    const arrange = (links: unknown[]) => {
+      mockResponse([submission292()], submissions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse(
+        [{ content: { schema: { type: 'object', properties: {} } } }],
+        documentVersions,
+        'select',
+      );
+      mockResponse([{ email: 'citizen@example.com' }], users, 'select');
+      mockResponse([{ slug: 'ws' }], workspaces, 'select');
+      mockResponse(links, documentLinks, 'select');
+      mockResponse([{ title: 'Apply online' }], documentVersions, 'select');
+      mockResponse([{ userId: 'm1', email: 'm1@example.com' }], workspaceMembers, 'select');
+      mockResponse([draftVersion292({ status: 'pending' })], submissionVersions, 'update');
+    };
+
+    it('names the linked published service in the staff notification, else the method', async () => {
+      arrange([LINKED_SERVICE]);
+      await service.submit('user-1', 'sub-1', {});
+      expect(vi.mocked(staffSubmissionContent)).toHaveBeenLastCalledWith(
+        expect.any(String),
+        'Parking permits',
+      );
+
+      arrange([]);
+      await service.submit('user-1', 'sub-1', {});
+      expect(vi.mocked(staffSubmissionContent)).toHaveBeenLastCalledWith(
+        expect.any(String),
+        'Apply online',
+      );
+    });
+  });
+
+  describe('listMine (rule 7)', () => {
+    it('gives each application the service it was made through, or null', async () => {
+      mockResponse(
+        [submission292(), submission292({ id: 'sub-2', documentId: 'doc-2' })],
+        submissions,
+        'select',
+      );
+      mockResponse([{ title: 'Apply online' }], documentVersions, 'select');
+      mockResponse([draftVersion292()], submissionVersions, 'select');
+      mockResponse([LINKED_SERVICE], documentLinks, 'select');
+      mockResponse([{ title: 'Other' }], documentVersions, 'select');
+      mockResponse([draftVersion292({ submissionId: 'sub-2' })], submissionVersions, 'select');
+      mockResponse([], documentLinks, 'select');
+
+      const result = await service.listMine('user-1');
+
+      expect(result.map((item) => [item.id, item.serviceId])).toEqual([
+        ['sub-1', 'svc-1'],
+        ['sub-2', null],
+      ]);
     });
   });
 });

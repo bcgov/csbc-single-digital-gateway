@@ -29,6 +29,8 @@ export type SubmissionStatus = z.infer<typeof submissionStatusSchema>;
 
 export const myApplicationSchema = z.object({
   id: z.string(),
+  /** Doc 292 rule 7: the published service the application's method belongs to, or null. */
+  serviceId: z.string().nullable(),
   formId: z.string(),
   formVersionId: z.string(),
   /** The application method / form the citizen applied through — its version's generated title. */

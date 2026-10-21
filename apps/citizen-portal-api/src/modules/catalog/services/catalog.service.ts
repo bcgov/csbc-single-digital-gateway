@@ -112,6 +112,8 @@ export class CatalogService {
     const { schema, variants } = contentSchemas(method.content);
     return {
       id: method.id,
+      // Doc 292: the published version a citizen's draft is created on.
+      versionId: method.versionId,
       title: method.title,
       description: method.description,
       schema,

@@ -333,6 +333,7 @@ const referencing = (ids: string[]) =>
   });
 const methodRow = (id: string, title: string) => ({
   id,
+  versionId: `${id}-v1`,
   title,
   description: `${title} description`,
   content: {
@@ -391,6 +392,8 @@ describe('CatalogService — application methods (doc 291 rules 4-7)', () => {
 
       expect(result).toEqual({
         id: M1,
+        // Doc 292: the published version a citizen's draft is created on.
+        versionId: `${M1}-v1`,
         title: 'Online',
         description: 'Online description',
         schema: { type: 'object', properties: { name: { type: 'string' } } },

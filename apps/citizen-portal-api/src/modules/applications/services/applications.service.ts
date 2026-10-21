@@ -5,7 +5,6 @@ import {
   type Database,
   countries,
   documentVersions,
-  documents,
   reviews,
   submissionVersions,
   submissions,
@@ -22,6 +21,12 @@ import {
   type SubmissionStatus,
 } from '../dtos/application.dtos';
 import { applicationReference, normalizeContent, submissionStatusLabel } from '../util/format';
+import {
+  draftTarget,
+  linkedServiceVersion,
+  moveDraft,
+  neverSubmittedDraft,
+} from './application-drafts';
 import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
@@ -34,8 +39,6 @@ import {
   validateDecimals,
   validateSubmission,
 } from '../util/validate';
-
-const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
 type SubmissionRow = typeof submissions.$inferSelect;
 type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
@@ -52,40 +55,25 @@ export class ApplicationsService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  /** Start a new application for a form version, or resume the citizen's existing draft for it. */
+  /**
+   * Start an application on a published method version, resume the citizen's draft on it, or move their
+   * never-submitted draft from an older version of the same method onto it (doc 292 rules 2-5).
+   */
   async createOrResumeDraft(userId: string, formVersionId: string): Promise<SubmissionResponse> {
-    const fvRows = await this.db
-      .select({
-        documentId: documentVersions.documentId,
-        kind: documents.kind,
-        workspaceId: documents.workspaceId,
-      })
-      .from(documentVersions)
-      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
-      .where(eq(documentVersions.id, formVersionId))
-      .limit(1);
-    const fv = fvRows[0];
-    if (fv === undefined || !FORM_KINDS.has(fv.kind) || fv.workspaceId === null) {
-      // Application forms are always workspace-scoped (only service agreements may be global),
-      // so a workspace-less document is not a valid application form version.
-      throw new UnprocessableEntityException('Not an application form version');
+    const target = await draftTarget(this.db, formVersionId);
+    const draft = await neverSubmittedDraft(this.db, userId, target.documentId);
+    if (draft !== undefined) {
+      const current =
+        draft.submission.documentVersionId === formVersionId
+          ? draft
+          : await moveDraft(this.db, draft, formVersionId, target);
+      return this.toDto(current.submission, current.version);
     }
-    // Hoist the narrowed workspace: property narrowing (fv.workspaceId) doesn't survive into the
-    // transaction closure below, but a const local does.
-    const { workspaceId } = fv;
-    const existing = await this.findUserDraft(userId, formVersionId);
-    if (existing) {
-      return this.toDto(existing.submission, existing.version);
-    }
+    const { documentId, workspaceId } = target;
     return this.db.transaction(async (tx) => {
       const subIns = await tx
         .insert(submissions)
-        .values({
-          documentId: fv.documentId,
-          documentVersionId: formVersionId,
-          userId,
-          workspaceId,
-        })
+        .values({ documentId, documentVersionId: formVersionId, userId, workspaceId })
         .returning();
       const sub = subIns[0];
       if (sub === undefined) {
@@ -258,13 +246,15 @@ export class ApplicationsService {
       .from(workspaces)
       .where(eq(workspaces.id, sub.workspaceId))
       .limit(1);
-    // Feature 217: the staff message named the OWNING SERVICE, resolved through the form's
-    // `application_form` reference. With references gone the form itself is the only name there is.
-    const [serviceRef] = await this.db
+    // Doc 292 rule 9: the staff message names the SERVICE again — the published one that links to this method
+    // (doc 290 `document_links`); the method's own title when none does.
+    const service = await linkedServiceVersion(this.db, sub.documentId);
+    const [formRef] = await this.db
       .select({ title: documentVersions.title })
       .from(documentVersions)
       .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
+    const serviceTitle = service?.title ?? formRef?.title ?? null;
     const members = await this.db
       .select({ userId: workspaceMembers.userId, email: users.email })
       .from(workspaceMembers)
@@ -306,7 +296,7 @@ export class ApplicationsService {
       // no self-exclusion is needed.
       const staffContent = staffSubmissionContent(
         applicationReference(sub.id, sub.createdAt),
-        serviceRef?.title ?? null,
+        serviceTitle,
       );
       for (const member of members) {
         // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
@@ -355,10 +345,15 @@ export class ApplicationsService {
       .from(documentVersions)
       .where(eq(documentVersions.id, sub.documentVersionId))
       .limit(1);
-    const ver = await this.latestVersion(sub.id);
+    const [ver, service] = await Promise.all([
+      this.latestVersion(sub.id),
+      linkedServiceVersion(this.db, sub.documentId),
+    ]);
     const status: SubmissionStatus = ver?.status ?? 'draft';
     return {
       id: sub.id,
+      // Doc 292 rule 7: where a draft row sends the citizen back to (its apply page).
+      serviceId: service?.serviceId ?? null,
       formId: sub.documentId,
       formVersionId: sub.documentVersionId,
       formTitle: form?.title ?? null,
@@ -367,25 +362,6 @@ export class ApplicationsService {
       statusLabel: submissionStatusLabel(status),
       lastUpdated: (ver?.updatedAt ?? sub.updatedAt).toISOString(),
     };
-  }
-
-  private async findUserDraft(
-    userId: string,
-    formVersionId: string,
-  ): Promise<{ submission: SubmissionRow; version: SubmissionVersionRow } | null> {
-    const subs = await this.db
-      .select()
-      .from(submissions)
-      .where(and(eq(submissions.userId, userId), eq(submissions.documentVersionId, formVersionId)))
-      .orderBy(desc(submissions.createdAt));
-    const withVersions = await Promise.all(
-      subs.map(async (submission) => ({
-        submission,
-        version: await this.latestVersion(submission.id),
-      })),
-    );
-    const draft = withVersions.find((entry) => entry.version?.status === 'draft');
-    return draft && draft.version ? { submission: draft.submission, version: draft.version } : null;
   }
 
   /** The form version's normalized render/validation structure (for submit validation). */

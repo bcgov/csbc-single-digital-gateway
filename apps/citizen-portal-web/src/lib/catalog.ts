@@ -28,6 +28,8 @@ export interface CatalogApplicationMethod {
 
 /** Doc 291 rule 7: an application method's PUBLISHED form — the document the apply page fills. */
 export interface CatalogApplicationMethodDetail extends CatalogApplicationMethod {
+  /** Doc 292: the published version a draft is created on. */
+  versionId: string;
   schema: Record<string, unknown>;
   /** Doc 275: the uischemas by variant name; `default` is always present. */
   variants: Record<string, Record<string, unknown>>;
@@ -86,6 +88,8 @@ export type ApplicationStatus =
  */
 export interface MyApplication {
   id: string;
+  /** Doc 292 rule 7: the published service this application's method belongs to, or null. */
+  serviceId: string | null;
   formId: string;
   formVersionId: string;
   /** The application method / form the citizen applied through — its version's generated title. */

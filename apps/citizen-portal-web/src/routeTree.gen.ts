@@ -25,6 +25,7 @@ import { Route as DevBreadcrumbRouteImport } from './routes/dev/breadcrumb'
 import { Route as DevBadgeRouteImport } from './routes/dev/badge'
 import { Route as DevAlertRouteImport } from './routes/dev/alert'
 import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
+import { Route as ApplicationsApplicationIdRouteImport } from './routes/applications.$applicationId'
 import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as AccountServiceAgreementsIndexRouteImport } from './routes/account_.service-agreements.index'
@@ -112,6 +113,12 @@ const DevAccordionRoute = DevAccordionRouteImport.update({
   path: '/accordion',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const ApplicationsApplicationIdRoute =
+  ApplicationsApplicationIdRouteImport.update({
+    id: '/applications/$applicationId',
+    path: '/applications/$applicationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AccountNotificationsRoute = AccountNotificationsRouteImport.update({
   id: '/account_/notifications',
   path: '/account/notifications',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/account/notifications': typeof AccountNotificationsRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/account/notifications': typeof AccountNotificationsRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -200,6 +209,7 @@ export interface FileRoutesById {
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/account_/notifications': typeof AccountNotificationsRoute
+  '/applications/$applicationId': typeof ApplicationsApplicationIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/account'
     | '/account/notifications'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/account/notifications'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -273,6 +285,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/account'
     | '/account_/notifications'
+    | '/applications/$applicationId'
     | '/dev/accordion'
     | '/dev/alert'
     | '/dev/badge'
@@ -298,6 +311,7 @@ export interface RootRouteChildren {
   DevRouteRoute: typeof DevRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   AccountNotificationsRoute: typeof AccountNotificationsRoute
+  ApplicationsApplicationIdRoute: typeof ApplicationsApplicationIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   AccountServiceAgreementsServiceAgreementIdRoute: typeof AccountServiceAgreementsServiceAgreementIdRoute
   AccountServiceAgreementsIndexRoute: typeof AccountServiceAgreementsIndexRoute
@@ -420,6 +434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevAccordionRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/applications/$applicationId': {
+      id: '/applications/$applicationId'
+      path: '/applications/$applicationId'
+      fullPath: '/applications/$applicationId'
+      preLoaderRoute: typeof ApplicationsApplicationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account_/notifications': {
       id: '/account_/notifications'
       path: '/account/notifications'
@@ -504,6 +525,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevRouteRoute: DevRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   AccountNotificationsRoute: AccountNotificationsRoute,
+  ApplicationsApplicationIdRoute: ApplicationsApplicationIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   AccountServiceAgreementsServiceAgreementIdRoute:
     AccountServiceAgreementsServiceAgreementIdRoute,
