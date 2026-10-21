@@ -9,15 +9,13 @@ import { SubmissionsService } from '../../../../src/modules/submissions/services
 import { ConfigService } from '@nestjs/config';
 
 describe('SubmissionsModule Unit Test Suite', () => {
-  it('should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
+  it('Should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
         {
           provide: ConfigService,
@@ -43,7 +41,7 @@ describe('SubmissionsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for SubmissionsModule', () => {
     const controllers = Reflect.getMetadata('controllers', SubmissionsModule) as any[];
     const providers = Reflect.getMetadata('providers', SubmissionsModule) as any[];
 

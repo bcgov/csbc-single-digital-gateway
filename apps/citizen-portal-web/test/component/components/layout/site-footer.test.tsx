@@ -8,7 +8,7 @@ vi.mock('@repo/ui/logo', () => ({
 }));
 
 describe('SiteFooter Component', () => {
-  it('renders the land acknowledgement section correctly', () => {
+  it('Should render the land acknowledgement section correctly', () => {
     render(<SiteFooter />);
 
     expect(
@@ -16,7 +16,7 @@ describe('SiteFooter Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the brand logo and support translation copy', () => {
+  it('Should render the brand logo and support translation copy', () => {
     render(<SiteFooter />);
 
     // Logo
@@ -28,7 +28,7 @@ describe('SiteFooter Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders footer link column headings and items', () => {
+  it('Should render footer link column headings and items', () => {
     render(<SiteFooter />);
 
     // Assert headings as navigations
@@ -55,7 +55,7 @@ describe('SiteFooter Component', () => {
     expect(screen.getByRole('link', { name: 'Copyright' })).toBeInTheDocument();
   });
 
-  it('renders the copyright notice with the current year', () => {
+  it('Should render the copyright notice with the current year', () => {
     render(<SiteFooter />);
 
     const currentYear = new Date().getFullYear();

@@ -5,15 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-
-/**
- * Auth + validation posture for the citizen service-agreement history (feature 139). The test
- * DATABASE_URL is unreachable, so handler queries aren't exercised here (covered by a live-DB probe).
- * We assert: `/v1/me/service-agreements*` is protected (401 without a session), and a malformed
- * `:id` is a clean 400 (validated before any DB access).
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['citizen'], claims: { sub: 'u' } } satisfies AuthUser);
+import { seedUser } from '../utils/test-telpers';
 
 describe('citizen service-agreement history (e2e)', () => {
   let app: INestApplication;
@@ -41,12 +33,12 @@ describe('citizen service-agreement history (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects the history endpoints (401 without a session)', async () => {
+  it('Should protect the history endpoints (401 without a session)', async () => {
     expect((await http().get('/v1/me/service-agreements')).status).toBe(401);
     expect((await http().get('/v1/me/service-agreements/abc')).status).toBe(401);
   });
 
-  it('rejects a malformed :id with 400 once past the guard (before any DB access)', async () => {
+  it('Should reject a malformed :id with 400 once past the guard (before any DB access)', async () => {
     const res = await http()
       .get('/v1/me/service-agreements/not-a-uuid')
       .set('x-test-user', seedUser());

@@ -7,14 +7,13 @@ import {
   submissionDetailSchema,
   reviewEntrySchema,
 } from '../../../../../src/modules/submissions/dtos/submission.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('Submission DTO schemas', () => {
   const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 
   describe('submissionStatusSchema', () => {
-    it('accepts valid submission status values', () => {
+    it('Should accept valid submission status values', () => {
       const validStatuses = [
         'draft',
         'pending',
@@ -29,13 +28,13 @@ describe('Submission DTO schemas', () => {
       }
     });
 
-    it('rejects invalid status values', () => {
+    it('Should reject invalid status values', () => {
       expect(submissionStatusSchema.safeParse('invalid_status').success).toBe(false);
     });
   });
 
   describe('listSubmissionsQuerySchema', () => {
-    it('accepts valid queries with a workspace UUID', () => {
+    it('Should accept valid queries with a workspace UUID', () => {
       expect(listSubmissionsQuerySchema.safeParse({ workspaceId: VALID_UUID }).success).toBe(true);
       expect(
         listSubmissionsQuerySchema.safeParse({ workspaceId: VALID_UUID, status: 'pending' })
@@ -43,14 +42,14 @@ describe('Submission DTO schemas', () => {
       ).toBe(true);
     });
 
-    it('rejects missing or invalid workspace UUIDs', () => {
+    it('Should reject missing or invalid workspace UUIDs', () => {
       expect(listSubmissionsQuerySchema.safeParse({}).success).toBe(false);
       expect(listSubmissionsQuerySchema.safeParse({ workspaceId: 'not-a-uuid' }).success).toBe(
         false,
       );
     });
 
-    it('rejects invalid statuses in query', () => {
+    it('Should reject invalid statuses in query', () => {
       expect(
         listSubmissionsQuerySchema.safeParse({ workspaceId: VALID_UUID, status: 'invalid' })
           .success,
@@ -59,7 +58,7 @@ describe('Submission DTO schemas', () => {
   });
 
   describe('reviewSubmissionSchema', () => {
-    it('accepts valid decisions with optional reason', () => {
+    it('Should accept valid decisions with optional reason', () => {
       expect(reviewSubmissionSchema.safeParse({ decision: 'approve' }).success).toBe(true);
       expect(
         reviewSubmissionSchema.safeParse({ decision: 'reject', reason: 'Not sufficient' }).success,
@@ -72,11 +71,11 @@ describe('Submission DTO schemas', () => {
       ).toBe(true);
     });
 
-    it('rejects invalid decision value', () => {
+    it('Should reject invalid decision value', () => {
       expect(reviewSubmissionSchema.safeParse({ decision: 'other' }).success).toBe(false);
     });
 
-    it('rejects reasons longer than 2000 characters', () => {
+    it('Should reject reasons longer than 2000 characters', () => {
       const longReason = 'a'.repeat(2001);
       expect(
         reviewSubmissionSchema.safeParse({ decision: 'reject', reason: longReason }).success,
@@ -100,11 +99,11 @@ describe('Submission DTO schemas', () => {
       updatedAt: '2026-07-12T12:30:00Z',
     };
 
-    it('accepts valid submission summaries', () => {
+    it('Should accept valid submission summaries', () => {
       expect(submissionSummarySchema.safeParse(validSummary).success).toBe(true);
     });
 
-    it('accepts null applicant email and submittedAt values', () => {
+    it('Should accept null applicant email and submittedAt values', () => {
       const nullsSummary = {
         ...validSummary,
         applicantEmail: null,
@@ -113,7 +112,7 @@ describe('Submission DTO schemas', () => {
       expect(submissionSummarySchema.safeParse(nullsSummary).success).toBe(true);
     });
 
-    it('rejects missing required properties', () => {
+    it('Should reject missing required properties', () => {
       const missingKey = { ...validSummary };
       delete (missingKey as any).id;
       expect(submissionSummarySchema.safeParse(missingKey).success).toBe(false);
@@ -129,11 +128,11 @@ describe('Submission DTO schemas', () => {
       createdAt: '2026-07-12T12:30:00Z',
     };
 
-    it('accepts valid review entries', () => {
+    it('Should accept valid review entries', () => {
       expect(reviewEntrySchema.safeParse(validEntry).success).toBe(true);
     });
 
-    it('accepts null reason', () => {
+    it('Should accept null reason', () => {
       expect(reviewEntrySchema.safeParse({ ...validEntry, reason: null }).success).toBe(true);
     });
   });
@@ -166,11 +165,11 @@ describe('Submission DTO schemas', () => {
       ],
     };
 
-    it('accepts valid submission details', () => {
+    it('Should accept valid submission details', () => {
       expect(submissionDetailSchema.safeParse(validDetail).success).toBe(true);
     });
 
-    it('list: requires a uuid workspaceId, defaults paging/sort, coerces limit/offset', () => {
+    it('Should require a uuid workspaceId, default paging/sort, and coerce limit/offset for list', () => {
       expect(listSubmissionsQuerySchema.safeParse({}).success).toBe(false);
       const parsed = listSubmissionsQuerySchema.safeParse({ workspaceId: UUID });
       expect(parsed.success && parsed.data).toMatchObject({
@@ -188,7 +187,7 @@ describe('Submission DTO schemas', () => {
       expect(coerced.success && coerced.data.offset).toBe(20);
     });
 
-    it('list: accepts a status filter + q, bounds limit, rejects unknown sort/order/status', () => {
+    it('Should accept a status filter + q, bound limit, and reject unknown sort/order/status for list', () => {
       expect(
         listSubmissionsQuerySchema.safeParse({ workspaceId: UUID, status: 'approved', q: 'abc' })
           .success,
@@ -210,7 +209,7 @@ describe('Submission DTO schemas', () => {
       ).toBe(false);
     });
 
-    it('review: requires a known decision; reason optional (length-capped)', () => {
+    it('Should require a known decision with optional reason for review', () => {
       expect(reviewSubmissionSchema.safeParse({ decision: 'approve' }).success).toBe(true);
       expect(reviewSubmissionSchema.safeParse({ decision: 'maybe' }).success).toBe(false);
       expect(

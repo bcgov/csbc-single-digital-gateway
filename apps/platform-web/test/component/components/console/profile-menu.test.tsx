@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfileMenu } from '@/components/console/profile-menu';
 import { logout } from '@/lib/bff';
+import { adminUser, mockUserNoEmail } from '../../../support/fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -55,7 +56,7 @@ describe('ProfileMenu Component Test Suite', () => {
     });
   });
 
-  it('renders loading state when user is loading/fetching', () => {
+  it('Should render loading state when user is loading/fetching', () => {
     renderProfileMenu(queryClient);
 
     // Should display skeleton loaders and placeholder avatar
@@ -65,45 +66,25 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByText('Test User')).not.toBeInTheDocument();
   });
 
-  it('shows the user initials on the avatar trigger, with name/role inside the menu', async () => {
+  it('Should show the user initials on the avatar trigger, with name/role inside the menu', async () => {
     const user = userEvent.setup();
-    const mockUser = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        preferred_username: 'Tester',
-      },
-    };
-    queryClient.setQueryData(['auth', 'me'], mockUser);
+    queryClient.setQueryData(['auth', 'me'], adminUser);
 
     renderProfileMenu(queryClient);
 
     // Avatar-only trigger shows initials; name is not shown inline (it moved into the menu).
-    expect(await screen.findByText('TU')).toBeInTheDocument();
-    expect(screen.queryByText('Test User')).not.toBeInTheDocument();
+    expect(await screen.findByText('MR')).toBeInTheDocument();
+    expect(screen.queryByText('Maya Reyes')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /account menu/i }));
-    expect(await screen.findByText('Test User')).toBeInTheDocument();
+    expect(await screen.findByText('Maya Reyes')).toBeInTheDocument();
     // "Admin" appears as the role caption and (for admins) the Admin menu item.
     expect(screen.getAllByText('Admin').length).toBeGreaterThan(0);
   });
 
-  it('opens the account menu with the correct items when clicked', async () => {
+  it('Should open the account menu with the correct items when clicked', async () => {
     const user = userEvent.setup();
-    const mockUser = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        preferred_username: 'Tester',
-      },
-    };
-    queryClient.setQueryData(['auth', 'me'], mockUser);
+    queryClient.setQueryData(['auth', 'me'], adminUser);
 
     renderProfileMenu(queryClient);
 
@@ -111,7 +92,7 @@ describe('ProfileMenu Component Test Suite', () => {
     await user.click(triggerBtn);
 
     // Verify Dropdown items and user details within it
-    expect(await screen.findByText('test@example.com')).toBeInTheDocument();
+    expect(await screen.findByText('maya.reyes@riverton.gov')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Account settings/i })).toBeInTheDocument();
     // Admins get the Admin link (moved here from the sidebar in feature 160).
     expect(screen.getByRole('menuitem', { name: /^Admin$/i })).toBeInTheDocument();
@@ -119,7 +100,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.getByRole('menuitem', { name: /Log out/i })).toBeInTheDocument();
   });
 
-  it('hides the Admin link for non-admin users', async () => {
+  it('Should hide the Admin link for non-admin users', async () => {
     const user = userEvent.setup();
     queryClient.setQueryData(['auth', 'me'], {
       id: 'u-9',
@@ -134,19 +115,9 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByRole('menuitem', { name: /^Admin$/i })).not.toBeInTheDocument();
   });
 
-  it('triggers logout endpoint and redirects to landing page on Log out click', async () => {
+  it('Should trigger logout endpoint and redirect to landing page on Log out click', async () => {
     const user = userEvent.setup();
-    const mockUser = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        preferred_username: 'Tester',
-      },
-    };
-    queryClient.setQueryData(['auth', 'me'], mockUser);
+    queryClient.setQueryData(['auth', 'me'], adminUser);
     vi.mocked(logout).mockResolvedValueOnce();
 
     renderProfileMenu(queryClient);
@@ -163,17 +134,8 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(mockAssign).toHaveBeenCalledWith('/');
   });
 
-  it('does not render email in dropdown if email claim is missing', async () => {
+  it('Should not render email in dropdown if email claim is missing', async () => {
     const user = userEvent.setup();
-    const mockUserNoEmail = {
-      id: 'u-123',
-      roles: ['admin'],
-      claims: {
-        sub: 'sub-123',
-        name: 'Test User No Email',
-        preferred_username: 'Tester',
-      },
-    };
     queryClient.setQueryData(['auth', 'me'], mockUserNoEmail);
 
     renderProfileMenu(queryClient);
@@ -185,7 +147,7 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByText(/@/)).not.toBeInTheDocument();
   });
 
-  it('does not render user header block in dropdown when user is not loaded', async () => {
+  it('Should not render user header block in dropdown when user is not loaded', async () => {
     const user = userEvent.setup();
     renderProfileMenu(queryClient);
 

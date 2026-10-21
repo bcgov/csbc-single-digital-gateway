@@ -91,7 +91,7 @@ function Reader() {
 }
 
 describe('PageChrome System Unit Test Suite', () => {
-  it('returns null chrome by default when stack is empty', () => {
+  it('Should return null chrome by default when stack is empty', () => {
     render(
       <PageChromeProvider>
         <ChromeDisplay />
@@ -101,7 +101,7 @@ describe('PageChrome System Unit Test Suite', () => {
     expect(screen.getByTestId('chrome-display')).toHaveTextContent('No Chrome');
   });
 
-  it('pushes and updates chrome onto the stack successfully', () => {
+  it('Should push and update chrome onto the stack successfully', () => {
     const { rerender } = render(
       <PageChromeProvider>
         <ChromeSetter title="Parent" description="Parent desc" />
@@ -128,7 +128,7 @@ describe('PageChrome System Unit Test Suite', () => {
     );
   });
 
-  it('manages a stack where child page overlays parent and restores parent on unmount', () => {
+  it('Should manage a stack where child page overlays parent and restore parent on unmount', () => {
     render(<ParentChildTest />);
 
     // Child is mounted: active chrome should be Child Page (top of stack)
@@ -141,17 +141,17 @@ describe('PageChrome System Unit Test Suite', () => {
     expect(screen.getByTestId('chrome-display')).toHaveTextContent('Parent Page');
   });
 
-  it('handles usePageChrome and useSetPageChrome when called outside provider', () => {
+  it('Should handle usePageChrome and useSetPageChrome when called outside provider', () => {
     render(<OutsideProviderComponent />);
     expect(screen.getByTestId('outside-display')).toHaveTextContent('No Provider');
   });
 
-  it('supports breadcrumb ReactNode storage and retrieval', () => {
+  it('Should support breadcrumb ReactNode storage and retrieval', () => {
     render(<BreadcrumbComponent />);
     expect(screen.getByTestId('custom-breadcrumb')).toHaveTextContent('Details Page');
   });
 
-  it('sets the active chrome without an update loop', () => {
+  it('Should set the active chrome without an update loop', () => {
     // A looping effect would throw "Maximum update depth exceeded" and fail this render.
     render(
       <PageChromeProvider>
@@ -163,7 +163,7 @@ describe('PageChrome System Unit Test Suite', () => {
     expect(screen.getByTestId('desc')).toHaveTextContent('Desc A');
   });
 
-  it('a child entry overlays its parent (stack) — top of stack wins', () => {
+  it('Should a child entry overlays its parent (stack) — top of stack wins', () => {
     render(
       <PageChromeProvider>
         <Reader />
@@ -174,7 +174,7 @@ describe('PageChrome System Unit Test Suite', () => {
     expect(screen.getByTestId('title')).toHaveTextContent('Builder');
     expect(screen.getByTestId('desc')).toHaveTextContent('editing');
   });
-  it('updates entry in place if already in the stack and maps non-matching ids', () => {
+  it('Should update entry in place if already in the stack and map non-matching ids', () => {
     render(
       <PageChromeProvider>
         <DirectPushTestComponent />

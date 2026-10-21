@@ -44,7 +44,7 @@ describe('AppModule metadata and factories tests', () => {
   const imports = Reflect.getMetadata('imports', AppModule) as any[];
   const providers = Reflect.getMetadata('providers', AppModule) as any[];
 
-  it('should have all feature modules registered correctly', () => {
+  it('Should have all feature modules registered correctly', () => {
     expect(imports).toBeDefined();
     expect(imports).toContain(WorkspacesModule);
     expect(imports).toContain(TemplatesModule);
@@ -53,7 +53,7 @@ describe('AppModule metadata and factories tests', () => {
     expect(imports).toContain(SubmissionsModule);
   });
 
-  it('should have global providers, interceptors, and filters registered correctly', () => {
+  it('Should have global providers, interceptors, and filters registered correctly', () => {
     expect(providers).toBeDefined();
 
     const pipeProvider = providers.find((p) => p.provide === APP_PIPE);
@@ -77,7 +77,7 @@ describe('AppModule metadata and factories tests', () => {
       (p: any) => p.provide === 'pino-params',
     );
 
-    it('sets silent level in test environments', async () => {
+    it('Should set silent level in test environments', async () => {
       const config = new MockConfigService({ NODE_ENV: 'test', LOG_LEVEL: 'info' });
       const options = await pinoParamsProvider.useFactory(config);
 
@@ -85,7 +85,7 @@ describe('AppModule metadata and factories tests', () => {
       expect(options.pinoHttp.transport).toBeUndefined();
     });
 
-    it('sets configured log level in production environments without pretty print', async () => {
+    it('Should set configured log level in production environments without pretty print', async () => {
       const config = new MockConfigService({ NODE_ENV: 'production', LOG_LEVEL: 'warn' });
       const options = await pinoParamsProvider.useFactory(config);
 
@@ -93,7 +93,7 @@ describe('AppModule metadata and factories tests', () => {
       expect(options.pinoHttp.transport).toBeUndefined();
     });
 
-    it('enables pretty printing in development environment', async () => {
+    it('Should enable pretty printing in development environment', async () => {
       const config = new MockConfigService({ NODE_ENV: 'development', LOG_LEVEL: 'debug' });
       const options = await pinoParamsProvider.useFactory(config);
 
@@ -113,7 +113,7 @@ describe('AppModule metadata and factories tests', () => {
       (p: any) => p.provide && p.provide.toString() === 'Symbol(DATABASE_SHUTDOWN)',
     );
 
-    it('creates database client with SSL mode CA cert configuration', () => {
+    it('Should create database client with SSL mode CA cert configuration', () => {
       const config = new MockConfigService({
         DATABASE_URL: 'postgres://localhost/test',
         PGSSLMODE: 'require',
@@ -131,7 +131,7 @@ describe('AppModule metadata and factories tests', () => {
       });
     });
 
-    it('closes database client connection on module destroy', () => {
+    it('Should close database client connection on module destroy', () => {
       const endMock = vi.fn();
       const mockDb = { $client: { end: endMock } };
 
@@ -156,7 +156,7 @@ describe('AppModule metadata and factories tests', () => {
         (p: any) => p.provide && p.provide.toString() === 'Symbol(SESSION_REGISTRY)',
       );
 
-      it('instantiates ValkeySessionRegistry with a lazy connection', () => {
+      it('Should instantiate ValkeySessionRegistry with a lazy connection', () => {
         const config = new MockConfigService({
           VALKEY_URL: 'valkey://localhost:6379',
           SESSION_KEY_PREFIX: 'csbc:',
@@ -174,10 +174,11 @@ describe('AppModule metadata and factories tests', () => {
         (p: any) => p.provide && p.provide.toString() === 'Symbol(AUTH_OPTIONS)',
       );
 
-      it('returns stub config under test environments', () => {
+      it('Should return stub config under test environments', () => {
         const config = new MockConfigService({
           NODE_ENV: 'test',
           AUTH_POST_LOGOUT_REDIRECT: 'https://logout.redirect',
+          AUTH_CLOCK_TOLERANCE_SECONDS: 5,
           OIDC_ISSUER: 'https://issuer',
           OIDC_CLIENT_ID: 'client',
           OIDC_CLIENT_SECRET: 'secret',
@@ -192,9 +193,10 @@ describe('AppModule metadata and factories tests', () => {
 
         expect(options.config).toEqual({});
         expect(options.postLogoutRedirect).toBe('https://logout.redirect');
+        expect(options.clockToleranceSeconds).toBe(5);
       });
 
-      it('returns regular options without stub config under non-test environments', () => {
+      it('Should return regular options without stub config under non-test environments', () => {
         const config = new MockConfigService({
           NODE_ENV: 'production',
           OIDC_ISSUER: 'https://issuer',
@@ -211,6 +213,7 @@ describe('AppModule metadata and factories tests', () => {
 
         expect(options.config).toBeUndefined();
         expect(options.postLogoutRedirect).toBeUndefined();
+        expect(options.clockToleranceSeconds).toBeUndefined();
       });
     });
   });

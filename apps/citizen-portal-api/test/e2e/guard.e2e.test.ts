@@ -5,6 +5,7 @@ import type { AuthModuleOptions, AuthUser } from '@repo/nestjs/auth';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { seedUser } from '../utils/test-telpers';
 
 @Controller('probe')
 class ProbeController {
@@ -40,9 +41,6 @@ const authOptions = {
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
 
-const seedUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u', roles, claims: { sub: 'u' } } satisfies AuthUser);
-
 describe('global AuthGuard (e2e)', () => {
   let app: INestApplication;
 
@@ -70,25 +68,25 @@ describe('global AuthGuard (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protected route 401s without a session', async () => {
+  it('Should return 401 for protected route without a session', async () => {
     expect((await http().get('/probe/me')).status).toBe(401);
   });
 
-  it('protected route 200s with a session and @CurrentUser resolves it', async () => {
+  it('Should return 200 for protected route with a session and resolve @CurrentUser', async () => {
     const res = await http().get('/probe/me').set('x-test-user', seedUser([]));
     expect(res.status).toBe(200);
     expect(res.body.id).toBe('u');
   });
 
-  it('@Public route is reachable without a session', async () => {
+  it('Should allow access to @Public route without a session', async () => {
     expect((await http().get('/probe/open')).status).toBe(200);
   });
 
-  it('@Roles route 403s a non-admin', async () => {
+  it('Should return 403 on @Roles route for a non-admin', async () => {
     expect((await http().get('/probe/admin').set('x-test-user', seedUser([]))).status).toBe(403);
   });
 
-  it('@Roles route 200s an admin', async () => {
+  it('Should return 200 on @Roles route for an admin', async () => {
     expect(
       (
         await http()

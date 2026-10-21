@@ -8,7 +8,7 @@ vi.mock('@/lib/bff', () => ({
 }));
 
 describe('HomePage Component Test Suite', () => {
-  it('renders landing page logo, title, login button, and disclaimer links', () => {
+  it('Should render landing page logo, title, login button, and disclaimer links', () => {
     render(<HomePage />);
 
     // Logo presence
@@ -34,12 +34,12 @@ describe('HomePage Component Test Suite', () => {
     expect(privacyLink).toHaveAttribute('href', 'https://www2.gov.bc.ca/gov/content/home/privacy');
   });
 
-  it('shows the application name', () => {
+  it('Should show the application name', () => {
     render(<HomePage />);
     expect(screen.getByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
   });
 
-  it('centers the greeting on the full viewport', () => {
+  it('Should center the greeting on the full viewport', () => {
     const { container } = render(<HomePage />);
     const main = container.querySelector('main');
     expect(main?.className).toContain('min-h-svh');
@@ -47,7 +47,7 @@ describe('HomePage Component Test Suite', () => {
     expect(main?.className).toContain('justify-center');
   });
 
-  it('offers a login link that points at the BFF /auth/login endpoint', () => {
+  it('Should offer a login link that points at the BFF /auth/login endpoint', () => {
     render(<HomePage />);
     const link = screen.getByRole('link', { name: /log in/i });
     expect(link).toHaveAttribute('href', '/mocked-login-url');

@@ -1,16 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { notificationOutbox, type Database, type NotificationOutbox } from '@repo/database';
-
 import { OutboxRelayService } from '../../../src/notifications/outbox-relay.service';
-import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 import { backoffMs, DEFAULT_BACKOFF_BASE_MS } from '../../../src/notifications/backoff';
 import type { Env } from '../../../src/config/env.schema';
+import { createMockConfigService } from '../../utils/create-mock-config-service';
+import { createTokenSpy } from '../../utils/create-token-spy';
 
 describe('OutboxRelayService Unit Test Suite', () => {
   let service: OutboxRelayService;
   let mockDb: any;
-  let mockConfigService: any;
   let getTokenSpy: any;
   let invalidateSpy: any;
 
@@ -21,8 +20,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
 
   beforeEach(() => {
     // Spies for M2mTokenClient
-    getTokenSpy = vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mocked-token');
-    invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate').mockImplementation(() => {});
+    ({ getTokenSpy, invalidateSpy } = createTokenSpy(getTokenSpy, invalidateSpy));
 
     // Initialize mock builders
     selectBuilder = {
@@ -47,36 +45,15 @@ describe('OutboxRelayService Unit Test Suite', () => {
       transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
     };
 
-    mockConfigService = {
-      get: vi.fn((key: string) => {
-        switch (key) {
-          case 'NOTIFICATIONS_M2M_ISSUER':
-            return 'http://auth.issuer';
-          case 'NOTIFICATIONS_M2M_CLIENT_ID':
-            return 'client-id';
-          case 'NOTIFICATIONS_M2M_CLIENT_SECRET':
-            return 'client-secret';
-          case 'NOTIFICATION_SERVICE_URL':
-            return 'http://notification.service';
-          case 'OUTBOX_RELAY_ENABLED':
-            return true;
-          case 'NODE_ENV':
-            return 'development';
-          case 'OUTBOX_RELAY_INTERVAL_MS':
-            return 5000;
-          case 'OUTBOX_RELAY_BATCH_SIZE':
-            return 10;
-          case 'OUTBOX_RELAY_MAX_ATTEMPTS':
-            return 3;
-          default:
-            return undefined;
-        }
-      }),
-    };
-
     service = new OutboxRelayService(
       mockDb as unknown as Database,
-      mockConfigService as unknown as ConfigService<Env, true>,
+      createMockConfigService({
+        NODE_ENV: 'development',
+        OUTBOX_RELAY_ENABLED: true,
+        OUTBOX_RELAY_INTERVAL_MS: 5000,
+        OUTBOX_RELAY_BATCH_SIZE: 10,
+        OUTBOX_RELAY_MAX_ATTEMPTS: 3,
+      }) as unknown as ConfigService<Env, true>,
     );
   });
 
@@ -93,7 +70,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       vi.useRealTimers();
     });
 
-    it('should start interval timer if enabled and NODE_ENV is not test', () => {
+    it('Should start interval timer if enabled and NODE_ENV is not test', () => {
       const tickSpy = vi.spyOn(service, 'tick').mockResolvedValue(undefined);
 
       service.onApplicationBootstrap();
@@ -102,11 +79,13 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(tickSpy).toHaveBeenCalled();
     });
 
-    it('should not start interval timer if not enabled', () => {
-      mockConfigService.get.mockImplementation((key: string) => {
-        if (key === 'OUTBOX_RELAY_ENABLED') return false;
-        return undefined;
-      });
+    it('Should not start interval timer if not enabled', () => {
+      service = new OutboxRelayService(
+        mockDb,
+        createMockConfigService({
+          OUTBOX_RELAY_ENABLED: false,
+        }) as unknown as ConfigService<Env, true>,
+      );
 
       const tickSpy = vi.spyOn(service, 'tick').mockResolvedValue(undefined);
 
@@ -116,12 +95,13 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(tickSpy).not.toHaveBeenCalled();
     });
 
-    it('should not start interval timer if NODE_ENV is test', () => {
-      mockConfigService.get.mockImplementation((key: string) => {
-        if (key === 'OUTBOX_RELAY_ENABLED') return true;
-        if (key === 'NODE_ENV') return 'test';
-        return undefined;
-      });
+    it('Should not start interval timer if NODE_ENV is test', () => {
+      service = new OutboxRelayService(
+        mockDb,
+        createMockConfigService({
+          NODE_ENV: 'test',
+        }) as unknown as ConfigService<Env, true>,
+      );
 
       const tickSpy = vi.spyOn(service, 'tick').mockResolvedValue(undefined);
 
@@ -133,14 +113,16 @@ describe('OutboxRelayService Unit Test Suite', () => {
   });
 
   describe('onApplicationShutdown', () => {
-    it('should clear timer and wait for inFlight progress', async () => {
+    it('Should clear timer and wait for inFlight progress', async () => {
       vi.useFakeTimers();
-      mockConfigService.get.mockImplementation((key: string) => {
-        if (key === 'OUTBOX_RELAY_ENABLED') return true;
-        if (key === 'NODE_ENV') return 'development';
-        if (key === 'OUTBOX_RELAY_INTERVAL_MS') return 5000;
-        return undefined;
-      });
+      service = new OutboxRelayService(
+        mockDb,
+        createMockConfigService({
+          OUTBOX_RELAY_ENABLED: true,
+          NODE_ENV: 'development',
+          OUTBOX_RELAY_INTERVAL_MS: 5000,
+        }) as unknown as ConfigService<Env, true>,
+      );
 
       service.onApplicationBootstrap();
 
@@ -152,14 +134,14 @@ describe('OutboxRelayService Unit Test Suite', () => {
       vi.useRealTimers();
     });
 
-    it('should do nothing if timer is undefined', async () => {
+    it('Should do nothing if timer is undefined', async () => {
       service['timer'] = undefined;
       await expect(service.onApplicationShutdown()).resolves.not.toThrow();
     });
   });
 
   describe('tick', () => {
-    it('should skip execution if inFlight is already defined', async () => {
+    it('Should skip execution if inFlight is already defined', async () => {
       service['inFlight'] = Promise.resolve();
       const processSpy = vi.spyOn(service, 'processDueRows');
 
@@ -168,7 +150,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(processSpy).not.toHaveBeenCalled();
     });
 
-    it('should execute processDueRows and set/clear inFlight', async () => {
+    it('Should execute processDueRows and set/clear inFlight', async () => {
       const processSpy = vi.spyOn(service, 'processDueRows').mockResolvedValue(2);
 
       await service.tick();
@@ -177,7 +159,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(service['inFlight']).toBeUndefined();
     });
 
-    it('should catch error and log if processDueRows fails', async () => {
+    it('Should catch error and log if processDueRows fails', async () => {
       const processSpy = vi
         .spyOn(service, 'processDueRows')
         .mockRejectedValue(new Error('DB connection failed'));
@@ -190,7 +172,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(service['inFlight']).toBeUndefined();
     });
 
-    it('should catch a non-Error and log unknown error', async () => {
+    it('Should catch a non-Error and log unknown error', async () => {
       const processSpy = vi
         .spyOn(service, 'processDueRows')
         .mockRejectedValue('unreachable-string-error');
@@ -203,7 +185,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(service['inFlight']).toBeUndefined();
     });
 
-    it('should log singular relayed outbox row when claimed is 1', async () => {
+    it('Should log singular relayed outbox row when claimed is 1', async () => {
       vi.spyOn(service, 'processDueRows').mockResolvedValue(1);
       const loggerLogSpy = vi.spyOn(service['logger'], 'log').mockImplementation(() => {});
 
@@ -212,7 +194,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(loggerLogSpy).toHaveBeenCalledWith('relayed 1 outbox row');
     });
 
-    it('should not log relayed rows message if claimed is 0', async () => {
+    it('Should not log relayed rows message if claimed is 0', async () => {
       const processSpy = vi.spyOn(service, 'processDueRows').mockResolvedValue(0);
       const loggerLogSpy = vi.spyOn(service['logger'], 'log').mockImplementation(() => {});
 
@@ -244,7 +226,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       },
     ];
 
-    it('should return 0 immediately if there are no due rows', async () => {
+    it('Should return 0 immediately if there are no due rows', async () => {
       selectBuilder.for.mockResolvedValue([]);
 
       const result = await service.processDueRows();
@@ -254,7 +236,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(getTokenSpy).not.toHaveBeenCalled();
     });
 
-    it('should deliver due rows and update to delivered status on success', async () => {
+    it('Should deliver due rows and update to delivered status on success', async () => {
       selectBuilder.for.mockResolvedValue(mockDueRows);
 
       const responseMock = {
@@ -296,7 +278,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(updateBuilder.where).toHaveBeenCalled();
     });
 
-    it('should increment attempts and back off nextAttemptAt on generic failure', async () => {
+    it('Should increment attempts and back off nextAttemptAt on generic failure', async () => {
       selectBuilder.for.mockResolvedValue(mockDueRows);
 
       const responseMock = {
@@ -319,7 +301,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       });
     });
 
-    it('should mark row as failed when max attempts is reached', async () => {
+    it('Should mark row as failed when max attempts is reached', async () => {
       const mockRowAtLimit = {
         ...mockDueRows[0],
         attempts: 2, // limit is 3, so next is 3 which reaches the max attempts limit
@@ -339,7 +321,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       });
     });
 
-    it('should invalidate token on 401 error', async () => {
+    it('Should invalidate token on 401 error', async () => {
       selectBuilder.for.mockResolvedValue(mockDueRows);
 
       const responseMock = {
@@ -353,7 +335,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
       expect(invalidateSpy).toHaveBeenCalled();
     });
 
-    it('should fall back to "unknown relay error" if delivery throws a non-Error object', async () => {
+    it('Should fall back to "unknown relay error" if delivery throws a non-Error object', async () => {
       selectBuilder.for.mockResolvedValue(mockDueRows);
       vi.spyOn(globalThis, 'fetch').mockRejectedValue('unreachable-string-error');
 

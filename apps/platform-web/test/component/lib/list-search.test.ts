@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { listSearchValidator, useListSearch } from '@/lib/list-search';
 import { renderHook, act } from '@testing-library/react';
+import { mockNavigate } from '../../support/vi-fixtures';
 
 const validate = listSearchValidator(['title', 'updated', 'status'] as const, {
   sort: 'updated',
@@ -8,11 +9,11 @@ const validate = listSearchValidator(['title', 'updated', 'status'] as const, {
 });
 
 describe('listSearchValidator', () => {
-  it('applies defaults for empty search', () => {
+  it('Should apply defaults for empty search', () => {
     expect(validate({})).toEqual({ page: 1, sort: 'updated', order: 'desc' });
   });
 
-  it('coerces and clamps page (≥ 1, integer)', () => {
+  it('Should coerce and clamp page (≥ 1, integer)', () => {
     expect(validate({ page: '3' }).page).toBe(3);
     expect(validate({ page: 0 }).page).toBe(1);
     expect(validate({ page: -5 }).page).toBe(1);
@@ -20,24 +21,24 @@ describe('listSearchValidator', () => {
     expect(validate({ page: 'nope' }).page).toBe(1);
   });
 
-  it('falls back to the default sort for an unknown column', () => {
+  it('Should fall back to the default sort for an unknown column', () => {
     expect(validate({ sort: 'bogus' }).sort).toBe('updated');
     expect(validate({ sort: 'title' }).sort).toBe('title');
   });
 
-  it('only accepts asc/desc for order (else the default)', () => {
+  it('Should only accepts asc/desc for order (else the default)', () => {
     expect(validate({ order: 'asc' }).order).toBe('asc');
     expect(validate({ order: 'sideways' }).order).toBe('desc');
   });
 
-  it('falls back to desc for order when defaults.order is not specified', () => {
+  it('Should fall back to desc for order when defaults.order is not specified', () => {
     const validateNoOrder = listSearchValidator(['title', 'updated', 'status'] as const, {
       sort: 'updated',
     });
     expect(validateNoOrder({ order: 'sideways' }).order).toBe('desc');
   });
 
-  it('omits an empty/non-string q entirely', () => {
+  it('Should omit an empty/non-string q entirely', () => {
     expect('q' in validate({ q: '' })).toBe(false);
     expect('q' in validate({ q: 5 })).toBe(false);
     expect(validate({ q: 'permit' }).q).toBe('permit');
@@ -45,7 +46,6 @@ describe('listSearchValidator', () => {
 });
 
 let mockSearchValue: any = {};
-const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
@@ -62,7 +62,7 @@ describe('useListSearch Unit Test', () => {
     mockNavigate.mockClear();
   });
 
-  it('uses default options when no options are provided', () => {
+  it('Should use default options when no options are provided', () => {
     const { result } = renderHook(() => useListSearch());
     expect(result.current.page).toBe(1);
     expect(result.current.sort).toBe('');
@@ -72,7 +72,7 @@ describe('useListSearch Unit Test', () => {
     expect(result.current.offset).toBe(0);
   });
 
-  it('uses custom options and search values', () => {
+  it('Should use custom options and search values', () => {
     mockSearchValue = { page: 3, sort: 'name', order: 'asc', q: 'search-term' };
     const { result } = renderHook(() =>
       useListSearch({ limit: 10, defaultSort: 'title', defaultOrder: 'desc' }),
@@ -85,12 +85,12 @@ describe('useListSearch Unit Test', () => {
     expect(result.current.offset).toBe(20);
   });
 
-  it('falls back to defaultSort when search.sort is missing', () => {
+  it('Should fall back to defaultSort when search.sort is missing', () => {
     const { result } = renderHook(() => useListSearch({ defaultSort: 'title' }));
     expect(result.current.sort).toBe('title');
   });
 
-  it('triggers setPage and handles navigation', () => {
+  it('Should trigger setPage and handle navigation', () => {
     const { result } = renderHook(() => useListSearch());
 
     act(() => {
@@ -102,7 +102,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({ existing: 'val' })).toEqual({ existing: 'val', page: 5 });
   });
 
-  it('clamps nextPage in setPage to at least 1', () => {
+  it('Should clamp nextPage in setPage to at least 1', () => {
     const { result } = renderHook(() => useListSearch());
 
     act(() => {
@@ -113,7 +113,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ page: 1 });
   });
 
-  it('triggers setSort for a new column', () => {
+  it('Should trigger setSort for a new column', () => {
     mockSearchValue = { sort: 'title', order: 'desc' };
     const { result } = renderHook(() =>
       useListSearch<'title' | 'status'>({ defaultSort: 'title' }),
@@ -127,7 +127,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ sort: 'status', order: 'desc', page: 1 });
   });
 
-  it('triggers setSort for the active column to toggle desc to asc', () => {
+  it('Should trigger setSort for the active column to toggle desc to asc', () => {
     mockSearchValue = { sort: 'title', order: 'desc' };
     const { result } = renderHook(() => useListSearch({ defaultSort: 'title' }));
 
@@ -139,7 +139,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ sort: 'title', order: 'asc', page: 1 });
   });
 
-  it('triggers setSort for the active column to toggle asc to desc', () => {
+  it('Should trigger setSort for the active column to toggle asc to desc', () => {
     mockSearchValue = { sort: 'title', order: 'asc' };
     const { result } = renderHook(() => useListSearch({ defaultSort: 'title' }));
 
@@ -151,7 +151,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ sort: 'title', order: 'desc', page: 1 });
   });
 
-  it('triggers setQ to update query and reset page to 1', () => {
+  it('Should trigger setQ to update query and reset page to 1', () => {
     const { result } = renderHook(() => useListSearch());
 
     act(() => {
@@ -162,7 +162,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ q: 'new-query', page: 1 });
   });
 
-  it('triggers setFilter to update filters and reset page to 1', () => {
+  it('Should trigger setFilter to update filters and reset page to 1', () => {
     const { result } = renderHook(() => useListSearch());
 
     act(() => {
@@ -173,7 +173,7 @@ describe('useListSearch Unit Test', () => {
     expect(searchFn({})).toEqual({ status: 'active', page: 1 });
   });
 
-  it('removes empty string and undefined keys during search updates', () => {
+  it('Should remove empty string and undefined keys during search updates', () => {
     const { result } = renderHook(() => useListSearch());
 
     act(() => {

@@ -7,7 +7,7 @@ import { AppModule } from '../../src/app.module';
 
 // Under NODE_ENV=test the AuthModule factory injects a stub config and skips OIDC discovery, so
 // AppModule boots without a running Keycloak. The live login round-trip is verified separately.
-describe('platform-api auth wiring (e2e)', () => {
+describe('Auth Wiring E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,13 +20,13 @@ describe('platform-api auth wiring (e2e)', () => {
     await app.close();
   });
 
-  it('boots with the auth module configured from env', () => {
+  it('Should boot with the auth module configured from env', () => {
     const options = app.get<{ clientId: string; issuer: string }>(AUTH_OPTIONS);
     expect(options.clientId).toBe('platform-api');
     expect(options.issuer).toContain('/realms/sdg');
   });
 
-  it('keeps health endpoints working alongside auth', async () => {
+  it('Should keep health endpoints working alongside auth', async () => {
     const res = await request(app.getHttpServer()).get('/health/live');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');

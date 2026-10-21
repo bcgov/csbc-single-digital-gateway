@@ -10,11 +10,11 @@ import type { SubmissionStatus } from '../../../../src/modules/submissions/dtos/
  * stays visible.
  */
 describe('isStaffVisibleSubmission', () => {
-  it('hides drafts', () => {
+  it('Should hide drafts', () => {
     expect(isStaffVisibleSubmission('draft')).toBe(false);
   });
 
-  it('shows every submitted / decided status', () => {
+  it('Should show every submitted / decided status', () => {
     const visible: SubmissionStatus[] = [
       'pending',
       'in_review',

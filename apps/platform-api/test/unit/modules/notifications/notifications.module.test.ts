@@ -7,7 +7,7 @@ import { MyNotificationsV1Controller } from '../../../../src/modules/notificatio
 import { NotificationsProxyService } from '../../../../src/modules/notifications/services/notifications-proxy.service';
 
 describe('NotificationsModule Unit Test Suite', () => {
-  it('should compile NotificationsModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile NotificationsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
@@ -35,7 +35,7 @@ describe('NotificationsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for NotificationsModule', () => {
     const controllers = Reflect.getMetadata('controllers', NotificationsModule) as any[];
     const providers = Reflect.getMetadata('providers', NotificationsModule) as any[];
 

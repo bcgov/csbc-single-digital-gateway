@@ -20,13 +20,13 @@ describe('citizen-portal-api auth wiring (e2e)', () => {
     await app.close();
   });
 
-  it('boots with the auth module configured from env', () => {
+  it('Should boot with the auth module configured from env', () => {
     const options = app.get<{ clientId: string; issuer: string }>(AUTH_OPTIONS);
     expect(options.clientId).toBe('citizen-portal-api');
     expect(options.issuer).toContain('/realms/citizens');
   });
 
-  it('keeps health endpoints working alongside auth', async () => {
+  it('Should keep health endpoints working alongside auth', async () => {
     const res = await request(app.getHttpServer()).get('/health/live');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');

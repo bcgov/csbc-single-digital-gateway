@@ -20,7 +20,7 @@ describe('swagger docs (e2e)', () => {
     await app.close();
   });
 
-  it('serves a base doc with unversioned routes (health/auth)', async () => {
+  it('Should serve a base doc with unversioned routes (health/auth)', async () => {
     const res = await request(app.getHttpServer()).get('/docs-json');
     expect(res.status).toBe(200);
     const paths = Object.keys(res.body.paths as Record<string, unknown>);
@@ -28,7 +28,7 @@ describe('swagger docs (e2e)', () => {
     expect(paths.some((path) => path.startsWith('/v1'))).toBe(false);
   });
 
-  it('serves a v1 doc (empty — no feature modules yet)', async () => {
+  it('Should serve a v1 doc (empty — no feature modules yet)', async () => {
     const res = await request(app.getHttpServer()).get('/v1/docs-json');
     expect(res.status).toBe(200);
     const paths = Object.keys(res.body.paths as Record<string, unknown>);

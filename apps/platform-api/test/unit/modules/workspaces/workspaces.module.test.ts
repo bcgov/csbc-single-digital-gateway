@@ -7,15 +7,13 @@ import { WorkspacesV1Controller } from '../../../../src/modules/workspaces/contr
 import { WorkspacesService } from '../../../../src/modules/workspaces/services/workspaces.service';
 
 describe('WorkspacesModule Unit Test Suite', () => {
-  it('should compile WorkspacesModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
+  it('Should compile WorkspacesModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],
@@ -37,7 +35,7 @@ describe('WorkspacesModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for WorkspacesModule', () => {
     const controllers = Reflect.getMetadata('controllers', WorkspacesModule) as any[];
     const providers = Reflect.getMetadata('providers', WorkspacesModule) as any[];
 

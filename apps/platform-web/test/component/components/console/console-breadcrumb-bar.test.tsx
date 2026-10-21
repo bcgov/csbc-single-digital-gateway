@@ -8,13 +8,13 @@ vi.mock('@/lib/page-chrome', () => ({
 }));
 
 describe('ConsoleBreadcrumbBar Component Test Suite', () => {
-  it('renders nothing when chrome is null', () => {
+  it('Should render nothing when chrome is null', () => {
     vi.mocked(usePageChrome).mockReturnValue(null);
     const { container } = render(<ConsoleBreadcrumbBar />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders nothing when breadcrumb is not defined', () => {
+  it('Should render nothing when breadcrumb is not defined', () => {
     vi.mocked(usePageChrome).mockReturnValue({
       title: 'Dashboard',
     });
@@ -22,7 +22,7 @@ describe('ConsoleBreadcrumbBar Component Test Suite', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders the breadcrumb when defined', () => {
+  it('Should render the breadcrumb when defined', () => {
     vi.mocked(usePageChrome).mockReturnValue({
       title: 'Service Detail',
       breadcrumb: <div data-testid="mock-crumb">Services &gt; Municipal Parking</div>,

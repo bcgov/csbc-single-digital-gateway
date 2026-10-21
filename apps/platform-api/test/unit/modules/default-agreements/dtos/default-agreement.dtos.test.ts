@@ -8,19 +8,19 @@ const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 
 describe('default-agreement DTO schemas', () => {
   describe('addDefaultAgreementSchema', () => {
-    it('accepts a valid UUID for agreementDocumentId', () => {
+    it('Should accept a valid UUID for agreementDocumentId', () => {
       const payload = { agreementDocumentId: VALID_UUID };
       const parsed = addDefaultAgreementSchema.parse(payload);
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects an invalid UUID for agreementDocumentId', () => {
+    it('Should reject an invalid UUID for agreementDocumentId', () => {
       const payload = { agreementDocumentId: 'not-a-uuid' };
       const result = addDefaultAgreementSchema.safeParse(payload);
       expect(result.success).toBe(false);
     });
 
-    it('rejects a missing agreementDocumentId', () => {
+    it('Should reject a missing agreementDocumentId', () => {
       const payload = {};
       const result = addDefaultAgreementSchema.safeParse(payload);
       expect(result.success).toBe(false);
@@ -28,7 +28,7 @@ describe('default-agreement DTO schemas', () => {
   });
 
   describe('defaultAgreementSchema', () => {
-    it('accepts a valid default agreement payload', () => {
+    it('Should accept a valid default agreement payload', () => {
       const payload = {
         id: 'some-id',
         agreementDocumentId: VALID_UUID,
@@ -41,7 +41,7 @@ describe('default-agreement DTO schemas', () => {
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects payload missing required fields', () => {
+    it('Should reject payload missing required fields', () => {
       const payload = {
         id: 'some-id',
         agreementDocumentId: VALID_UUID,
@@ -50,7 +50,7 @@ describe('default-agreement DTO schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects incorrect types', () => {
+    it('Should reject incorrect types', () => {
       const payload = {
         id: 'some-id',
         agreementDocumentId: VALID_UUID,

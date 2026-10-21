@@ -58,14 +58,14 @@ describe('WorkspaceSwitcher Component Test Suite', () => {
     });
   });
 
-  it('renders No workspace when workspaces list is empty', () => {
+  it('Should render No workspace when workspaces list is empty', () => {
     vi.mocked(useWorkspaces).mockReturnValue({ data: [] } as any);
     renderSwitcher(queryClient);
 
     expect(screen.getByText('No workspace')).toBeInTheDocument();
   });
 
-  it('renders Select workspace when workspaces exist but none match active slug', () => {
+  it('Should render Select workspace when workspaces exist but none match active slug', () => {
     vi.mocked(useWorkspaces).mockReturnValue({
       data: [
         { id: 'w-1', slug: 'riverton', name: 'Riverton' },
@@ -79,7 +79,7 @@ describe('WorkspaceSwitcher Component Test Suite', () => {
     expect(screen.getByText('Select workspace')).toBeInTheDocument();
   });
 
-  it('renders active workspace name, and displays list and active check icon in dropdown', async () => {
+  it('Should render active workspace name, and display list and active check icon in dropdown', async () => {
     vi.mocked(useWorkspaces).mockReturnValue({
       data: [
         { id: 'w-1', slug: 'riverton', name: 'Riverton' },
@@ -109,7 +109,7 @@ describe('WorkspaceSwitcher Component Test Suite', () => {
     expect(linkBurnaby.querySelector('.lucide-check')).not.toBeInTheDocument();
   });
 
-  it('shows no workspaces message in dropdown when empty', async () => {
+  it('Should show no workspaces message in dropdown when empty', async () => {
     vi.mocked(useWorkspaces).mockReturnValue({ data: [] } as any);
     renderSwitcher(queryClient);
 
@@ -119,7 +119,7 @@ describe('WorkspaceSwitcher Component Test Suite', () => {
     expect(await screen.findByText('No workspaces yet')).toBeInTheDocument();
   });
 
-  it('opens and closes create workspace modal from the dropdown', async () => {
+  it('Should open and close create workspace modal from the dropdown', async () => {
     const user = userEvent.setup();
     vi.mocked(useWorkspaces).mockReturnValue({ data: [] } as any);
     renderSwitcher(queryClient);

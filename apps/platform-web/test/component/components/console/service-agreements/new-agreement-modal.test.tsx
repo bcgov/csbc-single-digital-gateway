@@ -2,11 +2,11 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NewAgreementModal } from '@/components/console/service-agreements/new-agreement-modal';
-import type { AgreementScope } from '@/components/console/service-agreements/scope';
 import { createAgreement } from '@/lib/service-agreements';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { adminScope, workspaceScope } from '../../../../support/fixtures';
+import { mockNavigate } from '../../../../support/vi-fixtures';
 
-const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
@@ -60,11 +60,8 @@ afterEach(() => {
   queryClient.clear();
 });
 
-const workspaceScope: AgreementScope = { kind: 'workspace', slug: 'riverton', workspaceId: 'w1' };
-const adminScope: AgreementScope = { kind: 'admin' };
-
 describe('NewAgreementModal Component Test Suite', () => {
-  it('renders workspace scope, submits creation payload, and navigates to the detail page on success', async () => {
+  it('Should render workspace scope, submits creation payload, and navigate to the detail page on success', async () => {
     (createAgreement as any).mockResolvedValueOnce({
       agreement: { id: 'new-a1' },
       version: { id: 'new-v1' },
@@ -105,7 +102,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     });
   });
 
-  it('renders admin scope and submits creation without workspaceId', async () => {
+  it('Should render admin scope and submit creation without workspaceId', async () => {
     (createAgreement as any).mockResolvedValueOnce({
       agreement: { id: 'global-a1' },
       version: { id: 'global-v1' },
@@ -135,7 +132,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     });
   });
 
-  it('closes modal and navigates back to list on Cancel', async () => {
+  it('Should close modal and navigate back to list on Cancel', async () => {
     // 1. Workspace scope cancel
     const { unmount } = render(
       <QueryClientProvider client={queryClient}>
@@ -169,7 +166,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     });
   });
 
-  it('renders API error message on creation failure', async () => {
+  it('Should render API error message on creation failure', async () => {
     vi.mocked(createAgreement).mockRejectedValueOnce(new Error('Failed to create agreement'));
 
     render(
@@ -189,7 +186,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     expect(errorMsg).toHaveTextContent('Failed to create agreement');
   });
 
-  it('shows error if form is submitted with empty title', async () => {
+  it('Should show error if form is submitted with empty title', async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <NewAgreementModal scope={workspaceScope} />
@@ -204,7 +201,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     expect(errorMsg).toHaveTextContent('A title is required');
   });
 
-  it('covers onOpenChange true and false branches', () => {
+  it('Should cover onOpenChange true and false branches', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <NewAgreementModal scope={workspaceScope} />
@@ -225,7 +222,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     });
   });
 
-  it('renders spinner and disables submit button when creation is pending', async () => {
+  it('Should render spinner and disable submit button when creation is pending', async () => {
     let resolvePromise!: (val: any) => void;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;

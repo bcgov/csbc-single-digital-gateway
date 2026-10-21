@@ -42,7 +42,7 @@ describe('ServiceVersionRoute', () => {
     vi.clearAllMocks();
   });
 
-  it('registers ServiceVersionPage as its component correctly', async () => {
+  it('Should register ServiceVersionPage as its component correctly', async () => {
     const Component = Route.options.component;
     expect(Component).toBeDefined();
 
@@ -59,7 +59,7 @@ describe('ServiceVersionRoute', () => {
   });
 
   describe('beforeLoad redirect logic', () => {
-    it('redirects to canonical service URL when the requested version is the current published version', async () => {
+    it('Should redirect to canonical service URL when the requested version is the current published version', async () => {
       const mockService = { id: 's1', publishedVersionId: 'v1' };
       vi.mocked(getService).mockResolvedValue(mockService as any);
 
@@ -84,7 +84,7 @@ describe('ServiceVersionRoute', () => {
       }
     });
 
-    it('does not redirect when the requested version is a historical (not current) version', async () => {
+    it('Should not redirect when the requested version is a historical (not current) version', async () => {
       const mockService = { id: 's1', publishedVersionId: 'v2' };
       vi.mocked(getService).mockResolvedValue(mockService as any);
 
@@ -101,7 +101,7 @@ describe('ServiceVersionRoute', () => {
       }
     });
 
-    it('does not redirect and completes gracefully if getService fails', async () => {
+    it('Should not redirect and completes gracefully if getService fails', async () => {
       vi.mocked(getService).mockRejectedValue(new Error('Network Error'));
 
       const beforeLoad = Route.options.beforeLoad;

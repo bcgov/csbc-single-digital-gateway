@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { setupSwagger } from '../../src/swagger';
 
-describe('swagger docs (e2e)', () => {
+describe('Swagger E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,7 +20,7 @@ describe('swagger docs (e2e)', () => {
     await app.close();
   });
 
-  it('serves a base doc with unversioned routes and no /v1 paths', async () => {
+  it('Should serve a base doc with unversioned routes and no /v1 paths', async () => {
     const res = await request(app.getHttpServer()).get('/docs-json');
     expect(res.status).toBe(200);
     const paths = Object.keys(res.body.paths as Record<string, unknown>);
@@ -28,7 +28,7 @@ describe('swagger docs (e2e)', () => {
     expect(paths.some((path) => path.startsWith('/v1'))).toBe(false);
   });
 
-  it('serves a v1 doc with /v1/workspaces and no unversioned routes', async () => {
+  it('Should serve a v1 doc with /v1/workspaces and no unversioned routes', async () => {
     const res = await request(app.getHttpServer()).get('/v1/docs-json');
     expect(res.status).toBe(200);
     const paths = Object.keys(res.body.paths as Record<string, unknown>);

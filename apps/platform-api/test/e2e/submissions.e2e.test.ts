@@ -23,13 +23,10 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
-
-describe('submissions (e2e)', () => {
+describe('Submissions E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -65,7 +62,7 @@ describe('submissions (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s submission endpoints without a session', async () => {
+  it('Should return 401 for submission endpoints without a session', async () => {
     expect((await http().get(`/v1/submissions?workspaceId=${UUID}`)).status).toBe(401);
     expect((await http().get(`/v1/submissions/${UUID}`)).status).toBe(401);
     expect(
@@ -73,46 +70,46 @@ describe('submissions (e2e)', () => {
     ).toBe(401);
   });
 
-  it('400s a list without a valid workspaceId query', async () => {
+  it('Should return 400 for a list without a valid workspaceId query when fetching submissions', async () => {
     expect(
       (
         await http()
           .get('/v1/submissions')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });
 
-  it('400s a list with out-of-range paging, an unknown sort, or an invalid status', async () => {
+  it('Should return 400 for a list with out-of-range paging, an unknown sort, or an invalid status', async () => {
     expect(
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&limit=0`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&sort=bogus`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&status=nope`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });
 
-  it('400s a review with an invalid decision', async () => {
+  it('Should return 400 for a review with an invalid decision', async () => {
     expect(
       (
         await http()
           .post(`/v1/submissions/${UUID}/review`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
           .send({ decision: 'maybe' })
       ).status,
     ).toBe(400);

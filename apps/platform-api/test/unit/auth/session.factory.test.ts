@@ -34,7 +34,7 @@ describe('session.factory buildAppSessionOptions Unit Test', () => {
     vi.clearAllMocks();
   });
 
-  it('builds session options with memory store (useStore = false)', () => {
+  it('Should build session options with memory store (useStore = false)', () => {
     const params = {
       secret: 'test-secret',
       secure: true,
@@ -60,7 +60,7 @@ describe('session.factory buildAppSessionOptions Unit Test', () => {
     });
   });
 
-  it('builds session options with Valkey/RedisStore (useStore = true)', () => {
+  it('Should build session options with Valkey/RedisStore (useStore = true)', () => {
     const params = {
       secret: 'another-secret',
       secure: false,
@@ -86,7 +86,7 @@ describe('session.factory buildAppSessionOptions Unit Test', () => {
     expect(buildSessionOptions).toHaveBeenCalledTimes(1);
   });
 
-  it('handles sessionKeyPrefix with multiple trailing colons correctly', () => {
+  it('Should handle sessionKeyPrefix with multiple trailing colons correctly', () => {
     const params = {
       secret: 'secret',
       secure: true,
@@ -99,7 +99,7 @@ describe('session.factory buildAppSessionOptions Unit Test', () => {
     expect(options.cookieName).toBe('my-app.sid');
   });
 
-  it('handles sessionKeyPrefix without any colons correctly', () => {
+  it('Should handle sessionKeyPrefix without any colons correctly', () => {
     const params = {
       secret: 'secret',
       secure: true,

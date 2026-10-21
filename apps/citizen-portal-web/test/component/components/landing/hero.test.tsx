@@ -17,7 +17,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 describe('Hero Component', () => {
-  it('renders marketing elements and the BC Services Card log in button', () => {
+  it('Should render marketing elements and the BC Services Card log in button', () => {
     render(<Hero />);
 
     // Assert main headline is present

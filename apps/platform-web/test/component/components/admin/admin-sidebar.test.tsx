@@ -13,7 +13,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
 }));
 
 describe('AdminSidebar', () => {
-  it('renders correctly when expanded (collapsed = false)', () => {
+  it('Should render correctly when expanded (collapsed = false)', () => {
     const { container } = render(<AdminSidebar collapsed={false} />);
 
     const aside = container.querySelector('aside');
@@ -31,7 +31,7 @@ describe('AdminSidebar', () => {
     expect(screen.getByText('Back to app')).toBeInTheDocument();
   });
 
-  it('renders correctly when collapsed (collapsed = true)', () => {
+  it('Should render correctly when collapsed (collapsed = true)', () => {
     const { container } = render(<AdminSidebar collapsed={true} />);
 
     const aside = container.querySelector('aside');

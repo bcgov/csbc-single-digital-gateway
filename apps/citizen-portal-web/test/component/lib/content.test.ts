@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FEATURE_CARDS } from '@/lib/content';
 
 describe('content lib', () => {
-  it('defines correct static FEATURE_CARDS marketing data', () => {
+  it('Should define correct static FEATURE_CARDS marketing data', () => {
     expect(FEATURE_CARDS).toBeDefined();
     expect(Array.isArray(FEATURE_CARDS)).toBe(true);
     expect(FEATURE_CARDS).toHaveLength(3);
@@ -27,7 +27,7 @@ describe('content lib', () => {
     }
   });
 
-  it('contains the expected features', () => {
+  it('Should contain the expected features', () => {
     const ids = FEATURE_CARDS.map((c) => c.id);
     expect(ids).toContain('discover');
     expect(ids).toContain('apply');

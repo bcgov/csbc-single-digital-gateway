@@ -15,8 +15,8 @@ describe('enqueueNotification', () => {
     };
   });
 
-  it('inserts a notification into the outbox within the transaction', async () => {
-    const mockRow = {
+  it('Should insert a notification into the outbox within the transaction', async () => {
+    const mockNotification = {
       idempotencyKey: 'key-123',
       userId: 'user-123',
       type: 'email' as const,
@@ -26,10 +26,10 @@ describe('enqueueNotification', () => {
       email: 'user@example.com',
     };
 
-    await enqueueNotification(txMock, mockRow);
+    await enqueueNotification(txMock, mockNotification);
 
     expect(txMock.insert).toHaveBeenCalledWith(notificationOutbox);
-    expect(txMock.values).toHaveBeenCalledWith(mockRow);
+    expect(txMock.values).toHaveBeenCalledWith(mockNotification);
     expect(txMock.onConflictDoNothing).toHaveBeenCalledWith({
       target: notificationOutbox.idempotencyKey,
     });

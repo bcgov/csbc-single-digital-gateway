@@ -1,24 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { SubmissionsV1Controller } from '../../../../../src/modules/submissions/controllers/submissions-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   ListSubmissionsQueryDto,
   ReviewSubmissionDto,
 } from '../../../../../src/modules/submissions/dtos/submission.dtos';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('SubmissionsV1Controller', () => {
   let controller: SubmissionsV1Controller;
   let submissionsServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     submissionsServiceMock = {
@@ -31,7 +21,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('list', () => {
-    it('lists submissions via the submissions service', async () => {
+    it('Should list submissions via the submissions service', async () => {
       const query: ListSubmissionsQueryDto = {
         workspaceId: 'workspace-1',
       } as any;
@@ -46,7 +36,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('get', () => {
-    it('gets submission detail via the submissions service', async () => {
+    it('Should get submission detail via the submissions service', async () => {
       const mockResult = { id: 'sub-1', status: 'pending', data: {} };
       submissionsServiceMock.get.mockResolvedValue(mockResult);
 
@@ -58,7 +48,7 @@ describe('SubmissionsV1Controller', () => {
   });
 
   describe('review', () => {
-    it('reviews a submission via the submissions service', async () => {
+    it('Should review a submission via the submissions service', async () => {
       const body: ReviewSubmissionDto = {
         decision: 'approve',
         reason: 'Looks good!',

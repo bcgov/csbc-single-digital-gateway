@@ -13,17 +13,17 @@ const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 
 describe('notification DTO schemas', () => {
   describe('feedQuerySchema', () => {
-    it('applies default limit and offset when empty', () => {
+    it('Should apply default limit and offset when empty', () => {
       const parsed = feedQuerySchema.parse({});
       expect(parsed).toEqual({ limit: 20, offset: 0 });
     });
 
-    it('coerces strings and enforces ranges', () => {
+    it('Should coerce strings and enforce ranges', () => {
       const parsed = feedQuerySchema.parse({ limit: '50', offset: '10' });
       expect(parsed).toEqual({ limit: 50, offset: 10 });
     });
 
-    it('rejects values outside of range limits', () => {
+    it('Should reject values outside of range limits', () => {
       expect(feedQuerySchema.safeParse({ limit: 0 }).success).toBe(false);
       expect(feedQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
       expect(feedQuerySchema.safeParse({ offset: -1 }).success).toBe(false);
@@ -31,7 +31,7 @@ describe('notification DTO schemas', () => {
   });
 
   describe('feedItemSchema', () => {
-    it('validates a correct feed item structure', () => {
+    it('Should validate a correct feed item structure', () => {
       const payload = {
         deliveryId: VALID_UUID,
         notificationId: VALID_UUID,
@@ -46,7 +46,7 @@ describe('notification DTO schemas', () => {
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects when invalid UUID is provided', () => {
+    it('Should reject when invalid UUID is provided', () => {
       const payload = {
         deliveryId: 'invalid-uuid',
         notificationId: VALID_UUID,
@@ -62,7 +62,7 @@ describe('notification DTO schemas', () => {
   });
 
   describe('feedResponseSchema', () => {
-    it('validates a correct feed response structure', () => {
+    it('Should validate a correct feed response structure', () => {
       const payload = {
         items: [
           {
@@ -84,7 +84,7 @@ describe('notification DTO schemas', () => {
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects negative total count', () => {
+    it('Should reject negative total count', () => {
       const payload = {
         items: [],
         total: -1,
@@ -96,29 +96,29 @@ describe('notification DTO schemas', () => {
   });
 
   describe('unreadCountSchema', () => {
-    it('validates a positive count', () => {
+    it('Should validate a positive count', () => {
       const parsed = unreadCountSchema.parse({ count: 5 });
       expect(parsed).toEqual({ count: 5 });
     });
 
-    it('rejects negative count', () => {
+    it('Should reject negative count', () => {
       expect(unreadCountSchema.safeParse({ count: -1 }).success).toBe(false);
     });
   });
 
   describe('readAllResponseSchema', () => {
-    it('validates correct updated count response', () => {
+    it('Should validate correct updated count response', () => {
       const parsed = readAllResponseSchema.parse({ updated: 10 });
       expect(parsed).toEqual({ updated: 10 });
     });
 
-    it('rejects negative updated count', () => {
+    it('Should reject negative updated count', () => {
       expect(readAllResponseSchema.safeParse({ updated: -5 }).success).toBe(false);
     });
   });
 
   describe('updatePreferencesSchema', () => {
-    it('validates valid updates containing email and channels toggles', () => {
+    it('Should validate valid updates containing email and channels toggles', () => {
       const payload = {
         email: 'user@example.com',
         channels: [{ channel: 'email', enabled: true }],
@@ -127,7 +127,7 @@ describe('notification DTO schemas', () => {
       expect(parsed).toEqual(payload);
     });
 
-    it('rejects duplicate channel entries', () => {
+    it('Should reject duplicate channel entries', () => {
       const payload = {
         channels: [
           { channel: 'email', enabled: true },
@@ -137,7 +137,7 @@ describe('notification DTO schemas', () => {
       expect(updatePreferencesSchema.safeParse(payload).success).toBe(false);
     });
 
-    it('rejects invalid email formats', () => {
+    it('Should reject invalid email formats', () => {
       const payload = {
         email: 'invalid-email',
       };
@@ -146,7 +146,7 @@ describe('notification DTO schemas', () => {
   });
 
   describe('preferencesResponseSchema', () => {
-    it('validates a correct preference response structure', () => {
+    it('Should validate a correct preference response structure', () => {
       const payload = {
         userId: VALID_UUID,
         email: 'user@example.com',

@@ -10,6 +10,7 @@ import {
   subscribeToNotifications,
 } from '@/lib/notifications';
 import { BFF_ORIGIN } from '@/lib/bff';
+import { createMockSpy } from '../../support/create-mock-spy';
 
 describe('notifications lib', () => {
   beforeEach(() => {
@@ -17,7 +18,7 @@ describe('notifications lib', () => {
   });
 
   describe('RequestError', () => {
-    it('creates RequestError correctly', () => {
+    it('Should create RequestError correctly', () => {
       const error = new RequestError(500, 'Internal Server Error');
       expect(error.status).toBe(500);
       expect(error.message).toBe('Internal Server Error');
@@ -26,16 +27,13 @@ describe('notifications lib', () => {
   });
 
   describe('query options and fetch helpers', () => {
-    it('notificationFeedQueryOptions returns correct configuration', async () => {
+    it('Should notificationFeedQueryOptions returns correct configuration', async () => {
       const options = notificationFeedQueryOptions();
       expect(options.queryKey).toEqual(['notifications', 'feed']);
       expect(options.refetchOnWindowFocus).toBe(false);
 
       const mockFeed = { items: [], total: 0, limit: 10, offset: 0 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockFeed,
-      } as Response);
+      const fetchSpy = createMockSpy(mockFeed);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications`, {
@@ -44,17 +42,14 @@ describe('notifications lib', () => {
       expect(result).toEqual(mockFeed);
     });
 
-    it('unreadCountQueryOptions returns correct configuration', async () => {
+    it('Should unreadCountQueryOptions returns correct configuration', async () => {
       const options = unreadCountQueryOptions();
       expect(options.queryKey).toEqual(['notifications', 'unread-count']);
       expect(options.refetchInterval).toBe(30000);
       expect(options.refetchOnWindowFocus).toBe(false);
 
       const mockCount = { count: 5 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockCount,
-      } as Response);
+      const fetchSpy = createMockSpy(mockCount);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/unread-count`, {
@@ -63,7 +58,7 @@ describe('notifications lib', () => {
       expect(result).toEqual(mockCount);
     });
 
-    it('notificationPreferencesQueryOptions returns correct configuration', async () => {
+    it('Should notificationPreferencesQueryOptions returns correct configuration', async () => {
       const options = notificationPreferencesQueryOptions();
       expect(options.queryKey).toEqual(['notifications', 'preferences']);
       expect(options.refetchOnWindowFocus).toBe(false);
@@ -73,10 +68,7 @@ describe('notifications lib', () => {
         email: 'test@example.com',
         channels: [],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockPrefs,
-      } as Response);
+      const fetchSpy = createMockSpy(mockPrefs);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notification-preferences`, {
@@ -85,7 +77,7 @@ describe('notifications lib', () => {
       expect(result).toEqual(mockPrefs);
     });
 
-    it('throws RequestError if response is not ok', async () => {
+    it('Should throw RequestError if response is not ok', async () => {
       const options = notificationFeedQueryOptions();
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: false,
@@ -106,12 +98,9 @@ describe('notifications lib', () => {
   });
 
   describe('mutations and updates', () => {
-    it('markNotificationRead sends POST request', async () => {
+    it('Should markNotificationRead sends POST request', async () => {
       const mockItem = { deliveryId: 'd1', notificationId: 'n1', title: 'Test' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockItem,
-      } as Response);
+      const fetchSpy = createMockSpy(mockItem);
 
       const result = await markNotificationRead('d/1'); // with URI encoding check
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/d%2F1/read`, {
@@ -121,12 +110,9 @@ describe('notifications lib', () => {
       expect(result).toEqual(mockItem);
     });
 
-    it('markAllNotificationsRead sends POST request', async () => {
+    it('Should markAllNotificationsRead sends POST request', async () => {
       const mockResponse = { updated: 3 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
+      const fetchSpy = createMockSpy(mockResponse);
 
       const result = await markAllNotificationsRead();
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/read-all`, {
@@ -136,16 +122,13 @@ describe('notifications lib', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('updateNotificationPreferences sends PUT request', async () => {
+    it('Should updateNotificationPreferences sends PUT request', async () => {
       const mockPrefs = {
         userId: 'u1',
         email: 'new@example.com',
         channels: [],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockPrefs,
-      } as Response);
+      const fetchSpy = createMockSpy(mockPrefs);
 
       const input = { email: 'new@example.com' };
       const result = await updateNotificationPreferences(input);
@@ -160,7 +143,7 @@ describe('notifications lib', () => {
   });
 
   describe('subscribeToNotifications', () => {
-    it('no-ops when EventSourceCtor is undefined', () => {
+    it('Should no-op when EventSourceCtor is undefined', () => {
       const onEvent = vi.fn();
       const sub = subscribeToNotifications(onEvent, undefined);
       expect(sub.close).toBeTypeOf('function');
@@ -168,7 +151,7 @@ describe('notifications lib', () => {
       expect(onEvent).not.toHaveBeenCalled();
     });
 
-    it('creates EventSource and registers notification listener when EventSourceCtor is defined', () => {
+    it('Should create EventSource and registers notification listener when EventSourceCtor is defined', () => {
       const onEvent = vi.fn();
       const addEventListenerSpy = vi.fn();
       const closeSpy = vi.fn();
@@ -191,7 +174,7 @@ describe('notifications lib', () => {
       expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('uses global EventSource if no constructor is passed', () => {
+    it('Should use global EventSource if no constructor is passed', () => {
       const originalEventSource = globalThis.EventSource;
       const addEventListenerSpy = vi.fn();
       const closeSpy = vi.fn();

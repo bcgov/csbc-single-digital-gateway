@@ -17,7 +17,7 @@ describe('CatalogV1Controller Unit Test Suite', () => {
   });
 
   describe('list', () => {
-    it('should list catalog services based on the query', async () => {
+    it('Should list catalog services based on the query', async () => {
       const mockQuery: ListServicesQueryDto = { q: 'health', limit: 50 };
       const mockServices = [
         { id: 'service-1', title: 'Health Service' },
@@ -33,7 +33,7 @@ describe('CatalogV1Controller Unit Test Suite', () => {
   });
 
   describe('get', () => {
-    it('should retrieve detail of a specific service', async () => {
+    it('Should retrieve detail of a specific service', async () => {
       const mockServiceId = 'service-123';
       const mockServiceDetail = {
         id: mockServiceId,
@@ -50,7 +50,7 @@ describe('CatalogV1Controller Unit Test Suite', () => {
   });
 
   describe('getVersion', () => {
-    it('should retrieve a specific version of a service', async () => {
+    it('Should retrieve a specific version of a service', async () => {
       const mockServiceId = 'service-123';
       const mockVersionId = 'version-456';
       const mockServiceVersion = {

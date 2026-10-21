@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MyServiceAgreementsV1Controller } from '../../../../../src/modules/service-agreements/controllers/my-service-agreements-v1.controller';
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
-import type { AuthUser } from '@repo/nestjs/auth';
+import { createMockUser } from '../../../../utils/create-mock-user';
 
 describe('MyServiceAgreementsV1Controller Unit Test Suite', () => {
   let controller: MyServiceAgreementsV1Controller;
   let serviceMock: any;
 
-  const mockUser = { id: 'user-123' } as unknown as AuthUser;
+  const mockUser = createMockUser();
 
   beforeEach(() => {
     serviceMock = {
@@ -20,7 +20,7 @@ describe('MyServiceAgreementsV1Controller Unit Test Suite', () => {
   });
 
   describe('list', () => {
-    it('should return service agreements list for current user', async () => {
+    it('Should return service agreements list for current user', async () => {
       const mockAgreements = [
         {
           id: 'agreement-id-1',
@@ -39,9 +39,9 @@ describe('MyServiceAgreementsV1Controller Unit Test Suite', () => {
   });
 
   describe('get', () => {
-    it('should return a specific service agreement detail for current user', async () => {
+    it('Should return a specific service agreement detail for current user', async () => {
       const consentId = 'consent-uuid';
-      const mockDetail = {
+      const mockResult = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         title: 'Terms of Service',
@@ -52,12 +52,12 @@ describe('MyServiceAgreementsV1Controller Unit Test Suite', () => {
         rejectLabel: 'Reject',
         consentedAt: '2026-07-31T20:34:51.000Z',
       };
-      serviceMock.getMine.mockResolvedValue(mockDetail);
+      serviceMock.getMine.mockResolvedValue(mockResult);
 
       const result = await controller.get(mockUser, consentId);
 
       expect(serviceMock.getMine).toHaveBeenCalledWith('user-123', consentId);
-      expect(result).toEqual(mockDetail);
+      expect(result).toEqual(mockResult);
     });
   });
 });

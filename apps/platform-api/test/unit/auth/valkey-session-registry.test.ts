@@ -12,7 +12,7 @@ const makeClient = (sets: Record<string, string[]> = {}) => ({
 });
 
 describe('ValkeySessionRegistry', () => {
-  it('track adds the session id to the user’s session set', async () => {
+  it('Should add the session id to the user’s session set on track()', async () => {
     const client = makeClient();
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -21,7 +21,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.sadd).toHaveBeenCalledWith('sdg:user-sessions:user-1', 'sid-1');
   });
 
-  it('revokeAll deletes every connect-redis session key and the index set', async () => {
+  it('Should delete every connect-redis session key and the index set on revokeAll()', async () => {
     const client = makeClient({ 'sdg:user-sessions:user-1': ['sid-1', 'sid-2'] });
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -33,7 +33,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.del).toHaveBeenCalledWith('sdg:user-sessions:user-1');
   });
 
-  it('revokeAll on a user with no tracked sessions only clears the (empty) index', async () => {
+  it('Should only clear the (empty) index on revokeAll for a user with no tracked sessions', async () => {
     const client = makeClient();
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -43,7 +43,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.del).toHaveBeenCalledWith('sdg:user-sessions:ghost');
   });
 
-  it('namespaces keys by the configured prefix (per-app isolation on a shared Valkey)', async () => {
+  it('Should namespace keys by the configured prefix (per-app isolation on a shared Valkey)', async () => {
     const client = makeClient({ 'cpa:user-sessions:user-1': ['sid-9'] });
     const registry = new ValkeySessionRegistry(client as never, 'cpa:');
 
@@ -55,7 +55,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.del).toHaveBeenCalledWith('cpa:user-sessions:user-1');
   });
 
-  it('track adds the session id to the user’s session set', async () => {
+  it('Should add the session id to the user’s session set on track()', async () => {
     const client = makeClient();
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -64,7 +64,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.sadd).toHaveBeenCalledWith('sdg:user-sessions:user-1', 'sid-1');
   });
 
-  it('revokeAll deletes every connect-redis session key and the index set', async () => {
+  it('Should delete every connect-redis session key and the index set on revokeAll()', async () => {
     const client = makeClient({ 'sdg:user-sessions:user-1': ['sid-1', 'sid-2'] });
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -76,7 +76,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.del).toHaveBeenCalledWith('sdg:user-sessions:user-1');
   });
 
-  it('revokeAll on a user with no tracked sessions only clears the (empty) index', async () => {
+  it('Should only clear the (empty) index on revokeAll for a user with no tracked sessions', async () => {
     const client = makeClient();
     const registry = new ValkeySessionRegistry(client as never, 'sdg:');
 
@@ -86,7 +86,7 @@ describe('ValkeySessionRegistry', () => {
     expect(client.del).toHaveBeenCalledWith('sdg:user-sessions:ghost');
   });
 
-  it('namespaces keys by the configured prefix (per-app isolation on a shared Valkey)', async () => {
+  it('Should namespace keys by the configured prefix (per-app isolation on a shared Valkey)', async () => {
     const client = makeClient({ 'cpa:user-sessions:user-1': ['sid-9'] });
     const registry = new ValkeySessionRegistry(client as never, 'cpa:');
 

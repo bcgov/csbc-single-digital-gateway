@@ -7,7 +7,7 @@ import { ServiceAgreementsService } from '../../../../src/modules/service-agreem
 import { InjectDatabase } from '@repo/nestjs/database';
 
 describe('ServiceAgreementsModule', () => {
-  it('should compile successfully', async () => {
+  it('Should compile successfully for ServiceAgreementsModule', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [ServiceAgreementsModule],
     })

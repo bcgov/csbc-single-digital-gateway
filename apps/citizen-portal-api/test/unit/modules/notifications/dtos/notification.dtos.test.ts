@@ -14,7 +14,7 @@ const VALID_UUID_2 = '22222222-2222-4222-8222-222222222222';
 
 describe('notification DTO schemas', () => {
   describe('feedQuerySchema', () => {
-    it('should parse valid limit and offset', () => {
+    it('Should parse valid limit and offset', () => {
       const result = feedQuerySchema.safeParse({ limit: 10, offset: 5 });
       expect(result.success).toBe(true);
       if (result.success) {
@@ -22,7 +22,7 @@ describe('notification DTO schemas', () => {
       }
     });
 
-    it('should fall back to defaults when limit and offset are omitted', () => {
+    it('Should fall back to defaults when limit and offset are omitted', () => {
       const result = feedQuerySchema.safeParse({});
       expect(result.success).toBe(true);
       if (result.success) {
@@ -30,7 +30,7 @@ describe('notification DTO schemas', () => {
       }
     });
 
-    it('should coerce strings to numbers', () => {
+    it('Should coerce strings to numbers', () => {
       const result = feedQuerySchema.safeParse({ limit: '15', offset: '2' });
       expect(result.success).toBe(true);
       if (result.success) {
@@ -38,12 +38,12 @@ describe('notification DTO schemas', () => {
       }
     });
 
-    it('should fail if limit is less than 1 or greater than 100', () => {
+    it('Should fail if limit is less than 1 or greater than 100', () => {
       expect(feedQuerySchema.safeParse({ limit: 0 }).success).toBe(false);
       expect(feedQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
     });
 
-    it('should fail if offset is less than 0', () => {
+    it('Should fail if offset is less than 0', () => {
       expect(feedQuerySchema.safeParse({ offset: -1 }).success).toBe(false);
     });
   });
@@ -60,12 +60,12 @@ describe('notification DTO schemas', () => {
       readAt: null,
     };
 
-    it('should parse a valid feed item', () => {
+    it('Should parse a valid feed item', () => {
       const result = feedItemSchema.safeParse(validFeedItem);
       expect(result.success).toBe(true);
     });
 
-    it('should allow nullable body and payload', () => {
+    it('Should allow nullable body and payload', () => {
       const result = feedItemSchema.safeParse({
         ...validFeedItem,
         body: null,
@@ -74,7 +74,7 @@ describe('notification DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should fail if deliveryId or notificationId is not a valid UUID', () => {
+    it('Should fail if deliveryId or notificationId is not a valid UUID', () => {
       expect(
         feedItemSchema.safeParse({
           ...validFeedItem,
@@ -110,12 +110,12 @@ describe('notification DTO schemas', () => {
       offset: 0,
     };
 
-    it('should parse a valid feed response', () => {
+    it('Should parse a valid feed response', () => {
       const result = feedResponseSchema.safeParse(validFeedResponse);
       expect(result.success).toBe(true);
     });
 
-    it('should fail if total is negative', () => {
+    it('Should fail if total is negative', () => {
       expect(
         feedResponseSchema.safeParse({
           ...validFeedResponse,
@@ -126,31 +126,31 @@ describe('notification DTO schemas', () => {
   });
 
   describe('unreadCountSchema', () => {
-    it('should parse a valid unread count', () => {
+    it('Should parse a valid unread count', () => {
       expect(unreadCountSchema.safeParse({ count: 5 }).success).toBe(true);
       expect(unreadCountSchema.safeParse({ count: 0 }).success).toBe(true);
     });
 
-    it('should fail if count is negative or not an integer', () => {
+    it('Should fail if count is negative or not an integer', () => {
       expect(unreadCountSchema.safeParse({ count: -1 }).success).toBe(false);
       expect(unreadCountSchema.safeParse({ count: 1.5 }).success).toBe(false);
     });
   });
 
   describe('readAllResponseSchema', () => {
-    it('should parse a valid read all response', () => {
+    it('Should parse a valid read all response', () => {
       expect(readAllResponseSchema.safeParse({ updated: 10 }).success).toBe(true);
       expect(readAllResponseSchema.safeParse({ updated: 0 }).success).toBe(true);
     });
 
-    it('should fail if updated is negative or not an integer', () => {
+    it('Should fail if updated is negative or not an integer', () => {
       expect(readAllResponseSchema.safeParse({ updated: -1 }).success).toBe(false);
       expect(readAllResponseSchema.safeParse({ updated: 1.5 }).success).toBe(false);
     });
   });
 
   describe('updatePreferencesSchema', () => {
-    it('should parse valid update preferences data', () => {
+    it('Should parse valid update preferences data', () => {
       const result = updatePreferencesSchema.safeParse({
         email: 'test@example.com',
         channels: [{ channel: 'email', enabled: true }],
@@ -158,16 +158,16 @@ describe('notification DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should allow optional email and channels', () => {
+    it('Should allow optional email and channels', () => {
       expect(updatePreferencesSchema.safeParse({}).success).toBe(true);
       expect(updatePreferencesSchema.safeParse({ email: null }).success).toBe(true);
     });
 
-    it('should fail if email format is invalid', () => {
+    it('Should fail if email format is invalid', () => {
       expect(updatePreferencesSchema.safeParse({ email: 'invalid-email' }).success).toBe(false);
     });
 
-    it('should fail if channel is not togglable (e.g. in_app is not allowed on write)', () => {
+    it('Should fail if channel is not togglable (e.g. in_app is not allowed on write)', () => {
       expect(
         updatePreferencesSchema.safeParse({
           channels: [{ channel: 'in_app' as any, enabled: true }],
@@ -175,7 +175,7 @@ describe('notification DTO schemas', () => {
       ).toBe(false);
     });
 
-    it('should fail if duplicate channel entries are supplied', () => {
+    it('Should fail if duplicate channel entries are supplied', () => {
       const result = updatePreferencesSchema.safeParse({
         channels: [
           { channel: 'email', enabled: true },
@@ -196,12 +196,12 @@ describe('notification DTO schemas', () => {
       ],
     };
 
-    it('should parse a valid preferences response', () => {
+    it('Should parse a valid preferences response', () => {
       const result = preferencesResponseSchema.safeParse(validPreferencesResponse);
       expect(result.success).toBe(true);
     });
 
-    it('should allow nullable email in response', () => {
+    it('Should allow nullable email in response', () => {
       const result = preferencesResponseSchema.safeParse({
         ...validPreferencesResponse,
         email: null,
@@ -209,7 +209,7 @@ describe('notification DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should fail if userId is not a valid UUID', () => {
+    it('Should fail if userId is not a valid UUID', () => {
       expect(
         preferencesResponseSchema.safeParse({
           ...validPreferencesResponse,

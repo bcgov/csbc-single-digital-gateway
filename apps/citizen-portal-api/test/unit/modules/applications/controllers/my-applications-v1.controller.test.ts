@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type AuthUser } from '@repo/nestjs/auth';
 import { MyApplicationsV1Controller } from '../../../../../src/modules/applications/controllers/my-applications-v1.controller';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
+import { createMockUser } from '../../../../utils/create-mock-user';
 
 describe('MyApplicationsV1Controller Unit Test Suite', () => {
   let controller: MyApplicationsV1Controller;
   let applicationsServiceMock: any;
 
-  const mockUser = { id: 'user-123' } as unknown as AuthUser;
+  const mockUser = createMockUser();
 
   beforeEach(() => {
     applicationsServiceMock = {
@@ -24,7 +24,7 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   });
 
   describe('list', () => {
-    it('should list applications for the current user', async () => {
+    it('Should list applications for the current user', async () => {
       const mockItems = [{ id: 'app-1' }, { id: 'app-2' }];
       applicationsServiceMock.listMine.mockResolvedValue(mockItems);
 
@@ -36,7 +36,7 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   });
 
   describe('create', () => {
-    it('should create or resume draft for the current user', async () => {
+    it('Should create or resume draft for the current user', async () => {
       const formVersionId = 'version-456';
       const mockSubmission = { id: 'submission-123', status: 'draft' };
       applicationsServiceMock.createOrResumeDraft.mockResolvedValue(mockSubmission);
@@ -52,20 +52,20 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   });
 
   describe('get', () => {
-    it('should get application details for the current user', async () => {
+    it('Should get application details for the current user', async () => {
       const id = 'app-123';
-      const mockDetail = { id, formVersionId: 'version-1', status: 'draft' };
-      applicationsServiceMock.getDetail.mockResolvedValue(mockDetail);
+      const mockResult = { id, formVersionId: 'version-1', status: 'draft' };
+      applicationsServiceMock.getDetail.mockResolvedValue(mockResult);
 
       const result = await controller.get(mockUser, id);
 
       expect(applicationsServiceMock.getDetail).toHaveBeenCalledWith('user-123', id);
-      expect(result).toEqual(mockDetail);
+      expect(result).toEqual(mockResult);
     });
   });
 
   describe('save', () => {
-    it('should save drafts for the current user', async () => {
+    it('Should save drafts for the current user', async () => {
       const id = 'app-123';
       const data = { field: 'value' };
       const mockResult = { id, status: 'draft' };
@@ -79,7 +79,7 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   });
 
   describe('submit', () => {
-    it('should submit an application for the current user', async () => {
+    it('Should submit an application for the current user', async () => {
       const id = 'app-123';
       const data = { field: 'value' };
       const mockResult = { id, status: 'submitted' };
@@ -93,7 +93,7 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   });
 
   describe('revise', () => {
-    it('should set an application to revision status for the current user', async () => {
+    it('Should set an application to revision status for the current user', async () => {
       const id = 'app-123';
       const mockResult = { id, status: 'revision_requested' };
       applicationsServiceMock.revise.mockResolvedValue(mockResult);

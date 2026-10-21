@@ -4,6 +4,8 @@ import { HomePage } from '@/components/home-page';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { logout } from '@/lib/bff';
+import { authedUser } from '../../support/fixtures';
+import { createMockAssign } from '../../support/create-mock-assign';
 
 // Mock components
 vi.mock('@/components/layout/page-shell', () => ({
@@ -85,7 +87,7 @@ describe('HomePage Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders loading/skeleton state when isPending is true', () => {
+  it('Should render loading/skeleton state when isPending is true', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: undefined,
       isPending: true,
@@ -104,7 +106,7 @@ describe('HomePage Component', () => {
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
   });
 
-  it('renders anonymous (signed-out) view when no user session exists', () => {
+  it('Should render anonymous (signed-out) view when no user session exists', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: null,
       isPending: false,
@@ -134,17 +136,9 @@ describe('HomePage Component', () => {
     expect(screen.queryByTestId('track-applications')).not.toBeInTheDocument();
   });
 
-  it('renders authenticated (signed-in) view when user session exists', () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
+  it('Should render authenticated (signed-in) view when user session exists', () => {
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 
@@ -186,17 +180,9 @@ describe('HomePage Component', () => {
     expect(screen.queryByTestId('login-cta')).not.toBeInTheDocument();
   });
 
-  it('calls logout and redirects to root when onLogout is triggered', async () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
+  it('Should call logout and redirects to root when onLogout is triggered', async () => {
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 
@@ -206,11 +192,7 @@ describe('HomePage Component', () => {
     } as any);
 
     // Mock window.location.assign
-    const assignMock = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: assignMock },
-    });
+    const assignMock = createMockAssign();
 
     render(<HomePage />);
 
@@ -223,17 +205,9 @@ describe('HomePage Component', () => {
     });
   });
 
-  it('handles nullish/empty data queries gracefully', () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
+  it('Should handle nullish/empty data queries gracefully', () => {
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 
@@ -248,7 +222,7 @@ describe('HomePage Component', () => {
     expect(screen.getByText('Applications Count: 0')).toBeInTheDocument();
   });
 
-  it('handles nullish services data query in anonymous view gracefully', () => {
+  it('Should handle nullish services data query in anonymous view gracefully', () => {
     vi.mocked(useAuth).mockReturnValue({
       data: null,
       isPending: false,
