@@ -32,21 +32,16 @@ export const options = {
  * of the application under stress.
  */
 export default function clientApiStressTest() {
-  const testAuthHealth = false;
-  const testMeApplications = false;
-  const testGeo = false;
-  const testServices = false;
-  const testConsent = false;
-  const testNotifications = false;
+  const testOptions = {
+    testAuthHealth: false,
+    testMeApplications: false,
+    testGeo: false,
+    testServices: false,
+    testConsent: false,
+    testNotifications: false,
+  };
 
-  clientApiTest(
-    testAuthHealth,
-    testServices,
-    testGeo,
-    testMeApplications,
-    testConsent,
-    testNotifications,
-  );
+  clientApiTest(testOptions);
 }
 
 export function handleSummary(data: any) {

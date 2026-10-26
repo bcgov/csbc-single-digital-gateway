@@ -37,7 +37,10 @@ export default defineConfig<TestOptions>({
     testClientDevUrl: 'http://localhost:3000',
     testClientUsername: 'citizen',
     testClientPassword: 'password',
-
+    testPlatformDevUrl: 'http://localhost:3001',
+    testPlatformUsername: 'admin',
+    testPlatformPassword: 'password',
+    testPlatformWaitTime: 60000,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
@@ -107,6 +110,17 @@ export default defineConfig<TestOptions>({
         testClientDevUrl: process.env.K6_CLIENT_DEV_URL,
         testClientUsername: process.env.K6_CLIENT_USERNAME,
         testClientPassword: process.env.K6_CLIENT_PASSWORD,
+      },
+    },
+    {
+      name: 'K6 Platform Dev Setup',
+      testMatch: 'playwright-platform-dev.setup.ts',
+      testDir: './tests/k6/utils/',
+      use: {
+        testPlatformDevUrl: process.env.K6_PLATFORM_DEV_URL,
+        testPlatformUsername: process.env.K6_PLATFORM_USERNAME,
+        testPlatformPassword: process.env.K6_PLATFORM_PASSWORD,
+        testPlatformWaitTime: parseInt(process.env.K6_PLATFORM_WAIT_TIME || '60000'),
       },
     },
   ],

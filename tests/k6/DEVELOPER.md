@@ -77,7 +77,7 @@ Stress testing assesses how the system performs when loads are heavier than usua
 
 ## Authentication
 
-The Single Digital Gateway project uses test user credentials to sign in to its applications via BC Services Card Login development URL. Performance tests with K6 requires authentication tokens and cookies to access its frontend and backend applications. To obtain the authentication cookies, we use Cypress sign in with test username and password and store the cookies in a temporary folder. Refer to the Cypress function [`loginToObtainCookies`](/testings/cypress/cypress/support/commands.ts) for more details. Navigate to the root directory and enter the following command.
+The Single Digital Gateway project uses test user credentials to sign in to its applications via BC Services Card Login development URL. Performance tests with K6 requires authentication tokens and cookies to access its frontend and backend applications. To obtain the authentication cookies, we use a Playwright script to sign in with test username and password and store the cookies in a temporary folder. Refer to the Playwright script [`createBcscUser`](./utils/playwright-platform-dev.setup.ts) for more details. Navigate to the root directory and enter the following command.
 
 Obtain cookies for a BCSC test user
 
@@ -87,21 +87,33 @@ npm run test:login
 
 ### IDIR Authentication
 
-Running performance tests on the Admin site requires IDIR authentication. Follow the steps below to obtain IDIR cookies:
+Running performance tests on the platform admin site requires IDIR authentication. Follow the steps below to obtain IDIR cookies:
 
-1. Open the Cypress Launchpad application with `npm run test:open`.
-2. Run the End-to-End (E2E) test using the file `idir-sign-in.e2e-cy.ts`.
-3. Authorize the login by entering the two-digit code provided into your authentication app.
-4. Once the `idir-auth-cookies.json` file is generated, transfer it to the performance folder using one of the following methods:
-   - Manual Transfer: Copy the file from `cypress/cookies` to `performance/cookies`.
-   - Command Line: Run the command `npm run cookies:copy` from the project's root directory.
+1. Run the End-to-End (E2E) test using the file `playwright-platform-dev.setup.ts`.
+2. Authorize the login by entering the two-digit code provided into your authentication app.
+3. Once the `platform-auth-cookies.json` file is generated, the performance test is ready to run.
 
 ## Configuration
 
-Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the performance/root folder with the variable `K6_CLIENT_DEV_URL` and set its value to the development URL.
+Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the root folder with the following environment variables and set their values accordingly.
 
 ```
 K6_CLIENT_DEV_URL=
+K6_CLIENT_USERNAME=
+K6_CLIENT_PASSWORD=
+K6_PLATFORM_DEV_URL=
+K6_PLATFORM_USERNAME=
+K6_PLATFORM_PASSWORD=
+K6_PLATFORM_WAIT_TIME=
+```
+
+Add another `.env` file in the platform folder with the following environment variables and set their values accordingly.
+
+```
+K6_CLIENT_DEV_URL=
+K6_CLIENT_STAGING_URL=
+K6_PLATFORM_DEV_URL=
+K6_PLATFORM_STAGING_URL=
 ```
 
 ## Testing Commands
@@ -118,14 +130,6 @@ test:client:web-smoke-test
 
 ```bash
 test:admin:api-load-test
-```
-
-## Test Reports
-
-Test reports are available for the K6 in developers' local environments. Refer to [reports page](<[./cypress.config.ts](https://grafana.com/docs/k6/latest/results-output/web-dashboard/)>) for more details. NPM scripts for reports are not included in `package.json` file as generating reports varies according to requirements. Smoke tests will not generate reports as the test durations were short. Run the command below to generate a HTML report file after running either a load test or a stress test.
-
-```bash
-K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=html-report.html dotenv -e .env k6 run web-load-test.js
 ```
 
 ## Test Interpretation

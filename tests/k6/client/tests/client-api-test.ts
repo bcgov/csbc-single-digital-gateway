@@ -1,56 +1,24 @@
 import { group } from 'k6';
 import { clientCookieData, setCookies, UserType } from '../../utils/cookies.ts';
-import { clientAuthLoginEndpoint, clientAuthMeEndpoint } from '../utils/client-api-auth.ts';
-import {
-  clientMeApplicationsCreateOneApplication,
-  clientMeApplicationsGetActions,
-  clientMeApplicationsGetMessages,
-  clientMeApplicationsGetOneApplication,
-  clientMeApplicationsGetOneServiceAgreement,
-  clientMeApplicationsGetServiceAgreements,
-  clientMeApplicationsList,
-  clientMeApplicationsReviseOneApplication,
-  clientMeApplicationsSubmitOneApplication,
-  clientMeApplicationsUpdateOneApplication,
-} from '../utils/client-api-me-applications.ts';
-import {
-  clientServicesFindAllServices,
-  clientServicesFindOneApplicationForm,
-  clientServicesFindOneService,
-  clientServicesFindOneVersion,
-  clientServicesGetApplicationProcess,
-} from '../utils/client-api-services.ts';
-import { clientHealthLiveEndpoint, clientHealthReadyEndpoint } from '../utils/client-api-health.ts';
-import {
-  clientGeoFindAddressSearch,
-  clientGeoFindAddressSearchRegions,
-  clientGeoFindAllCountries,
-  clientGeoFindStatesByCountry,
-} from '../utils/client-api-geo.ts';
-import {
-  clientConsentFindServiceAgreements,
-  clientConsentSubmitAgreementConsent,
-} from '../utils/client-api-consent.ts';
-import {
-  clientNotificationsFindNotifications,
-  clientNotificationsFindNotificationsReadAll,
-  clientNotificationsFindNotificationsUnreadCount,
-  clientNotificationsGetPreferences,
-  clientNotificationsReadByDeliveryId,
-  clientNotificationsUpdatePreferences,
-} from '../utils/client-api-notifications.ts';
+import ClientHealthAPIs from '../utils/client-api-health.ts';
+import ClientAuthAPIs from '../utils/client-api-auth.ts';
+import ClientServicesAPIS from '../utils/client-api-services.ts';
+import ClientGEOAPIs from '../utils/client-api-geo.ts';
+import ClientMeApplicationsAPIs from '../utils/client-api-me-applications.ts';
+import ClientConsentAPIs from '../utils/client-api-consent.ts';
+import ClientNotificationsAPIs from '../utils/client-api-notifications.ts';
 
 /**
  * This is the main entry point for the client API tests.
  */
-export default function clientApiTest(
-  testAuthHealth: boolean = false,
-  testServices: boolean = false,
-  testGeo: boolean = false,
-  testMeApplications: boolean = false,
-  testConsent: boolean = false,
-  testNotifications: boolean = false,
-) {
+export default function clientApiTest(options?: {
+  testAuthHealth: boolean;
+  testServices: boolean;
+  testGeo: boolean;
+  testMeApplications: boolean;
+  testConsent: boolean;
+  testNotifications: boolean;
+}) {
   setCookies(clientCookieData, UserType.Client);
 
   const serviceId = '123e4567-e89b-12d3-a456-426614174000';
@@ -61,116 +29,129 @@ export default function clientApiTest(
   const countryId = '123e4567-e89b-12d3-a456-426614174005';
   const deliveryId = '123e4567-e89b-12d3-a456-426614174006';
 
-  if (testAuthHealth) {
+  if (options?.testAuthHealth) {
     group('Client API - Auth', () => {
-      clientAuthLoginEndpoint();
-      clientAuthMeEndpoint();
+      const clientAuth = new ClientAuthAPIs();
+      // Login endpoint
+      clientAuth.loginEndpoint();
+
+      // Me endpoint
+      clientAuth.meEndpoint();
     });
 
     group('Client API - Health', () => {
-      clientHealthLiveEndpoint();
-      clientHealthReadyEndpoint();
+      const clientHealth = new ClientHealthAPIs();
+      // Live endpoint
+      clientHealth.liveEndpoint();
+
+      // Ready endpoint
+      clientHealth.readyEndpoint();
     });
   }
 
-  if (testServices) {
+  if (options?.testServices) {
     group('Client API - Services', () => {
+      const clientServices = new ClientServicesAPIS();
       // Find all services endpoint
-      clientServicesFindAllServices();
+      clientServices.findAllServices();
 
       // Find one service endpoint
-      clientServicesFindOneService(serviceId);
+      clientServices.findOneService(serviceId);
 
       // Find one version endpoint
-      clientServicesFindOneVersion(serviceId, versionId);
+      clientServices.findOneVersion(serviceId, versionId);
 
       // Find one application form endpoint
-      clientServicesFindOneApplicationForm(serviceId, formId);
+      clientServices.findOneApplicationForm(serviceId, formId);
 
       // Get application process endpoint
-      clientServicesGetApplicationProcess(serviceId, versionId, applicationId);
+      clientServices.getApplicationProcess(serviceId, versionId, applicationId);
     });
   }
 
-  if (testGeo) {
+  if (options?.testGeo) {
     group('Client API - Geo', () => {
+      const clientGeo = new ClientGEOAPIs();
       // Find all countries endpoint
-      clientGeoFindAllCountries();
+      clientGeo.findAllCountries();
 
       // Find states within a country endpoint
-      clientGeoFindStatesByCountry(countryId);
+      clientGeo.findStatesByCountry(countryId);
 
       // Find address-search endpoint
-      clientGeoFindAddressSearch();
+      clientGeo.findAddressSearch();
 
       // Find regions by address-search endpoint
-      clientGeoFindAddressSearchRegions();
+      clientGeo.findAddressSearchRegions();
     });
   }
 
-  if (testMeApplications) {
+  if (options?.testMeApplications) {
     group('Client API - Me Applications', () => {
+      const clientMeApplications = new ClientMeApplicationsAPIs();
       // List for user endpoint
-      clientMeApplicationsList();
+      clientMeApplications.list();
 
       // Create one application endpoint
-      clientMeApplicationsCreateOneApplication();
+      clientMeApplications.createOneApplication();
 
       // Get one application endpoint
-      clientMeApplicationsGetOneApplication(applicationId);
+      clientMeApplications.getOneApplication(applicationId);
 
       // Update one application endpoint
-      clientMeApplicationsUpdateOneApplication(applicationId);
+      clientMeApplications.updateOneApplication(applicationId);
 
       // Submit one application endpoint
-      clientMeApplicationsSubmitOneApplication(applicationId);
+      clientMeApplications.submitOneApplication(applicationId);
 
       // Revise one application endpoint
-      clientMeApplicationsReviseOneApplication(applicationId);
+      clientMeApplications.reviseOneApplication(applicationId);
 
       // Get actions endpoint
-      clientMeApplicationsGetActions(applicationId);
+      clientMeApplications.getActions(applicationId);
 
       // Get messages endpoint
-      clientMeApplicationsGetMessages(applicationId);
+      clientMeApplications.getMessages(applicationId);
 
       // Get service agreements endpoint
-      clientMeApplicationsGetServiceAgreements();
+      clientMeApplications.getServiceAgreements();
 
       // Get one service agreement endpoint
-      clientMeApplicationsGetOneServiceAgreement(serviceAgreementId);
+      clientMeApplications.getOneServiceAgreement(serviceAgreementId);
     });
   }
 
-  if (testConsent) {
+  if (options?.testConsent) {
     group('Client API - Consent', () => {
+      const clientConsent = new ClientConsentAPIs();
       // List service agreements endpoint
-      clientConsentFindServiceAgreements(serviceId);
+      clientConsent.findServiceAgreements(serviceId);
 
       // Submit agreement consent endpoint
-      clientConsentSubmitAgreementConsent();
+      clientConsent.submitAgreementConsent();
     });
   }
 
-  if (testNotifications) {
+  if (options?.testNotifications) {
     group('Client API - Notifications', () => {
+      const clientNotifications = new ClientNotificationsAPIs();
       // List notifications endpoint
-      clientNotificationsFindNotifications();
+      clientNotifications.findNotifications();
 
       // Unread count endpoint
-      clientNotificationsFindNotificationsUnreadCount();
+      clientNotifications.findNotificationsUnreadCount();
 
       // Read all notifications endpoint
-      clientNotificationsFindNotificationsReadAll();
+      clientNotifications.findNotificationsReadAll();
 
       // Read one notification endpoint
-      clientNotificationsReadByDeliveryId(deliveryId);
+      clientNotifications.readByDeliveryId(deliveryId);
 
       // Get notification preferences endpoint
-      clientNotificationsGetPreferences();
+      clientNotifications.getPreferences();
 
       // Update notification preferences endpoint
-      clientNotificationsUpdatePreferences();
+      clientNotifications.updatePreferences();
     });
   }
 }

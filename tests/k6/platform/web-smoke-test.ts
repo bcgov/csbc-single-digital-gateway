@@ -1,6 +1,6 @@
 // @ts-ignore: k6 summary lib is loaded at runtime from a URL; suppress TS module resolution error
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
-import adminWebTest from './tests/admin-web-test.ts';
+import platformWebTest from './tests/platform-web-test.ts';
 
 export const options = {
   scenarios: {
@@ -22,19 +22,19 @@ export const options = {
 };
 
 /**
- * This is the main entry point for the admin web smoke tests. The purpose of these
+ * This is the main entry point for the platform web smoke tests. The purpose of these
  * smoke tests is to quickly verify that the most important features of the application
  * are working as expected before running more comprehensive test suites.
  */
-export default async function adminWebSmokeTest() {
+export default async function platformWebSmokeTest() {
   const testHomePage = true;
 
-  adminWebTest(testHomePage);
+  platformWebTest(testHomePage);
 }
 
 export function handleSummary(data: any) {
   return {
-    'utils/reports/admin-web-smoke-test.json': JSON.stringify(data),
+    'utils/reports/platform-web-smoke-test.json': JSON.stringify(data),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
   };
 }

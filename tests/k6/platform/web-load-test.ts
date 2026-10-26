@@ -1,6 +1,6 @@
 // @ts-ignore: k6 summary lib is loaded at runtime from a URL; suppress TS module resolution error
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
-import adminWebTest from './tests/admin-web-test.ts';
+import platformWebTest from './tests/platform-web-test.ts';
 
 export const options = {
   scenarios: {
@@ -38,15 +38,15 @@ export const options = {
  * load tests is to simulate real-world usage scenarios and measure the performance
  * of the application under load.
  */
-export default async function adminWebLoadTest() {
+export default async function platformWebLoadTest() {
   const testHomePage = false;
 
-  adminWebTest(testHomePage);
+  platformWebTest(testHomePage);
 }
 
 export function handleSummary(data: any) {
   return {
-    'utils/reports/admin-web-load-test.json': JSON.stringify(data),
+    'utils/reports/platform-web-load-test.json': JSON.stringify(data),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
   };
 }

@@ -1,6 +1,6 @@
 import { browser } from 'k6/browser';
 import { clientCookieData } from '../../utils/cookies.ts';
-import { clientAppPage, clientHomePage } from '../utils/client-web-pages.ts';
+import ClientWebPages from '../utils/client-web-pages.ts';
 
 /**
  * This is the main entry point for the client web smoke tests.
@@ -10,13 +10,15 @@ export default async function clientWebTest(testHomePage: boolean, testAppPage: 
   const page = await context.newPage();
   await context.addCookies(clientCookieData.cookies);
 
+  const clientWebPages = new ClientWebPages();
+
   try {
     if (testHomePage) {
-      await clientHomePage();
+      await clientWebPages.homePage();
     }
 
     if (testAppPage) {
-      await clientAppPage(page);
+      await clientWebPages.appPage(page);
     }
   } finally {
     await page.close();

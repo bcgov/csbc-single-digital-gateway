@@ -20,7 +20,7 @@ interface JarCookie {
 }
 
 export enum UserType {
-  Admin = 'admin',
+  Platform = 'platform',
   Client = 'client',
 }
 
@@ -29,9 +29,9 @@ export const clientCookieData: { cookies: Cookie[] } = JSON.parse(
   open('./cookies/client-auth-cookies.json'),
 );
 
-// Load idir cookies from JSON file
-export const idirCookieData: { cookies: Cookie[] } = JSON.parse(
-  open('./cookies/idir-auth-cookies.json'),
+// Load platform cookies from JSON file
+export const platformCookieData: { cookies: Cookie[] } = JSON.parse(
+  open('./cookies/platform-auth-cookies.json'),
 );
 
 /**
@@ -94,7 +94,7 @@ export const setCookies = (cookieData: { cookies: JarCookie[] }, userType: UserT
       };
     }
     const webUrl =
-      userType === UserType.Admin ? `${__ENV.K6_CLIENT_DEV_URL}/admin` : __ENV.K6_CLIENT_DEV_URL;
+      userType === UserType.Platform ? __ENV.K6_PLATFORM_DEV_URL : __ENV.K6_CLIENT_DEV_URL;
     jar.set(webUrl, cookie.name, cookie.value, expiresOption);
   });
 };

@@ -1,6 +1,6 @@
 import { browser } from 'k6/browser';
-import { idirCookieData } from '../../utils/cookies.ts';
-import { adminHomePage } from '../utils/admin-web-pages.ts';
+import { platformCookieData } from '../../utils/cookies.ts';
+import AdminWebPages from '../utils/admin-web-pages.ts';
 
 export const options = {
   scenarios: {
@@ -22,16 +22,17 @@ export const options = {
 };
 
 /**
- * This is the main entry point for the admin web tests.
+ * This is the main entry point for the platform web tests.
  */
-export default async function adminWebTest(testHomePage: boolean) {
+export default async function platformWebTest(testHomePage: boolean) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await context.addCookies(idirCookieData);
+  await context.addCookies(platformCookieData.cookies);
 
   try {
     if (testHomePage) {
-      await adminHomePage(page);
+      const adminHomePage = new AdminWebPages();
+      await adminHomePage.adminHomePage(page);
     }
   } finally {
     await page.close();
