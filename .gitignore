@@ -52,3 +52,7 @@ CLAUDE*.md
 **/playwright/.cache/
 **/playwright/.auth/
 **/playwright/tests/setup/files/*.json
+
+# K6
+**/k6/**/cookies/*.json
+**/k6/**/reports/*.json
